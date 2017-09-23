@@ -6,10 +6,11 @@ Cheap DIY RC link based on LoRa 868MHz modules
 | Byte | Description | Notes |
 | ---- | ---- | ---- |
 | 0    | Preamble | "Q" 0x51 |
-| 1    | Frame type & Payload Length | bits 7-5 defines frame type, bits 4-0 payload length |
-| 2    | Packet ID | |
+| 1   | Channel ID | channel used for comunication between TX and RX |
+| 2    | Frame type & Payload Length | bits 7-5 defines frame type, bits 4-0 payload length |
+| 3    | Packet ID | |
 | 4 - 36 | Payload | 32 bytes max |
-| payload length + 3 | CRC | XOR of all previous bytes |
+| payload length + 4 | CRC | XOR of all previous bytes |
 
 ## Frame types
 
