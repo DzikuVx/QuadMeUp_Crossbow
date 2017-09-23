@@ -1,0 +1,18 @@
+//Only for UART connected radio modules
+#define UART_SPEED 57600
+
+#define CHANNEL_ID 0x01
+#define QSP_PREAMBLE 0x51
+#define QSP_PAYLOAD_LENGTH 32
+
+#define PIN_LED 13
+
+enum dataStates {
+    IDLE,
+    PREAMBLE_RECEIVED,
+    CHANNEL_RECEIVED,
+    FRAME_TYPE_RECEIVED,
+    PACKET_ID_RECEIVED,
+    PAYLOAD_RECEIVED,
+    CRC_RECEIVED
+};
