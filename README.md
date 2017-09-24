@@ -14,13 +14,13 @@ Cheap DIY RC link based on LoRa 868MHz modules
 
 ## Frame types
 
-| Value | Description                   | Direction                                       |
-| ----  | ----                          | ---- |
-| 000   | RC channels data `RC_DATA` | TX -> RX |
-| 001   | Receiver health and basic telemetry `RX_HEALTH` | RX -> TX |
-| 010   | Request receiver configuration | TX -> RX |
-| 011   | Receiver configuration | RX -> TX |
-| 100   | Set receiver configuration | TX -> RX |
+| Value  | Value hex    | Description                      | Direction  |
+| ----   | ----         |----                              | ---- |
+| 0000   | 0x0          | RC channels data `RC_DATA` | TX -> RX |
+| 0001   | 0x1          | Receiver health and basic telemetry `RX_HEALTH` | RX -> TX |
+| 0010   | 0x2          | Request receiver configuration | TX -> RX |
+| 0011   | 0x3          | Receiver configuration | RX -> TX |
+| 0100   | 0x4          | Set receiver configuration | TX -> RX |
 
 ### `RC_DATA` frame format
 

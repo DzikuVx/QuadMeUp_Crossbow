@@ -1,11 +1,10 @@
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
-
-#ifdef DEVICE_MODE_TX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 /*
  * Main defines for device working in TX mode
  */
+#ifdef DEVICE_MODE_TX
 
 #include <PPMReader.h>
 
@@ -14,8 +13,13 @@
 
 PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
 
+static uint32_t lastRcFrameTransmit = 0;
+
 #endif
 
+/*
+ * Main defines for device working in RX mode
+ */
 #ifdef DEVICE_MODE_RX
 
 #include <Adafruit_SSD1306.h>
@@ -92,33 +96,24 @@ void decodeIncomingQspFrame(uint8_t incomingByte) {
     } else if (protocolState == PAYLOAD_RECEIVED) {
 
         if (qspCrc == incomingByte) {
-            display.clearDisplay();
-            display.setCursor(0, 0);
-            display.print(qspPayload[0]); 
-        
-            display.setCursor(0, 10);
-            display.print(qspPayload[1]); 
-        
-            display.setCursor(0, 20);
-            display.print(qspPayload[2]); 
-        
-            display.setCursor(0, 30);
-            display.print(qspPayload[3]); 
-        
-            display.display(); 
+            //CRC is correct
         } else {
-
-            display.clearDisplay();
-            display.setCursor(0, 0);
-            display.print("CRC failed"); 
-            display.display(); 
-
+            //CRC failed, frame has to be rejected
         }
 
+        // In both cases switch to listening for next preamble
         protocolState = IDLE;
     }
 
 }
+
+/*
+display.clearDisplay();
+display.setCursor(0,0);
+display.print("Lat:");
+display.print(remoteData.latitude);
+display.display();
+*/
 
 uint8_t getPacketId() {
     return packetId++;
@@ -171,6 +166,59 @@ void setup(void) {
 void loop(void) {
 
 #ifdef DEVICE_MODE_TX
+
+    uint32_t currentMillis = millis();
+
+    if (currentMillis - lastRcFrameTransmit > TX_RC_FRAME_RATE) {
+        lastRcFrameTransmit = currentMillis; 
+
+        uint8_t payloadBit = 0;
+        uint8_t bitsToMove = 0;
+
+        for (uint8_t i = 0; i < QSP_PAYLOAD_LENGTH; i++) {
+            qspPayload[i] = 0;
+        }
+
+        for (uint8_t i = 0; i < PPM_CHANNEL_COUNT; i++) {
+            uint16_t channelValue10 = map(ppmReader.get(i), 1000, 2000, 0, 1000) & 0x03ff;
+            uint8_t channelValue8 = map(ppmReader.get(i), 1000, 2000, 0, 255) & 0xff;
+            uint8_t channelValue4 = map(ppmReader.get(i), 1000, 2000, 0, 15) & 0x0f;
+
+            if (i == 0) {
+                qspPayload[0] |= (channelValue10 >> 2) & B11111111; //255
+                qspPayload[1] |= (channelValue10 << 6) & B11000000; //192
+            } else if (i == 1) {
+                qspPayload[1] |= (channelValue10 >> 4) & B00111111; //63
+                qspPayload[2] |= (channelValue10 << 4) & B11110000; //240
+            } else if (i == 2) {
+                qspPayload[2] |= (channelValue10 >> 6) & B00001111; //15
+                qspPayload[3] |= (channelValue10 << 2) & B11111100; //252
+            } else if (i == 3) {
+                qspPayload[3] |= (channelValue10 >> 8) & B00000011; //3
+                qspPayload[4] |= channelValue10        & B11111111; //255
+            } else if (i == 4) {
+                qspPayload[5] |= channelValue8;
+            } else if (i == 5) {
+                qspPayload[6] |= channelValue8;
+            } else if (i == 6) {
+                qspPayload[7] |= (channelValue4 << 4) & B11110000; 
+            } else if (i == 7) {
+                qspPayload[7] |= channelValue4 & B00001111;
+            } else if (i == 8) {
+                qspPayload[8] |= (channelValue4 << 4) & B11110000;
+            } else if (i == 9) {
+                qspPayload[8] |= channelValue4 & B00001111;
+            }
+
+        }
+        //TODO RC_DATA frame length is just now hardcoded
+        encodeQspFrame(QSP_FRAME_RC_DATA, 9, qspPayload);
+        Serial.end();
+        delay(E45_TTL_100_UART_DOWNTIME);
+        Serial.begin(UART_SPEED);
+    }
+
+    /*
     uint8_t pp[4] = {0x41, 0x42, 0x43, 0x44};
 
     encodeQspFrame(0x01, 0x04, pp);
@@ -179,6 +227,7 @@ void loop(void) {
     delay(30);
     Serial.begin(UART_SPEED);
     delay(1000);
+    */
 #endif
 
 #ifdef DEVICE_MODE_RX

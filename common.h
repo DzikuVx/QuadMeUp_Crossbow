@@ -1,11 +1,22 @@
 //Only for UART connected radio modules
 #define UART_SPEED 57600
+#define E45_TTL_100_UART_DOWNTIME 30 
+
+#define PPM_CHANNEL_COUNT 10
+
+#define TX_RC_FRAME_RATE 100 //ms
+
 
 #define CHANNEL_ID 0x01
 #define QSP_PREAMBLE 0x51
 #define QSP_PAYLOAD_LENGTH 32
 
+#define QSP_FRAME_RC_DATA 0x0
+#define QSP_FRAME_RX_HEALTH 0x1
+
 #define PIN_LED 13
+
+
 
 enum dataStates {
     IDLE,
