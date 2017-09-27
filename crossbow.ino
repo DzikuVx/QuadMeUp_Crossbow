@@ -163,6 +163,18 @@ void setup(void) {
 #endif
 }
 
+#ifdef DEVICE_MODE_TX
+
+uint8_t get10bitHighShift(uint8_t channel) {
+    return (2 + (channel * 2)) % 8;
+}
+
+uint8_t get10bitLowShift(uint8_t channel) {
+    return 8 - get10bitHighShift(channel);
+}
+
+#endif
+
 void loop(void) {
 
 #ifdef DEVICE_MODE_TX
@@ -184,22 +196,12 @@ void loop(void) {
             uint8_t channelValue8 = map(ppmReader.get(i), 1000, 2000, 0, 255) & 0xff;
             uint8_t channelValue4 = map(ppmReader.get(i), 1000, 2000, 0, 15) & 0x0f;
 
-            if (i == 0) {
-                qspPayload[0] |= (channelValue10 >> 2) & B11111111; //255
-                qspPayload[1] |= (channelValue10 << 6) & B11000000; //192
-            } else if (i == 1) {
-                qspPayload[1] |= (channelValue10 >> 4) & B00111111; //63
-                qspPayload[2] |= (channelValue10 << 4) & B11110000; //240
-            } else if (i == 2) {
-                qspPayload[2] |= (channelValue10 >> 6) & B00001111; //15
-                qspPayload[3] |= (channelValue10 << 2) & B11111100; //252
-            } else if (i == 3) {
-                qspPayload[3] |= (channelValue10 >> 8) & B00000011; //3
-                qspPayload[4] |= channelValue10        & B11111111; //255
-            } else if (i == 4) {
-                qspPayload[5] |= channelValue8;
-            } else if (i == 5) {
-                qspPayload[6] |= channelValue8;
+            if (i < 4) {
+                uint8_t bitIndex = i + (i / 4);
+                qspPayload[bitIndex] |= (channelValue10 >> get10bitHighShift(i)) & (0x03ff >> get10bitHighShift(i)); //255 | shift right 2 bits
+                qspPayload[bitIndex + 1] |= (channelValue10 << get10bitLowShift(i)) & 0xff << (8 - get10bitHighShift(i)); //192 | shift left 6 bits
+            } else if (i == 4 || i == 5) {
+                qspPayload[i + 1] |= channelValue8;
             } else if (i == 6) {
                 qspPayload[7] |= (channelValue4 << 4) & B11110000; 
             } else if (i == 7) {
@@ -218,16 +220,6 @@ void loop(void) {
         Serial.begin(UART_SPEED);
     }
 
-    /*
-    uint8_t pp[4] = {0x41, 0x42, 0x43, 0x44};
-
-    encodeQspFrame(0x01, 0x04, pp);
-
-    Serial.end();
-    delay(30);
-    Serial.begin(UART_SPEED);
-    delay(1000);
-    */
 #endif
 
 #ifdef DEVICE_MODE_RX
