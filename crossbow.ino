@@ -9,7 +9,7 @@
 #include <PPMReader.h>
 
 #define PPM_INPUT_PIN       2
-#define PPM_INPUT_INTERRUPT 0
+#define PPM_INPUT_INTERRUPT 1 //For Pro Micro 1, For Pro Mini 0
 
 PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
 
@@ -173,6 +173,12 @@ uint8_t get10bitLowShift(uint8_t channel) {
     return 8 - get10bitHighShift(channel);
 }
 
+void clearQspPayload() {
+    for (uint8_t i = 0; i < QSP_PAYLOAD_LENGTH; i++) {
+        qspPayload[i] = 0;
+    }
+}
+
 #endif
 
 void loop(void) {
@@ -187,9 +193,7 @@ void loop(void) {
         uint8_t payloadBit = 0;
         uint8_t bitsToMove = 0;
 
-        for (uint8_t i = 0; i < QSP_PAYLOAD_LENGTH; i++) {
-            qspPayload[i] = 0;
-        }
+        clearQspPayload();
 
         for (uint8_t i = 0; i < PPM_CHANNEL_COUNT; i++) {
             uint16_t channelValue10 = map(ppmReader.get(i), 1000, 2000, 0, 1000) & 0x03ff;
