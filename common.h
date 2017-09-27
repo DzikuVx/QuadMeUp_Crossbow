@@ -4,8 +4,7 @@
 
 #define PPM_CHANNEL_COUNT 10
 
-#define TX_RC_FRAME_RATE 100 //ms
-
+#define TX_RC_FRAME_RATE 5000 //ms
 
 #define CHANNEL_ID 0x01
 #define QSP_PREAMBLE 0x51
@@ -15,8 +14,6 @@
 #define QSP_FRAME_RX_HEALTH 0x1
 
 #define PIN_LED 13
-
-
 
 enum dataStates {
     IDLE,

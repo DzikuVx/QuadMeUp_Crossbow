@@ -166,7 +166,7 @@ void setup(void) {
 #ifdef DEVICE_MODE_TX
 
 uint8_t get10bitHighShift(uint8_t channel) {
-    return (2 + (channel * 2)) % 8;
+    return ((channel % 4) * 2) + 2;
 }
 
 uint8_t get10bitLowShift(uint8_t channel) {
@@ -197,12 +197,21 @@ void loop(void) {
             uint8_t channelValue4 = map(ppmReader.get(i), 1000, 2000, 0, 15) & 0x0f;
 
             if (i < 4) {
+                /*
+                 * First 4 channels encoded with 10 bits
+                 */
                 uint8_t bitIndex = i + (i / 4);
-                qspPayload[bitIndex] |= (channelValue10 >> get10bitHighShift(i)) & (0x03ff >> get10bitHighShift(i)); //255 | shift right 2 bits
-                qspPayload[bitIndex + 1] |= (channelValue10 << get10bitLowShift(i)) & 0xff << (8 - get10bitHighShift(i)); //192 | shift left 6 bits
+                qspPayload[bitIndex] |= (channelValue10 >> get10bitHighShift(i)) & (0x3ff >> get10bitHighShift(i));
+                qspPayload[bitIndex + 1] |= (channelValue10 << get10bitLowShift(i)) & 0xff << (8 - get10bitHighShift(i));
             } else if (i == 4 || i == 5) {
+                /*
+                 * Next 2 with 8 bits
+                 */ 
                 qspPayload[i + 1] |= channelValue8;
             } else if (i == 6) {
+                /*
+                 * And last 4 with 4 bits per channel
+                 */
                 qspPayload[7] |= (channelValue4 << 4) & B11110000; 
             } else if (i == 7) {
                 qspPayload[7] |= channelValue4 & B00001111;

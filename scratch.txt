@@ -1,0 +1,30 @@
+/*
+FIXME this should work, but does not...
+
+channel     get10bitHighShift       get10bitLowShift
+0           2                       6
+1           4                       4
+2           6                       2
+3           8                       0
+
+if (i < 4) {
+    uint8_t bitIndex = i + (i / 4);
+    qspPayload[bitIndex] |= (channelValue10 >> get10bitHighShift(i)) & (0xff >> get10bitHighShift(i));
+    qspPayload[bitIndex + 1] |= (channelValue10 << get10bitLowShift(i)) & (0xff << (8 - get10bitHighShift(i)));
+}
+
+if (i == 0) {
+    qspPayload[0] |= (channelValue10 >> 2) & B11111111; //255
+    qspPayload[1] |= (channelValue10 << 6) & B11000000; //192
+} else if (i == 1) {
+    qspPayload[1] |= (channelValue10 >> 4) & B00111111; //63
+    qspPayload[2] |= (channelValue10 << 4) & B11110000; //240
+} else if (i == 2) {
+    qspPayload[2] |= (channelValue10 >> 6) & B00001111; //15
+    qspPayload[3] |= (channelValue10 << 2) & B11111100; //252
+} else if (i == 3) {
+    qspPayload[3] |= (channelValue10 >> 8) & B00000011; //3
+    qspPayload[4] |= channelValue10        & B11111111; //255            
+} 
+
+*/

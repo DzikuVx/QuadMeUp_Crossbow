@@ -1,6 +1,7 @@
 {
-    "board": "arduino:avr:pro",
-    "configuration": "cpu=16MHzatmega328",
+    "board": "sparkfun:avr:promicro",
+    "configuration": "cpu=16MHzatmega32U4",
     "sketch": "crossbow.ino",
-    "port": "COM5"
+    "port": "COM23",
+    "output": "./build"
 }
