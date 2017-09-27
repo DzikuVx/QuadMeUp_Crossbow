@@ -37,6 +37,7 @@ Total length of `RC_DATA` payload is 9 bytes
 | Byte | Description                        |
 | ---- | ----                               |
 | 0    | RX RSSI                            |
-| 1    | RX supply volatage, sent in 0,1V   |
-| 2    | RX analog input 1 sent in 0,1V     |
-| 3    | RX analog input 2 sent in 0,1V     |
+| 1    | RX SNR                            |
+| 2    | RX supply volatage, sent in 0,1V   |
+| 3    | RX analog input 1 sent in 0,1V     |
+| 4    | RX analog input 2 sent in 0,1V     |
