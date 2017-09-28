@@ -1,3 +1,5 @@
+#include "variables.h"
+
 #define DEVICE_MODE_TX
 // #define DEVICE_MODE_RX
 
@@ -12,9 +14,6 @@
 #define PPM_INPUT_INTERRUPT 1 //For Pro Micro 1, For Pro Mini 0
 
 PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
-
-static uint32_t lastRcFrameTransmit = 0;
-
 #endif
 
 /*
@@ -29,21 +28,28 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 #endif
 
+/*
+ * Start of QSP protocol implementation
+ */
 static uint8_t protocolState = IDLE;
 static uint8_t packetId = 0;
 static uint8_t qspCrc = 0;
 static uint8_t qspPayload[QSP_PAYLOAD_LENGTH] = {0};
+static uint8_t qspPayloadLength = 0;
+static uint8_t qspFrameToSend = 0;
 
-void writeToRadio(uint8_t dataByte) {
-    //Compute CRC
-    qspCrc ^= dataByte;
+uint8_t getPacketId() {
+    return packetId++;
+}
 
-    //Write to radio
-    Serial.write(dataByte);
+void clearQspPayload() {
+    for (uint8_t i = 0; i < QSP_PAYLOAD_LENGTH; i++) {
+        qspPayload[i] = 0;
+    }
+    qspPayloadLength = 0;
 }
 
 void decodeIncomingQspFrame(uint8_t incomingByte) {
-
     static uint8_t frameId;
     static uint8_t payloadLength;
     static uint8_t receivedPayload;
@@ -107,18 +113,6 @@ void decodeIncomingQspFrame(uint8_t incomingByte) {
 
 }
 
-/*
-display.clearDisplay();
-display.setCursor(0,0);
-display.print("Lat:");
-display.print(remoteData.latitude);
-display.display();
-*/
-
-uint8_t getPacketId() {
-    return packetId++;
-}
-
 void encodeQspFrame(uint8_t frameId, uint8_t length, uint8_t *payload) {
     //Zero CRC
     qspCrc = 0;
@@ -145,6 +139,36 @@ void encodeQspFrame(uint8_t frameId, uint8_t length, uint8_t *payload) {
     writeToRadio(qspCrc);
 }
 
+/*
+ * End of QSP protocol implementation
+ */
+
+static uint32_t lastRcFrameTransmit = 0;
+
+uint8_t get10bitHighShift(uint8_t channel) {
+    return ((channel % 4) * 2) + 2;
+}
+
+uint8_t get10bitLowShift(uint8_t channel) {
+    return 8 - get10bitHighShift(channel);
+}
+
+void writeToRadio(uint8_t dataByte) {
+    //Compute CRC
+    qspCrc ^= dataByte;
+
+    //Write to radio
+    Serial.write(dataByte);
+}
+
+/*
+display.clearDisplay();
+display.setCursor(0,0);
+display.print("Lat:");
+display.print(remoteData.latitude);
+display.display();
+*/
+
 void setup(void) {
     Serial.begin(UART_SPEED);
 
@@ -165,81 +189,80 @@ void setup(void) {
 
 #ifdef DEVICE_MODE_TX
 
-uint8_t get10bitHighShift(uint8_t channel) {
-    return ((channel % 4) * 2) + 2;
-}
+/**
+ * Encode 10 RC channels 
+ */
+void encodeRcDataPayload(PPMReader* ppmSource, uint8_t noOfChannels) {
+    for (uint8_t i = 0; i < noOfChannels; i++) {
+        uint16_t channelValue10 = map(ppmSource->get(i), 1000, 2000, 0, 1000) & 0x03ff;
+        uint8_t channelValue8 = map(ppmSource->get(i), 1000, 2000, 0, 255) & 0xff;
+        uint8_t channelValue4 = map(ppmSource->get(i), 1000, 2000, 0, 15) & 0x0f;
 
-uint8_t get10bitLowShift(uint8_t channel) {
-    return 8 - get10bitHighShift(channel);
-}
-
-void clearQspPayload() {
-    for (uint8_t i = 0; i < QSP_PAYLOAD_LENGTH; i++) {
-        qspPayload[i] = 0;
+        if (i < 4) {
+            /*
+             * First 4 channels encoded with 10 bits
+             */
+            uint8_t bitIndex = i + (i / 4);
+            qspPayload[bitIndex] |= (channelValue10 >> get10bitHighShift(i)) & (0x3ff >> get10bitHighShift(i));
+            qspPayload[bitIndex + 1] |= (channelValue10 << get10bitLowShift(i)) & 0xff << (8 - get10bitHighShift(i));
+        } else if (i == 4 || i == 5) {
+            /*
+             * Next 2 with 8 bits
+             */ 
+            qspPayload[i + 1] |= channelValue8;
+        } else if (i == 6) {
+            /*
+             * And last 4 with 4 bits per channel
+             */
+            qspPayload[7] |= (channelValue4 << 4) & B11110000; 
+        } else if (i == 7) {
+            qspPayload[7] |= channelValue4 & B00001111;
+        } else if (i == 8) {
+            qspPayload[8] |= (channelValue4 << 4) & B11110000;
+        } else if (i == 9) {
+            qspPayload[8] |= channelValue4 & B00001111;
+        }
     }
+
+    qspPayloadLength = 9;
 }
 
 #endif
 
 void loop(void) {
 
+    bool transmitPayload = false;
+
 #ifdef DEVICE_MODE_TX
 
     uint32_t currentMillis = millis();
 
-    if (currentMillis - lastRcFrameTransmit > TX_RC_FRAME_RATE) {
+    /*
+     * RC_DATA QSP frame
+     */
+    if (currentMillis - lastRcFrameTransmit > TX_RC_FRAME_RATE && !transmitPayload) {
         lastRcFrameTransmit = currentMillis; 
 
-        uint8_t payloadBit = 0;
-        uint8_t bitsToMove = 0;
-
         clearQspPayload();
+        encodeRcDataPayload(&ppmReader, PPM_CHANNEL_COUNT);
+        qspFrameToSend = QSP_FRAME_RC_DATA;
 
-        for (uint8_t i = 0; i < PPM_CHANNEL_COUNT; i++) {
-            uint16_t channelValue10 = map(ppmReader.get(i), 1000, 2000, 0, 1000) & 0x03ff;
-            uint8_t channelValue8 = map(ppmReader.get(i), 1000, 2000, 0, 255) & 0xff;
-            uint8_t channelValue4 = map(ppmReader.get(i), 1000, 2000, 0, 15) & 0x0f;
+        transmitPayload = true;
+    }
 
-            if (i < 4) {
-                /*
-                 * First 4 channels encoded with 10 bits
-                 */
-                uint8_t bitIndex = i + (i / 4);
-                qspPayload[bitIndex] |= (channelValue10 >> get10bitHighShift(i)) & (0x3ff >> get10bitHighShift(i));
-                qspPayload[bitIndex + 1] |= (channelValue10 << get10bitLowShift(i)) & 0xff << (8 - get10bitHighShift(i));
-            } else if (i == 4 || i == 5) {
-                /*
-                 * Next 2 with 8 bits
-                 */ 
-                qspPayload[i + 1] |= channelValue8;
-            } else if (i == 6) {
-                /*
-                 * And last 4 with 4 bits per channel
-                 */
-                qspPayload[7] |= (channelValue4 << 4) & B11110000; 
-            } else if (i == 7) {
-                qspPayload[7] |= channelValue4 & B00001111;
-            } else if (i == 8) {
-                qspPayload[8] |= (channelValue4 << 4) & B11110000;
-            } else if (i == 9) {
-                qspPayload[8] |= channelValue4 & B00001111;
-            }
+#endif
 
-        }
-        //TODO RC_DATA frame length is just now hardcoded
-        encodeQspFrame(QSP_FRAME_RC_DATA, 9, qspPayload);
+    if (Serial.available()) {
+        decodeIncomingQspFrame(Serial.read());
+    }
+
+    if (transmitPayload) {
+        transmitPayload = false;
+
+        encodeQspFrame(qspFrameToSend, qspPayloadLength, qspPayload);
         Serial.end();
         delay(E45_TTL_100_UART_DOWNTIME);
         Serial.begin(UART_SPEED);
     }
 
-#endif
-
-#ifdef DEVICE_MODE_RX
-    
-    if (Serial.available()) {
-        decodeIncomingQspFrame(Serial.read());
-    }
-
-#endif
 }

@@ -11,10 +11,25 @@
                 "path": [
                     "C:\\Users\\pspyc\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.6.19\\cores\\arduino",
                     "${workspaceRoot}",
-                    "C:\\Users\\pspyc\\Documents\\Arduino\\libraries\\PPMReader"
+                    "C:\\Users\\pspyc\\Documents\\Arduino\\libraries"
                 ]
             },
             "intelliSenseMode": "msvc-x64"
+        },
+        {
+            "name": "Mac",
+            "includePath": [
+                "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino"
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": false,
+                "path": [
+                    "/Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino",
+                    "${workspaceRoot}",
+                    "~/Documents/Arduino/libraries/"
+                ]
+            },
+            "intelliSenseMode": "clang-x64"
         }
     ],
     "version": 3
