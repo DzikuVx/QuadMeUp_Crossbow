@@ -1,7 +1,7 @@
 #include "variables.h"
 
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 /*
  * Main defines for device working in TX mode
@@ -38,18 +38,51 @@ static uint8_t qspPayload[QSP_PAYLOAD_LENGTH] = {0};
 static uint8_t qspPayloadLength = 0;
 static uint8_t qspFrameToSend = 0;
 
-uint8_t getPacketId() {
+uint8_t qspGetPacketId() {
     return packetId++;
 }
 
-void clearQspPayload() {
+void qspClearPayload() {
     for (uint8_t i = 0; i < QSP_PAYLOAD_LENGTH; i++) {
         qspPayload[i] = 0;
     }
     qspPayloadLength = 0;
 }
 
-void decodeIncomingQspFrame(uint8_t incomingByte) {
+int ppmOutput[PPM_CHANNEL_COUNT] = {0};
+
+void qspDecodeRcDataFrame() {
+    //TODO fix it, baby :)
+
+    ppmOutput[0] = (uint16_t) (((uint16_t) qspPayload[0] << 2) & 0x3fc) | ((qspPayload[1] >> 6) & 0x03);
+    ppmOutput[1] = (uint16_t) (((uint16_t) qspPayload[1] << 4) & 0x3f0) | ((qspPayload[2] >> 4) & 0x0F);
+    ppmOutput[2] = (uint16_t) (((uint16_t) qspPayload[2] << 6) & 0x3c0) | ((qspPayload[3] >> 2) & 0x3F);
+    ppmOutput[3] = (uint16_t) (((uint16_t) qspPayload[3] << 8) & 0x300) | ((qspPayload[4] >> 2) & 0xFF);
+    ppmOutput[4] = qspPayload[5];
+    ppmOutput[5] = qspPayload[6];
+    ppmOutput[6] = (qspPayload[7] >> 4) & 0b00001111;
+    ppmOutput[7] = qspPayload[7] & 0b00001111;
+    ppmOutput[8] = (qspPayload[8] >> 4) & 0b00001111;
+    ppmOutput[9] = qspPayload[8] & 0b00001111;
+
+    //10bit channels
+    ppmOutput[0] = map(ppmOutput[0], 0, 1000, 1000, 2000);
+    ppmOutput[1] = map(ppmOutput[1], 0, 1000, 1000, 2000);
+    ppmOutput[2] = map(ppmOutput[2], 0, 1000, 1000, 2000);
+    ppmOutput[3] = map(ppmOutput[3], 0, 1000, 1000, 2000);
+
+    //8bit channels
+    ppmOutput[4] = map(ppmOutput[4], 0, 0xff, 1000, 2000);
+    ppmOutput[5] = map(ppmOutput[5], 0, 0xff, 1000, 2000);
+
+    //4bit channels
+    ppmOutput[6] = map(ppmOutput[6], 0, 0x0f, 1000, 2000);
+    ppmOutput[7] = map(ppmOutput[7], 0, 0x0f, 1000, 2000);
+    ppmOutput[8] = map(ppmOutput[8], 0, 0x0f, 1000, 2000);
+    ppmOutput[9] = map(ppmOutput[9], 0, 0x0f, 1000, 2000);
+}
+
+void qspDecodeIncomingFrame(uint8_t incomingByte) {
     static uint8_t frameId;
     static uint8_t payloadLength;
     static uint8_t receivedPayload;
@@ -103,8 +136,21 @@ void decodeIncomingQspFrame(uint8_t incomingByte) {
 
         if (qspCrc == incomingByte) {
             //CRC is correct
+
+            switch (frameId) {
+                case QSP_FRAME_RC_DATA:
+                    qspDecodeRcDataFrame();
+                    break;
+
+                default:
+                    //Unknown frame
+                    //TODO do something in this case
+                    break;
+            }
+
         } else {
             //CRC failed, frame has to be rejected
+            //TODO do something in this case or something
         }
 
         // In both cases switch to listening for next preamble
@@ -113,7 +159,7 @@ void decodeIncomingQspFrame(uint8_t incomingByte) {
 
 }
 
-void encodeQspFrame(uint8_t frameId, uint8_t length, uint8_t *payload) {
+void qspEncodeFrame(uint8_t frameId, uint8_t length, uint8_t *payload) {
     //Zero CRC
     qspCrc = 0;
     
@@ -128,7 +174,7 @@ void encodeQspFrame(uint8_t frameId, uint8_t length, uint8_t *payload) {
     writeToRadio(data);
 
     //Write packet ID
-    writeToRadio(getPacketId());
+    writeToRadio(qspGetPacketId());
 
     //Write payload
     for (uint8_t i = 0; i < length; i++) {
@@ -237,13 +283,14 @@ void loop(void) {
 
     uint32_t currentMillis = millis();
 
+    //TODO It should be only possible to transmit when radio is not receiveing 
     /*
      * RC_DATA QSP frame
      */
-    if (currentMillis - lastRcFrameTransmit > TX_RC_FRAME_RATE && !transmitPayload) {
+    if (currentMillis - lastRcFrameTransmit > TX_RC_FRAME_RATE && !transmitPayload && protocolState == IDLE) {
         lastRcFrameTransmit = currentMillis; 
 
-        clearQspPayload();
+        qspClearPayload();
         encodeRcDataPayload(&ppmReader, PPM_CHANNEL_COUNT);
         qspFrameToSend = QSP_FRAME_RC_DATA;
 
@@ -253,13 +300,13 @@ void loop(void) {
 #endif
 
     if (Serial.available()) {
-        decodeIncomingQspFrame(Serial.read());
+        qspDecodeIncomingFrame(Serial.read());
     }
 
     if (transmitPayload) {
         transmitPayload = false;
 
-        encodeQspFrame(qspFrameToSend, qspPayloadLength, qspPayload);
+        qspEncodeFrame(qspFrameToSend, qspPayloadLength, qspPayload);
         Serial.end();
         delay(E45_TTL_100_UART_DOWNTIME);
         Serial.begin(UART_SPEED);
