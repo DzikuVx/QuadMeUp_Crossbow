@@ -1,7 +1,11 @@
+#include <LoRa.h>
 #include "variables.h"
 
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+// #define LORA_HARDWARE_SERIAL
+#define LORA_HARDWARE_SPI
+
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 /*
  * Main defines for device working in TX mode
@@ -199,13 +203,54 @@ uint8_t get10bitLowShift(uint8_t channel) {
     return 8 - get10bitHighShift(channel);
 }
 
+void computeCrc(uint8_t dataByte) {
+    qspCrc ^= dataByte;
+}
+
+/*
+ * Serial port used to send data
+ */
+#ifdef LORA_HARDWARE_SERIAL
+
+void radioPacketStart(void) {
+
+}
+
+void radioPacketEnd(void) {
+    Serial.end();
+    delay(E45_TTL_100_UART_DOWNTIME);
+    Serial.begin(UART_SPEED);
+}
+
 void writeToRadio(uint8_t dataByte) {
     //Compute CRC
-    qspCrc ^= dataByte;
+    computeCrc(dataByte);
 
     //Write to radio
     Serial.write(dataByte);
 }
+
+#endif
+
+#ifdef LORA_HARDWARE_SPI
+
+void radioPacketStart(void) {
+    LoRa.beginPacket();
+}
+
+void radioPacketEnd(void) {
+    LoRa.endPacket();
+}
+
+void writeToRadio(uint8_t dataByte) {
+    //Compute CRC
+    computeCrc(dataByte);
+
+    //Write to radio
+    LoRa.write(dataByte);
+}
+
+#endif
 
 /*
 display.clearDisplay();
@@ -216,7 +261,19 @@ display.display();
 */
 
 void setup(void) {
+
+#ifdef LORA_HARDWARE_SERIAL
     Serial.begin(UART_SPEED);
+#endif
+
+#ifdef LORA_HARDWARE_SPI
+    if (!LoRa.begin(868E6)) {
+        Serial.println("LoRa init failed. Check your connections.");
+        while (true);
+    }
+    LoRa.onReceive(onReceive);
+    LoRa.receive();
+#endif
 
 #ifdef DEVICE_MODE_RX
     pinMode(PIN_LED, OUTPUT);
@@ -299,17 +356,28 @@ void loop(void) {
 
 #endif
 
+#ifdef LORA_HARDWARE_SERIAL 
     if (Serial.available()) {
         qspDecodeIncomingFrame(Serial.read());
     }
+#endif
 
     if (transmitPayload) {
         transmitPayload = false;
 
+        radioPacketStart();
         qspEncodeFrame(qspFrameToSend, qspPayloadLength, qspPayload);
-        Serial.end();
-        delay(E45_TTL_100_UART_DOWNTIME);
-        Serial.begin(UART_SPEED);
+        radioPacketEnd();
     }
 
 }
+
+#ifdef LORA_HARDWARE_SPI
+void onReceive(int packetSize) {
+    if (packetSize == 0) return;
+
+    while (LoRa.available()) {
+        qspDecodeIncomingFrame(LoRa.read());
+    }
+}
+#endif
