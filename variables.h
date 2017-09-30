@@ -1,3 +1,5 @@
+#pragma once
+
 //Only for UART connected radio modules
 #define UART_SPEED 57600
 #define E45_TTL_100_UART_DOWNTIME 30 
