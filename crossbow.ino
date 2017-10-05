@@ -26,6 +26,8 @@ PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
+int ppm[PPM_CHANNEL_COUNT] = {0};
+
 #endif
 
 /*
@@ -49,37 +51,43 @@ void qspClearPayload() {
     qspPayloadLength = 0;
 }
 
-int ppmOutput[PPM_CHANNEL_COUNT] = {0};
-
 void qspDecodeRcDataFrame() {
+    int temporaryPpmOutput[PPM_CHANNEL_COUNT] = {0};
     //TODO fix it, baby :)
 
-    ppmOutput[0] = (uint16_t) (((uint16_t) qspPayload[0] << 2) & 0x3fc) | ((qspPayload[1] >> 6) & 0x03);
-    ppmOutput[1] = (uint16_t) (((uint16_t) qspPayload[1] << 4) & 0x3f0) | ((qspPayload[2] >> 4) & 0x0F);
-    ppmOutput[2] = (uint16_t) (((uint16_t) qspPayload[2] << 6) & 0x3c0) | ((qspPayload[3] >> 2) & 0x3F);
-    ppmOutput[3] = (uint16_t) (((uint16_t) qspPayload[3] << 8) & 0x300) | ((qspPayload[4] >> 2) & 0xFF);
-    ppmOutput[4] = qspPayload[5];
-    ppmOutput[5] = qspPayload[6];
-    ppmOutput[6] = (qspPayload[7] >> 4) & 0b00001111;
-    ppmOutput[7] = qspPayload[7] & 0b00001111;
-    ppmOutput[8] = (qspPayload[8] >> 4) & 0b00001111;
-    ppmOutput[9] = qspPayload[8] & 0b00001111;
+    temporaryPpmOutput[0] = (uint16_t) (((uint16_t) qspPayload[0] << 2) & 0x3fc) | ((qspPayload[1] >> 6) & 0x03);
+    temporaryPpmOutput[1] = (uint16_t) (((uint16_t) qspPayload[1] << 4) & 0x3f0) | ((qspPayload[2] >> 4) & 0x0F);
+    temporaryPpmOutput[2] = (uint16_t) (((uint16_t) qspPayload[2] << 6) & 0x3c0) | ((qspPayload[3] >> 2) & 0x3F);
+    temporaryPpmOutput[3] = (uint16_t) (((uint16_t) qspPayload[3] << 8) & 0x300) | ((qspPayload[4] >> 2) & 0xFF);
+    temporaryPpmOutput[4] = qspPayload[5];
+    temporaryPpmOutput[5] = qspPayload[6];
+    temporaryPpmOutput[6] = (qspPayload[7] >> 4) & 0b00001111;
+    temporaryPpmOutput[7] = qspPayload[7] & 0b00001111;
+    temporaryPpmOutput[8] = (qspPayload[8] >> 4) & 0b00001111;
+    temporaryPpmOutput[9] = qspPayload[8] & 0b00001111;
 
     //10bit channels
-    ppmOutput[0] = map(ppmOutput[0], 0, 1000, 1000, 2000);
-    ppmOutput[1] = map(ppmOutput[1], 0, 1000, 1000, 2000);
-    ppmOutput[2] = map(ppmOutput[2], 0, 1000, 1000, 2000);
-    ppmOutput[3] = map(ppmOutput[3], 0, 1000, 1000, 2000);
+    temporaryPpmOutput[0] = map(temporaryPpmOutput[0], 0, 1000, 1000, 2000);
+    temporaryPpmOutput[1] = map(temporaryPpmOutput[1], 0, 1000, 1000, 2000);
+    temporaryPpmOutput[2] = map(temporaryPpmOutput[2], 0, 1000, 1000, 2000);
+    temporaryPpmOutput[3] = map(temporaryPpmOutput[3], 0, 1000, 1000, 2000);
 
     //8bit channels
-    ppmOutput[4] = map(ppmOutput[4], 0, 0xff, 1000, 2000);
-    ppmOutput[5] = map(ppmOutput[5], 0, 0xff, 1000, 2000);
+    temporaryPpmOutput[4] = map(temporaryPpmOutput[4], 0, 0xff, 1000, 2000);
+    temporaryPpmOutput[5] = map(temporaryPpmOutput[5], 0, 0xff, 1000, 2000);
 
     //4bit channels
-    ppmOutput[6] = map(ppmOutput[6], 0, 0x0f, 1000, 2000);
-    ppmOutput[7] = map(ppmOutput[7], 0, 0x0f, 1000, 2000);
-    ppmOutput[8] = map(ppmOutput[8], 0, 0x0f, 1000, 2000);
-    ppmOutput[9] = map(ppmOutput[9], 0, 0x0f, 1000, 2000);
+    temporaryPpmOutput[6] = map(temporaryPpmOutput[6], 0, 0x0f, 1000, 2000);
+    temporaryPpmOutput[7] = map(temporaryPpmOutput[7], 0, 0x0f, 1000, 2000);
+    temporaryPpmOutput[8] = map(temporaryPpmOutput[8], 0, 0x0f, 1000, 2000);
+    temporaryPpmOutput[9] = map(temporaryPpmOutput[9], 0, 0x0f, 1000, 2000);
+
+    /*
+     * Copy tremporary to real output
+     */
+    for (uint8_t i = 0; i < PPM_CHANNEL_COUNT; i++) {
+        ppm[i] = temporaryPpmOutput[i];
+    }
 }
 
 void qspDecodeIncomingFrame(uint8_t incomingByte) {
@@ -230,6 +238,24 @@ void setup(void) {
     display.clearDisplay();
     display.display();
 
+    //initiallize default ppm values
+    for(int i=0; i<CHANNEL_NUMBER; i++){
+        ppm[i]= CHANNEL_DEFAULT_VALUE;
+    }
+
+    pinMode(sigPin, OUTPUT);
+    digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
+
+    cli();
+    TCCR1A = 0; // set entire TCCR1 register to 0
+    TCCR1B = 0;
+
+    OCR1A = 100;  // compare match register, change this
+    TCCR1B |= (1 << WGM12);  // turn on CTC mode
+    TCCR1B |= (1 << CS11);  // 8 prescaler: 0,5 microseconds at 16mhz
+    TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
+    sei();
+
 #endif
 }
 
@@ -272,6 +298,40 @@ void encodeRcDataPayload(PPMReader* ppmSource, uint8_t noOfChannels) {
 
     qspPayloadLength = 9;
 }
+
+#endif
+
+#ifdef DEVICE_MODE_RX
+
+ISR(TIMER1_COMPA_vect){  //leave this alone
+    static boolean state = true;
+    
+    TCNT1 = 0;
+    
+    if (state) {  //start pulse
+      digitalWrite(sigPin, onState);
+      OCR1A = PULSE_LENGTH * 2;
+      state = false;
+    } else{  //end pulse and calculate when to start the next pulse
+      static byte cur_chan_numb;
+      static unsigned int calc_rest;
+    
+      digitalWrite(sigPin, !onState);
+      state = true;
+  
+      if(cur_chan_numb >= CHANNEL_NUMBER){
+        cur_chan_numb = 0;
+        calc_rest = calc_rest + PULSE_LENGTH;// 
+        OCR1A = (FRAME_LENGTH - calc_rest) * 2;
+        calc_rest = 0;
+      }
+      else{
+        OCR1A = (ppm[cur_chan_numb] - PULSE_LENGTH) * 2;
+        calc_rest = calc_rest + ppm[cur_chan_numb];
+        cur_chan_numb++;
+      }     
+    }
+  }
 
 #endif
 

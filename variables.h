@@ -26,3 +26,11 @@ enum dataStates {
     PAYLOAD_RECEIVED,
     CRC_RECEIVED
 };
+
+
+#define CHANNEL_NUMBER 12  //set the number of chanels
+#define CHANNEL_DEFAULT_VALUE 1500  //set the default servo value
+#define FRAME_LENGTH 22500  //set the PPM frame length in microseconds (1ms = 1000µs)
+#define PULSE_LENGTH 300  //set the pulse length
+#define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
+#define sigPin 10  //set PPM signal output pin on the arduino
