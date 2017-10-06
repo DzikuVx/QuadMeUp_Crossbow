@@ -15,6 +15,8 @@
 #include <PPMReader.h>
 PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
 
+bool canTransmit = true;
+
 #endif
 
 /*
@@ -28,6 +30,8 @@ PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
 Adafruit_SSD1306 display(OLED_RESET);
 
 int ppm[PPM_CHANNEL_COUNT] = {0};
+
+bool canTransmit = false;
 
 #endif
 
@@ -145,6 +149,11 @@ void qspDecodeIncomingFrame(uint8_t incomingByte) {
 
         if (qspCrc == incomingByte) {
             //CRC is correct
+
+        #ifdef DEVICE_MODE_RX
+            //If devide received a valid frame, that means it can start to talk
+            canTransmit = true;
+        #endif
 
             switch (frameId) {
                 case QSP_FRAME_RC_DATA:
@@ -419,7 +428,7 @@ void loop(void) {
     }
 #endif
 
-    if (transmitPayload) {
+    if (canTransmit && transmitPayload) {
         transmitPayload = false;
 
         radioPacketStart();
