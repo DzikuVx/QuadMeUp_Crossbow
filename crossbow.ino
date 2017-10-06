@@ -4,8 +4,8 @@
 // #define LORA_HARDWARE_SERIAL
 #define LORA_HARDWARE_SPI
 
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 /*
  * Main defines for device working in TX mode
@@ -13,11 +13,8 @@
 #ifdef DEVICE_MODE_TX
 
 #include <PPMReader.h>
-
-#define PPM_INPUT_PIN       2
-#define PPM_INPUT_INTERRUPT 1 //For Pro Micro 1, For Pro Mini 0
-
 PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
+
 #endif
 
 /*
@@ -296,12 +293,12 @@ void setup(void) {
     display.display();
 
     //initiallize default ppm values
-    for(int i=0; i<CHANNEL_NUMBER; i++){
-        ppm[i]= CHANNEL_DEFAULT_VALUE;
+    for(int i=0; i<PPM_CHANNEL_COUNT; i++){
+        ppm[i]= PPM_CHANNEL_DEFAULT_VALUE;
     }
 
-    pinMode(sigPin, OUTPUT);
-    digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
+    pinMode(PPM_OUTPUT_PIN, OUTPUT);
+    digitalWrite(PPM_OUTPUT_PIN, !PPM_SIGNAL_POSITIVE_STATE);  //set the PPM signal pin to the default state (off)
 
     cli();
     TCCR1A = 0; // set entire TCCR1 register to 0
@@ -366,24 +363,24 @@ ISR(TIMER1_COMPA_vect){  //leave this alone
     TCNT1 = 0;
     
     if (state) {  //start pulse
-      digitalWrite(sigPin, onState);
-      OCR1A = PULSE_LENGTH * 2;
+      digitalWrite(PPM_OUTPUT_PIN, PPM_SIGNAL_POSITIVE_STATE);
+      OCR1A = PPM_PULSE_LENGTH * 2;
       state = false;
     } else{  //end pulse and calculate when to start the next pulse
       static byte cur_chan_numb;
       static unsigned int calc_rest;
     
-      digitalWrite(sigPin, !onState);
+      digitalWrite(PPM_OUTPUT_PIN, !PPM_SIGNAL_POSITIVE_STATE);
       state = true;
   
-      if(cur_chan_numb >= CHANNEL_NUMBER){
+      if(cur_chan_numb >= PPM_CHANNEL_COUNT){
         cur_chan_numb = 0;
-        calc_rest = calc_rest + PULSE_LENGTH;// 
-        OCR1A = (FRAME_LENGTH - calc_rest) * 2;
+        calc_rest = calc_rest + PPM_PULSE_LENGTH;// 
+        OCR1A = (PPM_FRAME_LENGTH - calc_rest) * 2;
         calc_rest = 0;
       }
       else{
-        OCR1A = (ppm[cur_chan_numb] - PULSE_LENGTH) * 2;
+        OCR1A = (ppm[cur_chan_numb] - PPM_PULSE_LENGTH) * 2;
         calc_rest = calc_rest + ppm[cur_chan_numb];
         cur_chan_numb++;
       }     
