@@ -128,18 +128,18 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
     static uint8_t receivedPayload;
     static uint8_t packetId; //TODO move this to global scope maybe?
 
-    if (qsp->protocolState == IDLE && incomingByte == QSP_PREAMBLE)
+    if (qsp->protocolState == QSP_STATE_IDLE && incomingByte == QSP_PREAMBLE)
     {
         //If in IDLE and correct preamble comes, start to decode frame
-        qsp->protocolState = PREAMBLE_RECEIVED;
+        qsp->protocolState = QSP_STATE_PREAMBLE_RECEIVED;
         qsp->crc = 0 ^ incomingByte;
     }
-    else if (qsp->protocolState == PREAMBLE_RECEIVED)
+    else if (qsp->protocolState == QSP_STATE_PREAMBLE_RECEIVED)
     {
         // Check if incomming channel ID is the same as receiver
         if (incomingByte == CHANNEL_ID)
         {
-            qsp->protocolState = CHANNEL_RECEIVED;
+            qsp->protocolState = QSP_STATE_CHANNEL_RECEIVED;
             qsp->crc ^= incomingByte;
 
             qspClearPayload(qsp);
@@ -149,10 +149,10 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
         }
         else
         {
-            qsp->protocolState = IDLE;
+            qsp->protocolState = QSP_STATE_IDLE;
         }
     }
-    else if (qsp->protocolState == CHANNEL_RECEIVED)
+    else if (qsp->protocolState == QSP_STATE_CHANNEL_RECEIVED)
     {
         //Frame ID and payload length
         qsp->crc ^= incomingByte;
@@ -160,15 +160,15 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
         frameId = (incomingByte >> 4) & 0x0f;
         payloadLength = incomingByte & 0x0f;
 
-        qsp->protocolState = FRAME_TYPE_RECEIVED;
+        qsp->protocolState = QSP_STATE_FRAME_TYPE_RECEIVED;
     }
-    else if (qsp->protocolState == FRAME_TYPE_RECEIVED)
+    else if (qsp->protocolState == QSP_STATE_FRAME_TYPE_RECEIVED)
     {
         qsp->crc ^= incomingByte;
         packetId = incomingByte;
-        qsp->protocolState = PACKET_ID_RECEIVED;
+        qsp->protocolState = QSP_STATE_PACKET_ID_RECEIVED;
     }
-    else if (qsp->protocolState == PACKET_ID_RECEIVED)
+    else if (qsp->protocolState == QSP_STATE_PACKET_ID_RECEIVED)
     {
 
         //Now it's time for payload
@@ -179,11 +179,11 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
 
         if (receivedPayload == payloadLength)
         {
-            qsp->protocolState = PAYLOAD_RECEIVED;
+            qsp->protocolState = QSP_STATE_PAYLOAD_RECEIVED;
             qsp->payloadLength = payloadLength;
         }
     }
-    else if (qsp->protocolState == PAYLOAD_RECEIVED)
+    else if (qsp->protocolState == QSP_STATE_PAYLOAD_RECEIVED)
     {
 
         if (qsp->crc == incomingByte) {
@@ -213,7 +213,7 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
         }
 
         // In both cases switch to listening for next preamble
-        qsp->protocolState = IDLE;
+        qsp->protocolState = QSP_STATE_IDLE;
     }
 }
 

@@ -18,13 +18,13 @@
 #define PIN_LED 13
 
 enum dataStates {
-    IDLE,
-    PREAMBLE_RECEIVED,
-    CHANNEL_RECEIVED,
-    FRAME_TYPE_RECEIVED,
-    PACKET_ID_RECEIVED,
-    PAYLOAD_RECEIVED,
-    CRC_RECEIVED
+    QSP_STATE_IDLE,
+    QSP_STATE_PREAMBLE_RECEIVED,
+    QSP_STATE_CHANNEL_RECEIVED,
+    QSP_STATE_FRAME_TYPE_RECEIVED,
+    QSP_STATE_PACKET_ID_RECEIVED,
+    QSP_STATE_PAYLOAD_RECEIVED,
+    QSP_STATE_CRC_RECEIVED
 };
 
 #define PPM_INPUT_PIN       2
@@ -37,7 +37,7 @@ enum dataStates {
 #define PPM_OUTPUT_PIN 10  //set PPM signal output pin on the arduino
 
 struct QspConfiguration_t {
-    uint8_t protocolState = IDLE;
+    uint8_t protocolState = QSP_STATE_IDLE;
     uint8_t crc = 0;
     uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};
     uint8_t payloadLength = 0;

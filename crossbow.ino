@@ -231,7 +231,7 @@ void loop(void)
     /*
      * RC_DATA QSP frame
      */
-    if (currentMillis - lastRcFrameTransmit > TX_RC_FRAME_RATE && !transmitPayload && qsp.protocolState == IDLE)
+    if (currentMillis - lastRcFrameTransmit > TX_RC_FRAME_RATE && !transmitPayload && qsp.protocolState == QSP_STATE_IDLE)
     {
         lastRcFrameTransmit = currentMillis;
 
