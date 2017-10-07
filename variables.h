@@ -35,3 +35,12 @@ enum dataStates {
 #define PPM_PULSE_LENGTH 300  //set the pulse length
 #define PPM_SIGNAL_POSITIVE_STATE 1  //set polarity of the pulses: 1 is positive, 0 is negative
 #define PPM_OUTPUT_PIN 10  //set PPM signal output pin on the arduino
+
+struct QspConfiguration_t {
+    uint8_t protocolState = IDLE;
+    uint8_t crc = 0;
+    uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};
+    uint8_t payloadLength = 0;
+    uint8_t frameToSend = 0;
+    void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
+};

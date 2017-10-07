@@ -39,154 +39,7 @@ bool canTransmit = false;
 /*
  * Start of QSP protocol implementation
  */
-static uint8_t protocolState = IDLE;
-static uint8_t qspCrc = 0;
-static uint8_t qspPayload[QSP_PAYLOAD_LENGTH] = {0};
-static uint8_t qspPayloadLength = 0;
-static uint8_t qspFrameToSend = 0;
-
-uint8_t qspGetPacketId()
-{
-    static uint8_t packetId = 0;
-
-    return packetId++;
-}
-
-void qspClearPayload()
-{
-    for (uint8_t i = 0; i < QSP_PAYLOAD_LENGTH; i++)
-    {
-        qspPayload[i] = 0;
-    }
-    qspPayloadLength = 0;
-}
-
-void qspDecodeIncomingFrame(uint8_t incomingByte)
-{
-    static uint8_t frameId;
-    static uint8_t payloadLength;
-    static uint8_t receivedPayload;
-    static uint8_t packetId; //TODO move this to global scope maybe?
-
-    if (protocolState == IDLE && incomingByte == QSP_PREAMBLE)
-    {
-        //If in IDLE and correct preamble comes, start to decode frame
-        protocolState = PREAMBLE_RECEIVED;
-        qspCrc = 0 ^ incomingByte;
-    }
-    else if (protocolState == PREAMBLE_RECEIVED)
-    {
-        // Check if incomming channel ID is the same as receiver
-        if (incomingByte == CHANNEL_ID)
-        {
-            protocolState = CHANNEL_RECEIVED;
-            qspCrc ^= incomingByte;
-
-            for (uint8_t i = 0; i < QSP_PAYLOAD_LENGTH; i++)
-            {
-                qspPayload[i] = 0x00;
-            }
-
-            receivedPayload = 0;
-            packetId = 0;
-        }
-        else
-        {
-            protocolState = IDLE;
-        }
-    }
-    else if (protocolState == CHANNEL_RECEIVED)
-    {
-        //Frame ID and payload length
-        qspCrc ^= incomingByte;
-
-        frameId = (incomingByte >> 4) & 0x0f;
-        payloadLength = incomingByte & 0x0f;
-
-        protocolState = FRAME_TYPE_RECEIVED;
-    }
-    else if (protocolState == FRAME_TYPE_RECEIVED)
-    {
-        qspCrc ^= incomingByte;
-        packetId = incomingByte;
-        protocolState = PACKET_ID_RECEIVED;
-    }
-    else if (protocolState == PACKET_ID_RECEIVED)
-    {
-
-        //Now it's time for payload
-        qspCrc ^= incomingByte;
-        qspPayload[receivedPayload] = incomingByte;
-
-        receivedPayload++;
-
-        if (receivedPayload == payloadLength)
-        {
-            protocolState = PAYLOAD_RECEIVED;
-        }
-    }
-    else if (protocolState == PAYLOAD_RECEIVED)
-    {
-
-        if (qspCrc == incomingByte)
-        {
-//CRC is correct
-
-#ifdef DEVICE_MODE_RX
-            //If devide received a valid frame, that means it can start to talk
-            canTransmit = true;
-#endif
-
-            switch (frameId)
-            {
-            case QSP_FRAME_RC_DATA:
-                qspDecodeRcDataFrame(qspPayload, ppm);
-                break;
-
-            default:
-                //Unknown frame
-                //TODO do something in this case
-                break;
-            }
-        }
-        else
-        {
-            //CRC failed, frame has to be rejected
-            //TODO do something in this case or something
-        }
-
-        // In both cases switch to listening for next preamble
-        protocolState = IDLE;
-    }
-}
-
-void qspEncodeFrame(uint8_t frameId, uint8_t length, uint8_t payload[])
-{
-    //Zero CRC
-    qspCrc = 0;
-
-    //Write preamble
-    writeToRadio(QSP_PREAMBLE);
-    //Write CHANNEL_ID
-    writeToRadio(CHANNEL_ID);
-
-    //Write frame type and length
-    uint8_t data = length & 0x0f;
-    data |= (frameId << 4) & 0xf0;
-    writeToRadio(data);
-
-    //Write packet ID
-    writeToRadio(qspGetPacketId());
-
-    //Write payload
-    for (uint8_t i = 0; i < length; i++)
-    {
-        writeToRadio(payload[i]);
-    }
-
-    //Finally write CRC
-    writeToRadio(qspCrc);
-}
+QspConfiguration_t qsp = {};
 
 /*
  * End of QSP protocol implementation
@@ -220,10 +73,10 @@ void radioPacketEnd(void)
     Serial.begin(UART_SPEED);
 }
 
-void writeToRadio(uint8_t dataByte)
+void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
 {
     //Compute CRC
-    qspComputeCrc(&qspCrc, dataByte);
+    qspComputeCrc(qsp, dataByte);
 
     //Write to radio
     Serial.write(dataByte);
@@ -253,10 +106,10 @@ void radioPacketEnd(void)
     LoRa.endPacket();
 }
 
-void writeToRadio(uint8_t dataByte)
+void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
 {
     //Compute CRC
-    qspComputeCrc(&qspCrc, dataByte);
+    qspComputeCrc(qsp, dataByte);
 
     //Write to radio
     LoRa.write(dataByte);
@@ -274,6 +127,7 @@ display.display();
 
 void setup(void)
 {
+    qsp.hardwareWriteFunction = writeToRadio;
 
 #ifdef LORA_HARDWARE_SERIAL
     Serial.begin(UART_SPEED);
@@ -377,13 +231,13 @@ void loop(void)
     /*
      * RC_DATA QSP frame
      */
-    if (currentMillis - lastRcFrameTransmit > TX_RC_FRAME_RATE && !transmitPayload && protocolState == IDLE)
+    if (currentMillis - lastRcFrameTransmit > TX_RC_FRAME_RATE && !transmitPayload && qsp.protocolState == IDLE)
     {
         lastRcFrameTransmit = currentMillis;
 
-        qspClearPayload();
-        encodeRcDataPayload(&ppmReader, PPM_CHANNEL_COUNT, qspPayload, &qspPayloadLength);
-        qspFrameToSend = QSP_FRAME_RC_DATA;
+        qspClearPayload(&qsp);
+        encodeRcDataPayload(&qsp, &ppmReader, PPM_CHANNEL_COUNT);
+        qsp.frameToSend = QSP_FRAME_RC_DATA;
 
         transmitPayload = true;
     }
@@ -393,7 +247,7 @@ void loop(void)
 #ifdef LORA_HARDWARE_SERIAL
     if (Serial.available())
     {
-        qspDecodeIncomingFrame(Serial.read());
+        qspDecodeIncomingFrame(&qsp, Serial.read(), ppm);
     }
 #endif
 
@@ -402,7 +256,7 @@ void loop(void)
         transmitPayload = false;
 
         radioPacketStart();
-        qspEncodeFrame(qspFrameToSend, qspPayloadLength, qspPayload);
+        qspEncodeFrame(&qsp);
         radioPacketEnd();
     }
 }
@@ -415,7 +269,7 @@ void onReceive(int packetSize)
 
     while (LoRa.available())
     {
-        qspDecodeIncomingFrame(LoRa.read());
+        qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm);
     }
 }
 #endif
