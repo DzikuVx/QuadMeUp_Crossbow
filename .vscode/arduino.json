@@ -1,7 +1,6 @@
 {
-    "board": "arduino:avr:pro",
+    "board": "bsfrance:avr:lora32u4",
     "sketch": "crossbow.ino",
     "port": "COM23",
-    "output": "./build",
-    "configuration": "cpu=16MHzatmega328"
+    "output": "./build"
 }

@@ -226,6 +226,14 @@ void computeCrc(uint8_t dataByte) {
  */
 #ifdef LORA_HARDWARE_SERIAL
 
+int getRadioRssi(void) {
+    return 0;
+}
+
+int getRadioSnr(void) {
+    return 0;
+}
+
 void radioPacketStart(void) {
 
 }
@@ -247,6 +255,14 @@ void writeToRadio(uint8_t dataByte) {
 #endif
 
 #ifdef LORA_HARDWARE_SPI
+
+int getRadioRssi(void) {
+    return LoRa.packetRssi();
+}
+
+int getRadioSnr(void) {
+    return LoRa.packetSnr();
+}
 
 void radioPacketStart(void) {
     LoRa.beginPacket();
