@@ -1,3 +1,15 @@
+/*
+
+TODO
+
+* Watchdog to go back to IDLE if frame did not completed in reasonable timer
+* Watchdog to force PPM output to LOW if RC_DATA was not received in 500ms aka filsafe
+* Telemetry feedback from RX to TX
+* Some kind of alarm when RSSI goes LOW
+* ability for RX and TX to change frequency
+* serial passtrough (?)
+
+*/ 
 #include <LoRa.h>
 #include "variables.h"
 #include "qsp.h"
