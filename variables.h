@@ -7,6 +7,7 @@
 #define PPM_CHANNEL_COUNT 10
 
 #define TX_RC_FRAME_RATE 5000 //ms
+#define RX_FAILSAFE_DELAY (TX_RC_FRAME_RATE * 4)
 
 #define CHANNEL_ID 0x01
 #define QSP_PREAMBLE 0x51
@@ -27,6 +28,11 @@ enum dataStates {
     QSP_STATE_CRC_RECEIVED
 };
 
+enum deviceStates {
+    DEVICE_STATE_OK,
+    DEVICE_STATE_FAILSAFE
+};
+
 #define PPM_INPUT_PIN       2
 #define PPM_INPUT_INTERRUPT 1 //For Pro Micro 1, For Pro Mini 0
 
@@ -42,5 +48,7 @@ struct QspConfiguration_t {
     uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};
     uint8_t payloadLength = 0;
     uint8_t frameToSend = 0;
+    uint32_t lastRcFrameReceived = 0;
+    uint8_t deviceState = DEVICE_STATE_OK;
     void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
 };

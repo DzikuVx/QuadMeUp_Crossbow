@@ -17,8 +17,8 @@ TODO
 // #define LORA_HARDWARE_SERIAL
 #define LORA_HARDWARE_SPI
 
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 int ppm[PPM_CHANNEL_COUNT] = {0};
 
@@ -141,6 +141,12 @@ void setup(void)
 {
     qsp.hardwareWriteFunction = writeToRadio;
 
+#ifdef DEVICE_MODE_RX
+    qsp.deviceState = DEVICE_STATE_FAILSAFE;
+#else 
+    qsp.deviceState = DEVICE_STATE_OK;
+#endif
+
 #ifdef LORA_HARDWARE_SERIAL
     Serial.begin(UART_SPEED);
 #endif
@@ -192,15 +198,23 @@ void setup(void)
 
 #ifdef DEVICE_MODE_RX
 
-ISR(TIMER1_COMPA_vect)
-{ //leave this alone
+void writePpmOutput(uint8_t val) {
+    if (qsp.deviceState == DEVICE_STATE_OK) {
+        digitalWrite(PPM_OUTPUT_PIN, val);
+    } else {
+        //This is failsafe state, we pull output low so FC can decide about failsafe 
+        digitalWrite(PPM_OUTPUT_PIN, LOW);
+    }
+}
+
+ISR(TIMER1_COMPA_vect) { //leave this alone
     static boolean state = true;
 
     TCNT1 = 0;
 
     if (state)
     { //start pulse
-        digitalWrite(PPM_OUTPUT_PIN, PPM_SIGNAL_POSITIVE_STATE);
+        writePpmOutput(PPM_SIGNAL_POSITIVE_STATE);
         OCR1A = PPM_PULSE_LENGTH * 2;
         state = false;
     }
@@ -209,7 +223,7 @@ ISR(TIMER1_COMPA_vect)
         static byte cur_chan_numb;
         static unsigned int calc_rest;
 
-        digitalWrite(PPM_OUTPUT_PIN, !PPM_SIGNAL_POSITIVE_STATE);
+        writePpmOutput(!PPM_SIGNAL_POSITIVE_STATE);
         state = true;
 
         if (cur_chan_numb >= PPM_CHANNEL_COUNT)
@@ -232,12 +246,10 @@ ISR(TIMER1_COMPA_vect)
 
 void loop(void)
 {
-
+    uint32_t currentMillis = millis();
     bool transmitPayload = false;
 
 #ifdef DEVICE_MODE_TX
-
-    uint32_t currentMillis = millis();
 
     //TODO It should be only possible to transmit when radio is not receiveing
     /*
@@ -271,6 +283,17 @@ void loop(void)
         qspEncodeFrame(&qsp);
         radioPacketEnd();
     }
+
+    /*
+     * Here we do state handling and similar operations 
+     */
+#ifdef DEVICE_MODE_RX
+    if (abs(currentMillis - qsp.lastRcFrameReceived) > RX_FAILSAFE_DELAY) {
+        qsp.deviceState = DEVICE_STATE_FAILSAFE;
+    } else {
+        qsp.deviceState = DEVICE_STATE_OK;
+    }
+#endif
 }
 
 #ifdef LORA_HARDWARE_SPI

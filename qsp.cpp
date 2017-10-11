@@ -197,6 +197,7 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
             switch (frameId)
             {
             case QSP_FRAME_RC_DATA:
+                qsp->lastRcFrameReceived = millis();
                 qspDecodeRcDataFrame(qsp, ppm);
                 break;
 
