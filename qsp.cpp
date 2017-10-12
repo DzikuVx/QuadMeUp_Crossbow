@@ -54,6 +54,17 @@ void qspComputeCrc(QspConfiguration_t *qsp, uint8_t dataByte)
     qsp->crc ^= dataByte;
 }
 
+void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState) {
+    qsp->payload[0] = rxDeviceState->rssi;
+    qsp->payload[1] = constrain(rxDeviceState->snr * 10, 0, 255);
+    qsp->payload[2] = rxDeviceState->rxVoltage;
+    qsp->payload[3] = rxDeviceState->a1Voltage;
+    qsp->payload[4] = rxDeviceState->a2Voltage;
+    qsp->payload[5] = qsp->lastReceivedPacketId;
+
+    qsp->payloadLength = 6;
+}
+
 /**
  * Encode 10 RC channels 
  */
@@ -130,6 +141,7 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
 
     if (qsp->protocolState == QSP_STATE_IDLE && incomingByte == QSP_PREAMBLE)
     {
+        //FIXME there should be a way to go back to IDLE if frame did not finished decoding in reasonable time
         //If in IDLE and correct preamble comes, start to decode frame
         qsp->protocolState = QSP_STATE_PREAMBLE_RECEIVED;
         qsp->crc = 0 ^ incomingByte;
@@ -199,15 +211,17 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
                 qsp->lastFrameReceivedAt[frameId] = millis();
             }
 
-            switch (frameId) {
-            case QSP_FRAME_RC_DATA:
-                qspDecodeRcDataFrame(qsp, ppm);
-                break;
+            qsp->lastReceivedPacketId = packetId;
 
-            default:
-                //Unknown frame
-                //TODO do something in this case
-                break;
+            switch (frameId) {
+                case QSP_FRAME_RC_DATA:
+                    qspDecodeRcDataFrame(qsp, ppm);
+                    break;
+
+                default:
+                    //Unknown frame
+                    //TODO do something in this case
+                    break;
             }
         }
         else

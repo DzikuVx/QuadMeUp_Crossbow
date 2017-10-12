@@ -52,12 +52,14 @@ bool canTransmit = false;
  * Start of QSP protocol implementation
  */
 QspConfiguration_t qsp = {};
+RxDeviceState_t rxDeviceState = {};
 
 /*
  * End of QSP protocol implementation
  */
 
 static uint32_t lastRcFrameTransmit = 0;
+static uint32_t lastRxHealthFrameTransmit = 0;
 
 /*
  * Serial port used to send data
@@ -250,8 +252,6 @@ void loop(void)
     bool transmitPayload = false;
 
 #ifdef DEVICE_MODE_TX
-
-    //TODO It should be only possible to transmit when radio is not receiveing
     /*
      * RC_DATA QSP frame
      */
@@ -262,6 +262,23 @@ void loop(void)
         qspClearPayload(&qsp);
         encodeRcDataPayload(&qsp, &ppmReader, PPM_CHANNEL_COUNT);
         qsp.frameToSend = QSP_FRAME_RC_DATA;
+
+        transmitPayload = true;
+    }
+
+#endif
+
+#ifdef DEVICE_MODE_RX
+    /*
+     * RC_DATA QSP frame
+     */
+    if (currentMillis - lastRxHealthFrameTransmit > RX_RX_HEALTH_FRAME_RATE && !transmitPayload && qsp.protocolState == QSP_STATE_IDLE)
+    {
+        lastRxHealthFrameTransmit = currentMillis;
+
+        qspClearPayload(&qsp);
+        encodeRxHealthPayload(&qsp, &rxDeviceState);
+        qsp.frameToSend = QSP_FRAME_RX_HEALTH;
 
         transmitPayload = true;
     }

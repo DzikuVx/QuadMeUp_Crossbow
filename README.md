@@ -39,10 +39,11 @@ Total length of `RC_DATA` payload is 9 bytes
 
 ### `RX_HEALTH` frame format
 
-| Byte | Description                        |
-| ---- | ----                               |
-| 0    | RX RSSI                            |
-| 1    | RX SNR                            |
-| 2    | RX supply volatage, sent in 0,1V   |
-| 3    | RX analog input 1 sent in 0,1V     |
-| 4    | RX analog input 2 sent in 0,1V     |
+| Byte  | Description                           |
+| ----  | ----                                  |
+| 1     | RX RSSI                               |
+| 2     | RX SNR                                |   
+| 3     | RX supply volatage, sent in 0,1V      |
+| 4     | RX analog input 1 sent in 0,1V        |
+| 5     | RX analog input 2 sent in 0,1V        |
+| 6     | Last received packet ID               |

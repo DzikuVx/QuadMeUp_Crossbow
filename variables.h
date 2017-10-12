@@ -6,7 +6,8 @@
 
 #define PPM_CHANNEL_COUNT 10
 
-#define TX_RC_FRAME_RATE 5000 //ms
+#define RX_RX_HEALTH_FRAME_RATE 5000
+#define TX_RC_FRAME_RATE 1000 //ms
 #define RX_FAILSAFE_DELAY (TX_RC_FRAME_RATE * 4)
 
 #define CHANNEL_ID 0x01
@@ -55,4 +56,13 @@ struct QspConfiguration_t {
     uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
     uint8_t deviceState = DEVICE_STATE_OK;
     void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
+    uint8_t lastReceivedPacketId = 0;
+};
+
+struct RxDeviceState_t {
+    int rssi = 0;
+    float snr = 0;
+    uint8_t rxVoltage = 0;
+    uint8_t a1Voltage = 0;
+    uint8_t a2Voltage = 0;
 };
