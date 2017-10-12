@@ -15,6 +15,10 @@
 
 #define QSP_FRAME_RC_DATA 0x0
 #define QSP_FRAME_RX_HEALTH 0x1
+#define QSP_FRAME_GET_RX_CONFIG 0x2
+#define QSP_FRAME_RX_CONFIG 0x3
+#define QSP_FRAME_SET_RX_CONFIG 0x4
+#define QSP_FRAME_COUNT 0x5
 
 #define PIN_LED 13
 
@@ -48,7 +52,7 @@ struct QspConfiguration_t {
     uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};
     uint8_t payloadLength = 0;
     uint8_t frameToSend = 0;
-    uint32_t lastRcFrameReceived = 0;
+    uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
     uint8_t deviceState = DEVICE_STATE_OK;
     void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
 };

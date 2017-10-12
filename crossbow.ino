@@ -288,7 +288,7 @@ void loop(void)
      * Here we do state handling and similar operations 
      */
 #ifdef DEVICE_MODE_RX
-    if (abs(currentMillis - qsp.lastRcFrameReceived) > RX_FAILSAFE_DELAY) {
+    if (abs(currentMillis - qsp.lastFrameReceivedAt[QSP_FRAME_RC_DATA]) > RX_FAILSAFE_DELAY) {
         qsp.deviceState = DEVICE_STATE_FAILSAFE;
     } else {
         qsp.deviceState = DEVICE_STATE_OK;

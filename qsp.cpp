@@ -194,10 +194,13 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
             canTransmit = true;
 #endif
 
-            switch (frameId)
-            {
+            //Store the last timestamp when frame was received
+            if (frameId < QSP_FRAME_COUNT) {
+                qsp->lastFrameReceivedAt[frameId] = millis();
+            }
+
+            switch (frameId) {
             case QSP_FRAME_RC_DATA:
-                qsp->lastRcFrameReceived = millis();
                 qspDecodeRcDataFrame(qsp, ppm);
                 break;
 
