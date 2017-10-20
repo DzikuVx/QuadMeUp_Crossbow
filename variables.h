@@ -21,8 +21,6 @@
 #define QSP_FRAME_SET_RX_CONFIG 0x4
 #define QSP_FRAME_COUNT 0x5
 
-#define PIN_LED 13
-
 enum dataStates {
     QSP_STATE_IDLE,
     QSP_STATE_PREAMBLE_RECEIVED,
@@ -57,6 +55,7 @@ struct QspConfiguration_t {
     uint8_t deviceState = DEVICE_STATE_OK;
     void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
     uint8_t lastReceivedPacketId = 0;
+    bool canTransmit = false;
 };
 
 struct RxDeviceState_t {

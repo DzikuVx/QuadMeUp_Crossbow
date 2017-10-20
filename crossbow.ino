@@ -8,17 +8,30 @@ TODO
 * Some kind of alarm when RSSI goes LOW
 * ability for RX and TX to change frequency
 * serial passtrough (?)
+FIXME
+
+* RX canTransmit is always false. For unknown reason first received frame does not enables it
 
 */ 
 #include <LoRa.h>
 #include "variables.h"
 #include "qsp.h"
 
+#define DEBUG_SERIAL
+#define DEBUG_LED
+#define WAIT_FOR_SERIAL
+
 // #define LORA_HARDWARE_SERIAL
 #define LORA_HARDWARE_SPI
 
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
+
+// LoRa32u4 ports
+#define SS      8
+#define RST     4
+#define DI0     7
+
 
 int ppm[PPM_CHANNEL_COUNT] = {0};
 
@@ -30,8 +43,6 @@ int ppm[PPM_CHANNEL_COUNT] = {0};
 #include <PPMReader.h>
 PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
 
-bool canTransmit = true;
-
 #endif
 
 /*
@@ -39,12 +50,10 @@ bool canTransmit = true;
  */
 #ifdef DEVICE_MODE_RX
 
-#include <Adafruit_SSD1306.h>
+// #include <Adafruit_SSD1306.h>
 
-#define OLED_RESET 4
-Adafruit_SSD1306 display(OLED_RESET);
-
-bool canTransmit = false;
+// #define OLED_RESET 4
+// Adafruit_SSD1306 display(OLED_RESET);
 
 #endif
 
@@ -118,6 +127,8 @@ void radioPacketStart(void)
 void radioPacketEnd(void)
 {
     LoRa.endPacket();
+    //After ending packet, put device into receive mode again
+    LoRa.receive();
 }
 
 void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
@@ -154,27 +165,48 @@ void setup(void)
 #endif
 
 #ifdef LORA_HARDWARE_SPI
+    Serial.begin(115200);
+
+#ifdef WAIT_FOR_SERIAL
+    while (!Serial) {
+        ; // wait for serial port to connect. Needed for native USB
+    }
+#endif
+
+#ifdef DEBUG_SERIAL
+    Serial.println("Start");
+#endif
+
+    LoRa.setPins(SS,RST,DI0);
+#ifdef DEBUG_SERIAL 
+    Serial.println("Pins Set");
+#endif
     if (!LoRa.begin(868E6))
     {
+    #ifdef DEBUG_SERIAL
         Serial.println("LoRa init failed. Check your connections.");
-        while (true)
-            ;
+    #endif
+        while (true);
     }
+#ifdef DEBUG_SERIAL
+    Serial.println("Init done");
+#endif
     LoRa.onReceive(onReceive);
     LoRa.receive();
+#ifdef DEBUG_SERIAL
+    Serial.println("Receive mode enabled");
+#endif
 #endif
 
 #ifdef DEVICE_MODE_RX
-    pinMode(PIN_LED, OUTPUT);
-
     /*
      * Initialize OLED display
      */
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.clearDisplay();
-    display.display();
+    // display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
+    // display.setTextSize(1);
+    // display.setTextColor(WHITE);
+    // display.clearDisplay();
+    // display.display();
 
     //initiallize default ppm values
     for (int i = 0; i < PPM_CHANNEL_COUNT; i++)
@@ -196,6 +228,12 @@ void setup(void)
     sei();
 
 #endif
+
+    pinMode(LED_BUILTIN, OUTPUT);
+
+// #ifdef DEVICE_MODE_TX
+    qsp.canTransmit = true;
+// #endif
 }
 
 #ifdef DEVICE_MODE_RX
@@ -292,13 +330,29 @@ void loop(void)
     }
 #endif
 
-    if (canTransmit && transmitPayload)
+    if (qsp.canTransmit && transmitPayload)
     {
         transmitPayload = false;
-
+        
         radioPacketStart();
         qspEncodeFrame(&qsp);
         radioPacketEnd();
+
+    #ifdef DEBUG_SERIAL
+        Serial.print("Packet frame ");
+        Serial.print(qsp.frameToSend);
+        Serial.println(" sent");
+    #endif
+
+    #ifdef DEBUG_LED
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(10);
+        digitalWrite(LED_BUILTIN, LOW);
+        delay(70);
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(10);
+        digitalWrite(LED_BUILTIN, LOW);
+    #endif
     }
 
     /*

@@ -1,5 +1,8 @@
 {
     "files.associations": {
         "variables.h": "c"
+    },
+    "files.exclude": {
+        "**/build": true
     }
 }
