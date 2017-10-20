@@ -13,19 +13,20 @@ FIXME
 * RX canTransmit is always false. For unknown reason first received frame does not enables it
 
 */ 
-#include <LoRa.h>
-#include "variables.h"
-#include "qsp.h"
-
-#define DEBUG_SERIAL
-#define DEBUG_LED
-#define WAIT_FOR_SERIAL
 
 // #define LORA_HARDWARE_SERIAL
 #define LORA_HARDWARE_SPI
 
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
+
+#define DEBUG_SERIAL
+#define DEBUG_LED
+// #define WAIT_FOR_SERIAL
+
+#include <LoRa.h>
+#include "variables.h"
+#include "qsp.h"
 
 // LoRa32u4 ports
 #define SS      8
@@ -231,9 +232,20 @@ void setup(void)
 
     pinMode(LED_BUILTIN, OUTPUT);
 
-// #ifdef DEVICE_MODE_TX
+/*
+ * TX should start talking imediately after power up
+ */
+#ifdef DEVICE_MODE_TX
     qsp.canTransmit = true;
-// #endif
+#endif
+
+#ifdef DEBUG_SERIAL
+    qsp.debugConfig |= DEBUG_FLAG_SERIAL;
+#endif
+#ifdef DEBUG_LED
+    qsp.debugConfig |= DEBUG_FLAG_LED;
+#endif
+
 }
 
 #ifdef DEVICE_MODE_RX

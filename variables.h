@@ -36,6 +36,11 @@ enum deviceStates {
     DEVICE_STATE_FAILSAFE
 };
 
+enum debugConfigFlags {
+    DEBUG_FLAG_SERIAL   = 0b00000001,
+    DEBUG_FLAG_LED      = 0b00000010
+};
+
 #define PPM_INPUT_PIN       2
 #define PPM_INPUT_INTERRUPT 1 //For Pro Micro 1, For Pro Mini 0
 
@@ -56,6 +61,7 @@ struct QspConfiguration_t {
     void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
     uint8_t lastReceivedPacketId = 0;
     bool canTransmit = false;
+    uint8_t debugConfig = 0;
 };
 
 struct RxDeviceState_t {

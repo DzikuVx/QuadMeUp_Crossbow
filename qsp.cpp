@@ -201,10 +201,8 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
         if (qsp->crc == incomingByte) {
             //CRC is correct
 
-        #ifdef DEVICE_MODE_RX
             //If devide received a valid frame, that means it can start to talk
             qsp->canTransmit = true;
-        #endif
 
             //Store the last timestamp when frame was received
             if (frameId < QSP_FRAME_COUNT) {
@@ -213,19 +211,19 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
 
             qsp->lastReceivedPacketId = packetId;
 
-        #ifdef DEBUG_SERIAL
-            Serial.print("Frame ");
-            Serial.print(frameId);
-            Serial.println(" received");
-        #endif
+            if (qsp->debugConfig & DEBUG_FLAG_SERIAL) {
+                Serial.print("Frame ");
+                Serial.print(frameId);
+                Serial.println(" received");
+            }
 
-        #ifdef DEBUG_LED
-            digitalWrite(LED_BUILTIN, HIGH);
-            delay(10);
-            digitalWrite(LED_BUILTIN, LOW);
-            delay(100);
-        #endif
-
+            if (qsp->debugConfig & DEBUG_FLAG_LED) {
+                digitalWrite(LED_BUILTIN, HIGH);
+                delay(10);
+                digitalWrite(LED_BUILTIN, LOW);
+                delay(100);
+            }
+            
             switch (frameId) {
                 case QSP_FRAME_RC_DATA:
                     qspDecodeRcDataFrame(qsp, ppm);
