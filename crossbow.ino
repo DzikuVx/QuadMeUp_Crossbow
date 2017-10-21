@@ -29,9 +29,9 @@ FIXME
 #include "qsp.h"
 
 // LoRa32u4 ports
-#define SS      8
-#define RST     4
-#define DI0     7
+#define LORA32U4_SS_PIN     8
+#define LORA32U4_RST_PIN    4
+#define LORA32U4_DI0_PIN    7
 
 
 int ppm[PPM_CHANNEL_COUNT] = {0};
@@ -178,11 +178,20 @@ void setup(void)
     Serial.println("Start");
 #endif
 
-    LoRa.setPins(SS,RST,DI0);
+    /*
+     * Setup hardware
+     */
+    LoRa.setPins(
+        LORA32U4_SS_PIN,
+        LORA32U4_RST_PIN,
+        LORA32U4_DI0_PIN
+    );
+
 #ifdef DEBUG_SERIAL 
     Serial.println("Pins Set");
 #endif
-    if (!LoRa.begin(868E6))
+    
+if (!LoRa.begin(868E6))
     {
     #ifdef DEBUG_SERIAL
         Serial.println("LoRa init failed. Check your connections.");
