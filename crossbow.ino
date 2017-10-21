@@ -17,8 +17,8 @@ FIXME
 // #define LORA_HARDWARE_SERIAL
 #define LORA_HARDWARE_SPI
 
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 #define DEBUG_SERIAL
 #define DEBUG_LED
@@ -33,7 +33,6 @@ FIXME
 #define LORA32U4_RST_PIN    4
 #define LORA32U4_DI0_PIN    7
 
-
 int ppm[PPM_CHANNEL_COUNT] = {0};
 
 /*
@@ -41,8 +40,12 @@ int ppm[PPM_CHANNEL_COUNT] = {0};
  */
 #ifdef DEVICE_MODE_TX
 
+#define OLED_RESET -1
 #include <PPMReader.h>
+#include <Adafruit_SSD1306.h>
+
 PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
+Adafruit_SSD1306 display(OLED_RESET);
 
 #endif
 
@@ -50,11 +53,6 @@ PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
  * Main defines for device working in RX mode
  */
 #ifdef DEVICE_MODE_RX
-
-// #include <Adafruit_SSD1306.h>
-
-// #define OLED_RESET 4
-// Adafruit_SSD1306 display(OLED_RESET);
 
 #endif
 
