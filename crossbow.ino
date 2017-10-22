@@ -50,15 +50,12 @@ RxDeviceState_t rxDeviceState = {};
  * End of QSP protocol implementation
  */
 
-static uint32_t lastRcFrameTransmit = 0;
-static uint32_t lastRxHealthFrameTransmit = 0;
-
 /*
  * Serial port used to send data
  */
 #ifdef LORA_HARDWARE_SERIAL
 
-int getRadioRssi(void)
+unint8_t getRadioRssi(void)
 {
     return 0;
 }
@@ -92,14 +89,15 @@ void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
 
 #ifdef LORA_HARDWARE_SPI
 
-int getRadioRssi(void)
+uint8_t getRadioRssi(void)
 {
-    return LoRa.packetRssi();
+    //Map from -164:0 to 0:100
+    return map(constrain(LoRa.packetRssi() * -1, 0, 164), 0, 164, 100, 0);
 }
 
 float getRadioSnr(void)
 {
-    return LoRa.packetSnr();
+    return (uint8_t) constrain(LoRa.packetSnr() * 10, 0, 255);
 }
 
 void radioPacketStart(void)
@@ -219,6 +217,10 @@ if (!LoRa.begin(868E6))
     TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
     sei();
 
+    pinMode(RX_ADC_PIN_1, INPUT);
+    pinMode(RX_ADC_PIN_2, INPUT);
+    pinMode(RX_ADC_PIN_3, INPUT);
+
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -285,6 +287,14 @@ ISR(TIMER1_COMPA_vect) { //leave this alone
     }
 }
 
+void updateRxDeviceState(RxDeviceState_t *rxDeviceState) {
+    rxDeviceState->rxVoltage = map(analogRead(RX_ADC_PIN_1), 0, 1024, 0, 255);
+    rxDeviceState->a1Voltage = map(analogRead(RX_ADC_PIN_2), 0, 1024, 0, 255);
+    rxDeviceState->a2Voltage = map(analogRead(RX_ADC_PIN_3), 0, 1024, 0, 255);
+    rxDeviceState->rssi = getRadioRssi();
+    rxDeviceState->snr = getRadioSnr();
+}    
+
 #endif
 
 void loop(void)
@@ -296,9 +306,13 @@ void loop(void)
     /*
      * RC_DATA QSP frame
      */
-    if (currentMillis - lastRcFrameTransmit > TX_RC_FRAME_RATE && !transmitPayload && qsp.protocolState == QSP_STATE_IDLE)
+    if (
+        currentMillis - qsp.lastFrameTransmitedAt[QSP_FRAME_RC_DATA] > TX_RC_FRAME_RATE && 
+        !transmitPayload && 
+        qsp.protocolState == QSP_STATE_IDLE
+    )
     {
-        lastRcFrameTransmit = currentMillis;
+        qsp.lastFrameTransmitedAt[QSP_FRAME_RC_DATA] = currentMillis;
 
         qspClearPayload(&qsp);
         encodeRcDataPayload(&qsp, &ppmReader, PPM_CHANNEL_COUNT);
@@ -311,11 +325,17 @@ void loop(void)
 
 #ifdef DEVICE_MODE_RX
     /*
-     * RC_DATA QSP frame
+     * RX_HEALTH QSP frame
      */
-    if (currentMillis - lastRxHealthFrameTransmit > RX_RX_HEALTH_FRAME_RATE && !transmitPayload && qsp.protocolState == QSP_STATE_IDLE)
+    if (
+        currentMillis - qsp.lastFrameTransmitedAt[QSP_FRAME_RX_HEALTH] > RX_RX_HEALTH_FRAME_RATE && 
+        !transmitPayload && 
+        qsp.protocolState == QSP_STATE_IDLE
+    )
     {
-        lastRxHealthFrameTransmit = currentMillis;
+        qsp.lastFrameTransmitedAt[QSP_FRAME_RX_HEALTH] = currentMillis;
+
+        updateRxDeviceState(&rxDeviceState);
 
         qspClearPayload(&qsp);
         encodeRxHealthPayload(&qsp, &rxDeviceState);
@@ -378,7 +398,7 @@ void onReceive(int packetSize)
 
     while (LoRa.available())
     {
-        qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm);
+        qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
     }
 }
 #endif

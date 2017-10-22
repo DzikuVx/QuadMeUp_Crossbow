@@ -56,13 +56,22 @@ void qspComputeCrc(QspConfiguration_t *qsp, uint8_t dataByte)
 
 void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState) {
     qsp->payload[0] = rxDeviceState->rssi;
-    qsp->payload[1] = constrain(rxDeviceState->snr * 10, 0, 255);
+    qsp->payload[1] = rxDeviceState->snr;
     qsp->payload[2] = rxDeviceState->rxVoltage;
     qsp->payload[3] = rxDeviceState->a1Voltage;
     qsp->payload[4] = rxDeviceState->a2Voltage;
     qsp->payload[5] = qsp->lastReceivedPacketId;
 
     qsp->payloadLength = 6;
+}
+
+void decodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState) {
+    rxDeviceState->rssi = qsp->payload[0];
+    rxDeviceState->snr = qsp->payload[1];
+    rxDeviceState->rxVoltage = qsp->payload[2];
+    rxDeviceState->a1Voltage = qsp->payload[3];
+    rxDeviceState->a2Voltage = qsp->payload[4];
+    // rxDeviceState->rssi = qsp->payload[0]; //TODO we skipped decoding this byte, figure it out
 }
 
 /**
@@ -132,7 +141,7 @@ void qspClearPayload(QspConfiguration_t *qsp)
     qsp->payloadLength = 0;
 }
 
-void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int ppm[])
+void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int ppm[], RxDeviceState_t *rxDeviceState)
 {
     static uint8_t frameId;
     static uint8_t payloadLength;
@@ -227,6 +236,16 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
             switch (frameId) {
                 case QSP_FRAME_RC_DATA:
                     qspDecodeRcDataFrame(qsp, ppm);
+                    break;
+
+                case QSP_FRAME_RX_HEALTH:
+                    decodeRxHealthPayload(qsp, rxDeviceState);
+                    if (qsp->debugConfig & DEBUG_FLAG_SERIAL) {
+                        Serial.print("RX RSSI: ");
+                        Serial.println(rxDeviceState->rssi);
+                        Serial.print("RX SNR: ");
+                        Serial.println(rxDeviceState->snr);
+                    }
                     break;
 
                 default:

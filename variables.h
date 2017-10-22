@@ -21,6 +21,10 @@
 #define QSP_FRAME_SET_RX_CONFIG 0x4
 #define QSP_FRAME_COUNT 0x5
 
+#define RX_ADC_PIN_1 A0
+#define RX_ADC_PIN_2 A1
+#define RX_ADC_PIN_3 A2
+
 enum dataStates {
     QSP_STATE_IDLE,
     QSP_STATE_PREAMBLE_RECEIVED,
@@ -57,6 +61,7 @@ struct QspConfiguration_t {
     uint8_t payloadLength = 0;
     uint8_t frameToSend = 0;
     uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
+    uint32_t lastFrameTransmitedAt[QSP_FRAME_COUNT] = {0};
     uint8_t deviceState = DEVICE_STATE_OK;
     void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
     uint8_t lastReceivedPacketId = 0;
