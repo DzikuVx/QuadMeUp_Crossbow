@@ -5,7 +5,7 @@
 // #define DEVICE_MODE_RX
 
 #define DEBUG_SERIAL
-#define DEBUG_LED
+// #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
 
 #include <LoRa.h>
@@ -171,13 +171,18 @@ void setup(void)
     Serial.println("Pins Set");
 #endif
     
-if (!LoRa.begin(868E6))
+    if (!LoRa.begin(868E6))
     {
     #ifdef DEBUG_SERIAL
         Serial.println("LoRa init failed. Check your connections.");
     #endif
         while (true);
     }
+
+    LoRa.setSignalBandwidth(250E3);
+    LoRa.setSpreadingFactor(7);
+    LoRa.setCodingRate4(5);
+
 #ifdef DEBUG_SERIAL
     Serial.println("Init done");
 #endif
@@ -302,7 +307,37 @@ void loop(void)
     uint32_t currentMillis = millis();
     bool transmitPayload = false;
 
+    if (
+        qsp.forcePongFrame && 
+        !transmitPayload && 
+        qsp.protocolState == QSP_STATE_IDLE
+    )
+    {
+        qsp.forcePongFrame = false;
+        qsp.lastFrameTransmitedAt[QSP_FRAME_PONG] = currentMillis;
+        qsp.frameToSend = QSP_FRAME_PONG;
+        transmitPayload = true;
+    }
+
+
 #ifdef DEVICE_MODE_TX
+
+    //PING frame
+    if (
+        currentMillis - qsp.lastFrameTransmitedAt[QSP_FRAME_PING] > TX_PING_RATE && 
+        !transmitPayload && 
+        qsp.protocolState == QSP_STATE_IDLE
+    )
+    {
+        qsp.lastFrameTransmitedAt[QSP_FRAME_PING] = currentMillis;
+
+        qspClearPayload(&qsp);
+        encodePingPayload(&qsp, micros());
+        qsp.frameToSend = QSP_FRAME_PING;
+        
+        transmitPayload = true;
+    }
+
     /*
      * RC_DATA QSP frame
      */
@@ -355,14 +390,12 @@ void loop(void)
 
     if (qsp.canTransmit && transmitPayload)
     {
-        transmitPayload = false;
-        
         radioPacketStart();
         qspEncodeFrame(&qsp);
         radioPacketEnd();
 
     #ifdef DEBUG_SERIAL
-        Serial.print("Packet frame ");
+        Serial.print("Frame ");
         Serial.print(qsp.frameToSend);
         Serial.println(" sent");
     #endif
@@ -376,6 +409,7 @@ void loop(void)
         delay(10);
         digitalWrite(LED_BUILTIN, LOW);
     #endif
+        transmitPayload = false;
     }
 
     /*

@@ -10,6 +10,8 @@
 #define TX_RC_FRAME_RATE 1000 //ms
 #define RX_FAILSAFE_DELAY (TX_RC_FRAME_RATE * 4)
 
+#define TX_PING_RATE 2000 
+
 #define CHANNEL_ID 0x01
 #define QSP_PREAMBLE 0x51
 #define QSP_PAYLOAD_LENGTH 32
@@ -19,7 +21,9 @@
 #define QSP_FRAME_GET_RX_CONFIG 0x2
 #define QSP_FRAME_RX_CONFIG 0x3
 #define QSP_FRAME_SET_RX_CONFIG 0x4
-#define QSP_FRAME_COUNT 0x5
+#define QSP_FRAME_PING 0x5
+#define QSP_FRAME_PONG 0x6
+#define QSP_FRAME_COUNT 0x7
 
 #define RX_ADC_PIN_1 A0
 #define RX_ADC_PIN_2 A1
@@ -66,6 +70,7 @@ struct QspConfiguration_t {
     void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
     uint8_t lastReceivedPacketId = 0;
     bool canTransmit = false;
+    bool forcePongFrame = false;
     uint8_t debugConfig = 0;
 };
 

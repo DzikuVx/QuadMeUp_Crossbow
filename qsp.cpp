@@ -248,6 +248,25 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
                     }
                     break;
 
+                case QSP_FRAME_PING:
+                    qsp->forcePongFrame = true;
+                    break;
+
+                case QSP_FRAME_PONG:
+                    if (qsp->debugConfig & DEBUG_FLAG_SERIAL) {
+
+                        uint32_t incoming = 0;
+
+                        incoming = qsp->payload[0];
+                        incoming += (uint32_t) qsp->payload[1] << 8;
+                        incoming += (uint32_t) qsp->payload[2] << 16;
+                        incoming += (uint32_t) qsp->payload[3] << 24;
+
+                        Serial.print("Rountrip: ");
+                        Serial.println((micros() - incoming) / 1000);
+                    }
+                    break;
+
                 default:
                     //Unknown frame
                     //TODO do something in this case
@@ -293,4 +312,13 @@ void qspEncodeFrame(QspConfiguration_t *qsp) {
 
     //Finally write CRC
     qsp->hardwareWriteFunction(qsp->crc, qsp);
+}
+
+void encodePingPayload(QspConfiguration_t *qsp, uint32_t currentMicros) {
+    qsp->payload[0] = currentMicros & 255;
+    qsp->payload[1] = (currentMicros >> 8) & 255;
+    qsp->payload[2] = (currentMicros >> 16) & 255;
+    qsp->payload[3] = (currentMicros >> 24) & 255;
+
+    qsp->payloadLength = 9;
 }

@@ -13,3 +13,5 @@ uint8_t qspGetPacketId(void);
 void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int ppm[], RxDeviceState_t *rxDeviceState);
 void qspClearPayload(QspConfiguration_t *qsp);
 void qspEncodeFrame(QspConfiguration_t *qsp);
+
+void encodePingPayload(QspConfiguration_t *qsp, uint32_t currentMicros);

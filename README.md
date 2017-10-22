@@ -26,6 +26,8 @@ Development, not yet functional
 | 0010   | 0x2          | Request receiver configuration | TX -> RX |
 | 0011   | 0x3          | Receiver configuration | RX -> TX |
 | 0100   | 0x4          | Set receiver configuration | TX -> RX |
+| 0101   | 0x5          | PING frame | TX -> RX |
+| 0110   | 0x6          | PONG frame | RX -> TX |
 
 ### `RC_DATA` frame format
 
@@ -47,3 +49,9 @@ Total length of `RC_DATA` payload is 9 bytes
 | 4     | RX analog input 1 sent in 0,1V        |
 | 5     | RX analog input 2 sent in 0,1V        |
 | 6     | Last received packet ID               |
+
+### `PING` and `PONG` frames
+
+`PING` and `PONG` frames are to determine packet roundrip between **TX** and **RX** module.
+**TX** sends `PING` frame with curent `micros`. If **RX** receives `PING` frame, it respons
+its payload as `PONG` frame. 
