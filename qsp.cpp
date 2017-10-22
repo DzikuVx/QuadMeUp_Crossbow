@@ -154,6 +154,7 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
         //If in IDLE and correct preamble comes, start to decode frame
         qsp->protocolState = QSP_STATE_PREAMBLE_RECEIVED;
         qsp->crc = 0 ^ incomingByte;
+        qsp->frameDecodingStartedAt = millis();
     }
     else if (qsp->protocolState == QSP_STATE_PREAMBLE_RECEIVED)
     {

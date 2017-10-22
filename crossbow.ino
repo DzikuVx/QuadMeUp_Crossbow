@@ -307,6 +307,16 @@ void loop(void)
     uint32_t currentMillis = millis();
     bool transmitPayload = false;
 
+    /*
+     * Watchdog for frame decoding stuck somewhere in the middle of a process
+     */
+    if (
+        qsp.protocolState != QSP_STATE_IDLE && 
+        abs(millis() - qsp.frameDecodingStartedAt) > QSP_MAX_FRAME_DECODE_TIME 
+    ) {
+        qsp.protocolState = QSP_STATE_IDLE;
+    }
+
     if (
         qsp.forcePongFrame && 
         !transmitPayload && 
