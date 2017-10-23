@@ -5,6 +5,7 @@
 // #define DEVICE_MODE_RX
 
 #define DEBUG_SERIAL
+// #define DEBUG_PING_PONG
 // #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
 
@@ -333,6 +334,7 @@ void loop(void)
 
 #ifdef DEVICE_MODE_TX
 
+#ifdef DEBUG_PING_PONG
     //PING frame
     if (
         currentMillis - qsp.lastFrameTransmitedAt[QSP_FRAME_PING] > TX_PING_RATE && 
@@ -348,6 +350,7 @@ void loop(void)
         
         transmitPayload = true;
     }
+#endif
 
     /*
      * RC_DATA QSP frame
