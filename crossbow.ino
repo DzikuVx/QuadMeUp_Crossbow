@@ -1,8 +1,8 @@
 // #define LORA_HARDWARE_SERIAL
 #define LORA_HARDWARE_SPI
 
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG

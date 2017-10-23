@@ -9,7 +9,7 @@ void qspDecodeRcDataFrame(QspConfiguration_t *qsp, int output[]) {
     temporaryPpmOutput[0] = (uint16_t) (((uint16_t) qsp->payload[0] << 2) & 0x3fc) | ((qsp->payload[1] >> 6) & 0x03);
     temporaryPpmOutput[1] = (uint16_t) (((uint16_t) qsp->payload[1] << 4) & 0x3f0) | ((qsp->payload[2] >> 4) & 0x0F);
     temporaryPpmOutput[2] = (uint16_t) (((uint16_t) qsp->payload[2] << 6) & 0x3c0) | ((qsp->payload[3] >> 2) & 0x3F);
-    temporaryPpmOutput[3] = (uint16_t) (((uint16_t) qsp->payload[3] << 8) & 0x300) | ((qsp->payload[4] >> 2) & 0xFF);
+    temporaryPpmOutput[3] = (uint16_t) (((uint16_t) qsp->payload[3] << 8) & 0x300) | ((qsp->payload[4]) & 0xFF);
     temporaryPpmOutput[4] = qsp->payload[5];
     temporaryPpmOutput[5] = qsp->payload[6];
     temporaryPpmOutput[6] = (qsp->payload[7] >> 4) & 0b00001111;
