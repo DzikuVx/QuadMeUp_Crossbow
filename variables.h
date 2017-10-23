@@ -4,7 +4,7 @@
 #define UART_SPEED 57600
 #define E45_TTL_100_UART_DOWNTIME 30 
 
-#define PPM_CHANNEL_COUNT 10
+#define PPM_CHANNEL_COUNT 11
 
 #define RX_RX_HEALTH_FRAME_RATE 5000
 #define TX_RC_FRAME_RATE 1000 //ms
@@ -51,8 +51,8 @@ enum debugConfigFlags {
     DEBUG_FLAG_LED      = 0b00000010
 };
 
-#define PPM_INPUT_PIN       2
-#define PPM_INPUT_INTERRUPT 1 //For Pro Micro 1, For Pro Mini 0
+#define PPM_INPUT_PIN       0 // Has to be one of Interrupt pins
+#define PPM_INPUT_INTERRUPT 2 // For Pro Micro 1, For Pro Mini 0
 
 #define PPM_CHANNEL_DEFAULT_VALUE 1500  //set the default servo value
 #define PPM_FRAME_LENGTH 22500  //set the PPM frame length in microseconds (1ms = 1000µs)

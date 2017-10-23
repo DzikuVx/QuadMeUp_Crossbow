@@ -9,6 +9,7 @@
 // #define WAIT_FOR_SERIAL
 
 #include <LoRa.h>
+// #include <PinChangeInterrupt.h>
 #include "variables.h"
 #include "qsp.h"
 
@@ -24,12 +25,13 @@ int ppm[PPM_CHANNEL_COUNT] = {0};
  */
 #ifdef DEVICE_MODE_TX
 
-#define OLED_RESET -1
+// #define OLED_RESET -1
 #include <PPMReader.h>
-#include <Adafruit_SSD1306.h>
+// #include <Adafruit_SSD1306.h>
 
 PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
-Adafruit_SSD1306 display(OLED_RESET);
+// PPMReader ppmReader(11, 2, MODE_PIN_CHANGE_INTERRUPT);
+// Adafruit_SSD1306 display(OLED_RESET);
 
 #endif
 
@@ -243,7 +245,6 @@ void setup(void)
 #ifdef DEBUG_LED
     qsp.debugConfig |= DEBUG_FLAG_LED;
 #endif
-
 }
 
 #ifdef DEVICE_MODE_RX
