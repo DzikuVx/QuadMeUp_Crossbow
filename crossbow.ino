@@ -1,10 +1,10 @@
 // #define LORA_HARDWARE_SERIAL
 #define LORA_HARDWARE_SPI
 
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
-#define DEBUG_SERIAL
+// #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
@@ -30,7 +30,7 @@ int ppm[PPM_OUTPUT_CHANNEL_COUNT] = {0};
 #include <PPMReader.h>
 // #include <Adafruit_SSD1306.h>
 
-PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT);
+PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT, true);
 // PPMReader ppmReader(11, 2, MODE_PIN_CHANGE_INTERRUPT);
 // Adafruit_SSD1306 display(OLED_RESET);
 
@@ -157,10 +157,6 @@ void setup(void)
     }
 #endif
 
-#ifdef DEBUG_SERIAL
-    Serial.println("Start");
-#endif
-
     /*
      * Setup hardware
      */
@@ -169,10 +165,6 @@ void setup(void)
         LORA32U4_RST_PIN,
         LORA32U4_DI0_PIN
     );
-
-#ifdef DEBUG_SERIAL 
-    Serial.println("Pins Set");
-#endif
     
     if (!LoRa.begin(868E6))
     {
@@ -186,14 +178,8 @@ void setup(void)
     LoRa.setSpreadingFactor(7);
     LoRa.setCodingRate4(5);
 
-#ifdef DEBUG_SERIAL
-    Serial.println("Init done");
-#endif
     LoRa.onReceive(onReceive);
     LoRa.receive();
-#ifdef DEBUG_SERIAL
-    Serial.println("Receive mode enabled");
-#endif
 #endif
 
 #ifdef DEVICE_MODE_RX
@@ -229,6 +215,12 @@ void setup(void)
     pinMode(RX_ADC_PIN_2, INPUT);
     pinMode(RX_ADC_PIN_3, INPUT);
 
+#endif
+
+#ifdef DEVICE_MODE_TX
+    TCCR1A = 0;  //reset timer1
+    TCCR1B = 0;
+    TCCR1B |= (1 << CS11);  //set timer1 to increment every 0,5 us or 1us on 8MHz
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -361,14 +353,6 @@ void loop(void)
         qsp.protocolState == QSP_STATE_IDLE
     )
     {
-        // int count;
-        // while(ppmReader.get(count) != 0){  //print out the servo values
-        //   Serial.print(ppmReader.get(count));
-        //   Serial.print("  ");
-        //   count++;
-        // }
-        // Serial.println("");
-
         qsp.lastFrameTransmitedAt[QSP_FRAME_RC_DATA] = currentMillis;
 
         qspClearPayload(&qsp);
@@ -415,12 +399,6 @@ void loop(void)
         radioPacketStart();
         qspEncodeFrame(&qsp);
         radioPacketEnd();
-
-    #ifdef DEBUG_SERIAL
-        Serial.print("Frame ");
-        Serial.print(qsp.frameToSend);
-        Serial.println(" sent");
-    #endif
 
     #ifdef DEBUG_LED
         digitalWrite(LED_BUILTIN, HIGH);
