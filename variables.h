@@ -4,10 +4,8 @@
 #define UART_SPEED 57600
 #define E45_TTL_100_UART_DOWNTIME 30 
 
-#define PPM_CHANNEL_COUNT 10
-
 #define RX_RX_HEALTH_FRAME_RATE 2000
-#define TX_RC_FRAME_RATE 50 //ms
+#define TX_RC_FRAME_RATE 1000 //ms
 #define RX_FAILSAFE_DELAY (TX_RC_FRAME_RATE * 4)
 
 #define TX_PING_RATE 2000 
@@ -54,9 +52,13 @@ enum debugConfigFlags {
 #define PPM_INPUT_PIN       0 // Has to be one of Interrupt pins
 #define PPM_INPUT_INTERRUPT 2 // For Pro Micro 1, For Pro Mini 0
 
+#define PPM_INPUT_CHANNEL_COUNT 10
+#define PPM_OUTPUT_CHANNEL_COUNT 10
+
 #define PPM_CHANNEL_DEFAULT_VALUE 1500  //set the default servo value
-#define PPM_FRAME_LENGTH 22500  //set the PPM frame length in microseconds (1ms = 1000µs)
+#define PPM_FRAME_LENGTH 30500  //set the PPM frame length in microseconds (1ms = 1000µs)
 #define PPM_PULSE_LENGTH 300  //set the pulse length
+#define PPM_OUTPUT_MULTIPLIER 1 //1 for 8MHz RX, 2 for 16MHz RX
 #define PPM_SIGNAL_POSITIVE_STATE 1  //set polarity of the pulses: 1 is positive, 0 is negative
 #define PPM_OUTPUT_PIN 10  //set PPM signal output pin on the arduino
 

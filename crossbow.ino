@@ -1,8 +1,8 @@
 // #define LORA_HARDWARE_SERIAL
 #define LORA_HARDWARE_SPI
 
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
@@ -19,7 +19,7 @@
 #define LORA32U4_RST_PIN    4
 #define LORA32U4_DI0_PIN    7
 
-int ppm[PPM_CHANNEL_COUNT] = {0};
+int ppm[PPM_OUTPUT_CHANNEL_COUNT] = {0};
 
 /*
  * Main defines for device working in TX mode
@@ -207,7 +207,7 @@ void setup(void)
     // display.display();
 
     //initiallize default ppm values
-    for (int i = 0; i < PPM_CHANNEL_COUNT; i++)
+    for (int i = 0; i < PPM_OUTPUT_CHANNEL_COUNT; i++)
     {
         ppm[i] = PPM_CHANNEL_DEFAULT_VALUE;
     }
@@ -267,7 +267,7 @@ ISR(TIMER1_COMPA_vect) { //leave this alone
     if (state)
     { //start pulse
         writePpmOutput(PPM_SIGNAL_POSITIVE_STATE);
-        OCR1A = PPM_PULSE_LENGTH * 2;
+        OCR1A = PPM_PULSE_LENGTH * PPM_OUTPUT_MULTIPLIER;
         state = false;
     }
     else
@@ -278,16 +278,16 @@ ISR(TIMER1_COMPA_vect) { //leave this alone
         writePpmOutput(!PPM_SIGNAL_POSITIVE_STATE);
         state = true;
 
-        if (cur_chan_numb >= PPM_CHANNEL_COUNT)
+        if (cur_chan_numb >= PPM_OUTPUT_CHANNEL_COUNT)
         {
             cur_chan_numb = 0;
             calc_rest = calc_rest + PPM_PULSE_LENGTH; //
-            OCR1A = (PPM_FRAME_LENGTH - calc_rest) * 2;
+            OCR1A = (PPM_FRAME_LENGTH - calc_rest) * PPM_OUTPUT_MULTIPLIER;
             calc_rest = 0;
         }
         else
         {
-            OCR1A = (ppm[cur_chan_numb] - PPM_PULSE_LENGTH) * 2;
+            OCR1A = (ppm[cur_chan_numb] - PPM_PULSE_LENGTH) * PPM_OUTPUT_MULTIPLIER;
             calc_rest = calc_rest + ppm[cur_chan_numb];
             cur_chan_numb++;
         }
@@ -361,10 +361,18 @@ void loop(void)
         qsp.protocolState == QSP_STATE_IDLE
     )
     {
+        // int count;
+        // while(ppmReader.get(count) != 0){  //print out the servo values
+        //   Serial.print(ppmReader.get(count));
+        //   Serial.print("  ");
+        //   count++;
+        // }
+        // Serial.println("");
+
         qsp.lastFrameTransmitedAt[QSP_FRAME_RC_DATA] = currentMillis;
 
         qspClearPayload(&qsp);
-        encodeRcDataPayload(&qsp, &ppmReader, PPM_CHANNEL_COUNT);
+        encodeRcDataPayload(&qsp, &ppmReader, PPM_INPUT_CHANNEL_COUNT);
         qsp.frameToSend = QSP_FRAME_RC_DATA;
 
         transmitPayload = true;

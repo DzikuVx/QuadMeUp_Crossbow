@@ -3,7 +3,7 @@
 #include <PPMReader.h>
 
 void qspDecodeRcDataFrame(QspConfiguration_t *qsp, int output[]) {
-    int temporaryPpmOutput[PPM_CHANNEL_COUNT] = {0};
+    int temporaryPpmOutput[PPM_OUTPUT_CHANNEL_COUNT] = {0};
     //TODO fix it, baby :)
 
     temporaryPpmOutput[0] = (uint16_t) (((uint16_t) qsp->payload[0] << 2) & 0x3fc) | ((qsp->payload[1] >> 6) & 0x03);
@@ -36,7 +36,7 @@ void qspDecodeRcDataFrame(QspConfiguration_t *qsp, int output[]) {
     /*
      * Copy tremporary to real output
      */
-    for (uint8_t i = 0; i < PPM_CHANNEL_COUNT; i++) {
+    for (uint8_t i = 0; i < PPM_OUTPUT_CHANNEL_COUNT; i++) {
         output[i] = temporaryPpmOutput[i];
     }
 }
@@ -81,9 +81,11 @@ void encodeRcDataPayload(QspConfiguration_t *qsp, PPMReader *ppmSource, uint8_t 
 {
     for (uint8_t i = 0; i < noOfChannels; i++)
     {
-        uint16_t channelValue10 = map(ppmSource->get(i), 1000, 2000, 0, 1000) & 0x03ff;
-        uint8_t channelValue8 = map(ppmSource->get(i), 1000, 2000, 0, 255) & 0xff;
-        uint8_t channelValue4 = map(ppmSource->get(i), 1000, 2000, 0, 15) & 0x0f;
+        int cV = constrain(ppmSource->get(i), 1000, 2000);
+
+        uint16_t channelValue10 = map(cV, 1000, 2000, 0, 1000) & 0x03ff;
+        uint8_t channelValue8 = map(cV, 1000, 2000, 0, 255) & 0xff;
+        uint8_t channelValue4 = map(cV, 1000, 2000, 0, 15) & 0x0f;
 
         if (i < 4)
         {
