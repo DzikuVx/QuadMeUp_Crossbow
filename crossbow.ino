@@ -1,4 +1,3 @@
-// #define LORA_HARDWARE_SERIAL
 #define LORA_HARDWARE_SPI
 
 // #define DEVICE_MODE_TX
@@ -50,47 +49,6 @@ PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT, true);
  */
 QspConfiguration_t qsp = {};
 RxDeviceState_t rxDeviceState = {};
-
-/*
- * End of QSP protocol implementation
- */
-
-/*
- * Serial port used to send data
- */
-#ifdef LORA_HARDWARE_SERIAL
-
-unint8_t getRadioRssi(void)
-{
-    return 0;
-}
-
-float getRadioSnr(void)
-{
-    return 0;
-}
-
-void radioPacketStart(void)
-{
-}
-
-void radioPacketEnd(void)
-{
-    Serial.end();
-    delay(E45_TTL_100_UART_DOWNTIME);
-    Serial.begin(UART_SPEED);
-}
-
-void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
-{
-    //Compute CRC
-    qspComputeCrc(qsp, dataByte);
-
-    //Write to radio
-    Serial.write(dataByte);
-}
-
-#endif
 
 #ifdef LORA_HARDWARE_SPI
 
@@ -148,10 +106,6 @@ void setup(void)
     qsp.deviceState = DEVICE_STATE_FAILSAFE;
 #else 
     qsp.deviceState = DEVICE_STATE_OK;
-#endif
-
-#ifdef LORA_HARDWARE_SERIAL
-    Serial.begin(UART_SPEED);
 #endif
 
 #ifdef LORA_HARDWARE_SPI
@@ -343,13 +297,6 @@ void loop(void)
         transmitPayload = true;
     }
 
-#endif
-
-#ifdef LORA_HARDWARE_SERIAL
-    if (Serial.available())
-    {
-        qspDecodeIncomingFrame(&qsp, Serial.read(), ppm);
-    }
 #endif
 
     if (qsp.canTransmit && transmitPayload)

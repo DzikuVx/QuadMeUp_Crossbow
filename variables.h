@@ -6,10 +6,6 @@
 #define RC_CHANNEL_MIN 990
 #define RC_CHANNEL_MAX 2010
 
-//Only for UART connected radio modules
-#define UART_SPEED 57600
-#define E45_TTL_100_UART_DOWNTIME 30 
-
 #define RX_RX_HEALTH_FRAME_RATE 1000
 #define TX_RC_FRAME_RATE 500 //ms
 #define RX_FAILSAFE_DELAY (TX_RC_FRAME_RATE * 8)
