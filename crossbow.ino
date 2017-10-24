@@ -12,6 +12,7 @@
 #include <LoRa.h>
 // #include <PinChangeInterrupt.h>
 #include "variables.h"
+#include "sbus.h"
 #include "qsp.h"
 
 // LoRa32u4 ports
@@ -19,7 +20,7 @@
 #define LORA32U4_RST_PIN    4
 #define LORA32U4_DI0_PIN    7
 
-int ppm[PPM_OUTPUT_CHANNEL_COUNT] = {0};
+int ppm[16] = {0};
 
 /*
  * Main defines for device working in TX mode
@@ -40,7 +41,8 @@ PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT, true);
  * Main defines for device working in RX mode
  */
 #ifdef DEVICE_MODE_RX
-
+    uint32_t sbusTime = 0;
+    uint8_t sbusPacket[SBUS_PACKET_LENGTH] = {0};
 #endif
 
 /*
@@ -136,6 +138,10 @@ display.display();
 
 void setup(void)
 {
+#ifdef DEBUG_SERIAL
+    Serial.begin(115200);
+#endif
+
     qsp.hardwareWriteFunction = writeToRadio;
 
 #ifdef DEVICE_MODE_RX
@@ -149,7 +155,6 @@ void setup(void)
 #endif
 
 #ifdef LORA_HARDWARE_SPI
-    Serial.begin(115200);
 
 #ifdef WAIT_FOR_SERIAL
     while (!Serial) {
@@ -193,28 +198,16 @@ void setup(void)
     // display.display();
 
     //initiallize default ppm values
-    for (int i = 0; i < PPM_OUTPUT_CHANNEL_COUNT; i++)
+    for (int i = 0; i < 16; i++)
     {
         ppm[i] = PPM_CHANNEL_DEFAULT_VALUE;
     }
-
-    pinMode(PPM_OUTPUT_PIN, OUTPUT);
-    digitalWrite(PPM_OUTPUT_PIN, !PPM_SIGNAL_POSITIVE_STATE); //set the PPM signal pin to the default state (off)
-
-    cli();
-    TCCR1A = 0; // set entire TCCR1 register to 0
-    TCCR1B = 0;
-
-    OCR1A = 100;             // compare match register, change this
-    TCCR1B |= (1 << WGM12);  // turn on CTC mode
-    TCCR1B |= (1 << CS11);   // 8 prescaler: 0,5 microseconds at 16mhz
-    TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
-    sei();
 
     pinMode(RX_ADC_PIN_1, INPUT);
     pinMode(RX_ADC_PIN_2, INPUT);
     pinMode(RX_ADC_PIN_3, INPUT);
 
+    Serial1.begin(100000, SERIAL_8E2);
 #endif
 
 #ifdef DEVICE_MODE_TX
@@ -238,53 +231,10 @@ void setup(void)
 #ifdef DEBUG_LED
     qsp.debugConfig |= DEBUG_FLAG_LED;
 #endif
+
 }
 
 #ifdef DEVICE_MODE_RX
-
-void writePpmOutput(uint8_t val) {
-    if (qsp.deviceState == DEVICE_STATE_OK) {
-        digitalWrite(PPM_OUTPUT_PIN, val);
-    } else {
-        //This is failsafe state, we pull output low so FC can decide about failsafe 
-        digitalWrite(PPM_OUTPUT_PIN, LOW);
-    }
-}
-
-ISR(TIMER1_COMPA_vect) { //leave this alone
-    static boolean state = true;
-
-    TCNT1 = 0;
-
-    if (state)
-    { //start pulse
-        writePpmOutput(PPM_SIGNAL_POSITIVE_STATE);
-        OCR1A = PPM_PULSE_LENGTH * PPM_OUTPUT_MULTIPLIER;
-        state = false;
-    }
-    else
-    { //end pulse and calculate when to start the next pulse
-        static byte cur_chan_numb;
-        static unsigned int calc_rest;
-
-        writePpmOutput(!PPM_SIGNAL_POSITIVE_STATE);
-        state = true;
-
-        if (cur_chan_numb >= PPM_OUTPUT_CHANNEL_COUNT)
-        {
-            cur_chan_numb = 0;
-            calc_rest = calc_rest + PPM_PULSE_LENGTH; //
-            OCR1A = (PPM_FRAME_LENGTH - calc_rest) * PPM_OUTPUT_MULTIPLIER;
-            calc_rest = 0;
-        }
-        else
-        {
-            OCR1A = (ppm[cur_chan_numb] - PPM_PULSE_LENGTH) * PPM_OUTPUT_MULTIPLIER;
-            calc_rest = calc_rest + ppm[cur_chan_numb];
-            cur_chan_numb++;
-        }
-    }
-}
 
 void updateRxDeviceState(RxDeviceState_t *rxDeviceState) {
     rxDeviceState->rxVoltage = map(analogRead(RX_ADC_PIN_1), 0, 1024, 0, 255);
@@ -306,7 +256,7 @@ void loop(void)
      */
     if (
         qsp.protocolState != QSP_STATE_IDLE && 
-        abs(millis() - qsp.frameDecodingStartedAt) > QSP_MAX_FRAME_DECODE_TIME 
+        abs(currentMillis - qsp.frameDecodingStartedAt) > QSP_MAX_FRAME_DECODE_TIME 
     ) {
         qsp.protocolState = QSP_STATE_IDLE;
     }
@@ -365,6 +315,14 @@ void loop(void)
 #endif
 
 #ifdef DEVICE_MODE_RX
+
+    if (currentMillis > sbusTime) {
+        sbusPreparePacket(sbusPacket, ppm, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
+        Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
+
+        sbusTime = currentMillis + SBUS_UPDATE_RATE;
+    }
+
     /*
      * RX_HEALTH QSP frame
      */

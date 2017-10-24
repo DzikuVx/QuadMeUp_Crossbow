@@ -1,11 +1,17 @@
 #pragma once
 
+#define SBUS_UPDATE_RATE 12 //ms
+#define SBUS_PACKET_LENGTH 25
+
+#define RC_CHANNEL_MIN 990
+#define RC_CHANNEL_MAX 2010
+
 //Only for UART connected radio modules
 #define UART_SPEED 57600
 #define E45_TTL_100_UART_DOWNTIME 30 
 
 #define RX_RX_HEALTH_FRAME_RATE 1000
-#define TX_RC_FRAME_RATE 50 //ms
+#define TX_RC_FRAME_RATE 500 //ms
 #define RX_FAILSAFE_DELAY (TX_RC_FRAME_RATE * 8)
 
 #define TX_PING_RATE 2000 
