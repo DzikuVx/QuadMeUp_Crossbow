@@ -6,6 +6,9 @@
 #define RC_CHANNEL_MIN 990
 #define RC_CHANNEL_MAX 2010
 
+#define RX_TASK_HEALTH 200 //5Hz should be enough
+#define RSSI_CHANNEL 11
+
 #define RX_RX_HEALTH_FRAME_RATE 1000
 #define TX_RC_FRAME_RATE 500 //ms
 #define RX_FAILSAFE_DELAY (TX_RC_FRAME_RATE * 8)

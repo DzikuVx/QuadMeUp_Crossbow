@@ -42,6 +42,7 @@ PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT, true);
 #ifdef DEVICE_MODE_RX
     uint32_t sbusTime = 0;
     uint8_t sbusPacket[SBUS_PACKET_LENGTH] = {0};
+    uint32_t lastRxStateTaskTime = 0;
 #endif
 
 /*
@@ -54,8 +55,8 @@ RxDeviceState_t rxDeviceState = {};
 
 uint8_t getRadioRssi(void)
 {
-    //Map from -164:0 to 0:100
-    return map(constrain(LoRa.packetRssi() * -1, 0, 164), 0, 164, 100, 0);
+    //Map from -164:0 to 0:255
+    return map(constrain(LoRa.packetRssi() * -1, 0, 164), 0, 164, 255, 0);
 }
 
 float getRadioSnr(void)
@@ -278,6 +279,15 @@ void loop(void)
     }
 
     /*
+     * This routine updates RX device state and updates one of radio channels with RSSI value
+     */
+    if (currentMillis - lastRxStateTaskTime > RX_TASK_HEALTH) {
+        lastRxStateTaskTime = currentMillis;
+        updateRxDeviceState(&rxDeviceState);
+        ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 255, 1000, 2000);
+    }
+
+    /*
      * RX_HEALTH QSP frame
      */
     if (
@@ -287,9 +297,6 @@ void loop(void)
     )
     {
         qsp.lastFrameTransmitedAt[QSP_FRAME_RX_HEALTH] = currentMillis;
-
-        updateRxDeviceState(&rxDeviceState);
-
         qspClearPayload(&qsp);
         encodeRxHealthPayload(&qsp, &rxDeviceState);
         qsp.frameToSend = QSP_FRAME_RX_HEALTH;
