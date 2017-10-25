@@ -1,5 +1,7 @@
 #pragma once
 
+#define OLED_UPDATE_RATE 300
+
 #define SBUS_UPDATE_RATE 15 //ms
 #define SBUS_PACKET_LENGTH 25
 
@@ -9,11 +11,11 @@
 #define RX_TASK_HEALTH 200 //5Hz should be enough
 #define RSSI_CHANNEL 11
 
-#define RX_RX_HEALTH_FRAME_RATE 500
+#define RX_RX_HEALTH_FRAME_RATE 503
 #define TX_RC_FRAME_RATE 50 //ms
 #define RX_FAILSAFE_DELAY (TX_RC_FRAME_RATE * 8)
 
-#define TX_PING_RATE 2000 
+#define TX_PING_RATE 2007
 
 #define CHANNEL_ID 0x01
 #define QSP_PREAMBLE 0x51
@@ -90,4 +92,5 @@ struct RxDeviceState_t {
     uint8_t rxVoltage = 0;
     uint8_t a1Voltage = 0;
     uint8_t a2Voltage = 0;
+    uint32_t roundtrip = 0;
 };

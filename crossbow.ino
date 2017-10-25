@@ -3,8 +3,10 @@
 #define DEVICE_MODE_TX
 // #define DEVICE_MODE_RX
 
-#define DEBUG_SERIAL
-// #define DEBUG_PING_PONG
+#define FEATURE_TX_OLED
+
+// #define DEBUG_SERIAL
+#define DEBUG_PING_PONG
 // #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
 
@@ -25,14 +27,17 @@ int ppm[16] = {0};
  * Main defines for device working in TX mode
  */
 #ifdef DEVICE_MODE_TX
-
-// #define OLED_RESET -1
 #include <PPMReader.h>
-// #include <Adafruit_SSD1306.h>
-
 PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT, true);
-// PPMReader ppmReader(11, 2, MODE_PIN_CHANGE_INTERRUPT);
-// Adafruit_SSD1306 display(OLED_RESET);
+
+#ifdef FEATURE_TX_OLED
+
+#define OLED_RESET -1
+#include <Adafruit_SSD1306.h>
+Adafruit_SSD1306 display(OLED_RESET);
+uint32_t lastOledTaskTime = 0;
+
+#endif
 
 #endif
 
@@ -143,15 +148,6 @@ void setup(void)
 #endif
 
 #ifdef DEVICE_MODE_RX
-    /*
-     * Initialize OLED display
-     */
-    // display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
-    // display.setTextSize(1);
-    // display.setTextColor(WHITE);
-    // display.clearDisplay();
-    // display.display();
-
     //initiallize default ppm values
     for (int i = 0; i < 16; i++)
     {
@@ -169,6 +165,15 @@ void setup(void)
     TCCR1A = 0;  //reset timer1
     TCCR1B = 0;
     TCCR1B |= (1 << CS11);  //set timer1 to increment every 0,5 us or 1us on 8MHz
+
+#ifdef FEATURE_TX_OLED
+    display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.clearDisplay();
+    display.display();
+#endif
+
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -230,6 +235,40 @@ void loop(void)
 
 
 #ifdef DEVICE_MODE_TX
+
+#ifdef FEATURE_TX_OLED
+    if (
+        currentMillis - lastOledTaskTime > OLED_UPDATE_RATE
+    ) {
+        lastOledTaskTime = currentMillis;
+
+        display.clearDisplay();
+
+        display.setTextColor(WHITE, BLACK);
+        display.setCursor(0, 0);
+        display.print("TX RSSI: ");
+        display.print(map(getRadioRssi(), 0, 255, 0, 100)); 
+
+        display.setCursor(0, 12);
+        display.print("TX SNR: ");
+        display.print(getRadioSnr()); 
+        
+        display.setCursor(0, 24);
+        display.print("RX RSSI: ");
+        display.print(map(rxDeviceState.rssi, 0, 255, 0, 100)); 
+
+        display.setCursor(0, 36);
+        display.print("RX SNR: ");
+        display.print(rxDeviceState.snr); 
+
+        display.setCursor(0, 46);
+        display.print("Roundtrip: ");
+        display.print(rxDeviceState.roundtrip); 
+
+        display.display(); 
+
+    }
+#endif
 
 #ifdef DEBUG_PING_PONG
     //PING frame

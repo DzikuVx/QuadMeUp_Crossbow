@@ -256,18 +256,13 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
                     break;
 
                 case QSP_FRAME_PONG:
-                    if (qsp->debugConfig & DEBUG_FLAG_SERIAL) {
+                    rxDeviceState->roundtrip = qsp->payload[0];
+                    rxDeviceState->roundtrip += (uint32_t) qsp->payload[1] << 8;
+                    rxDeviceState->roundtrip += (uint32_t) qsp->payload[2] << 16;
+                    rxDeviceState->roundtrip += (uint32_t) qsp->payload[3] << 24;
 
-                        uint32_t incoming = 0;
+                    rxDeviceState->roundtrip = (micros() - rxDeviceState->roundtrip) / 1000;
 
-                        incoming = qsp->payload[0];
-                        incoming += (uint32_t) qsp->payload[1] << 8;
-                        incoming += (uint32_t) qsp->payload[2] << 16;
-                        incoming += (uint32_t) qsp->payload[3] << 24;
-
-                        Serial.print("Rountrip: ");
-                        Serial.println((micros() - incoming) / 1000);
-                    }
                     break;
 
                 default:
