@@ -9,8 +9,8 @@
 #define RX_TASK_HEALTH 200 //5Hz should be enough
 #define RSSI_CHANNEL 11
 
-#define RX_RX_HEALTH_FRAME_RATE 1000
-#define TX_RC_FRAME_RATE 500 //ms
+#define RX_RX_HEALTH_FRAME_RATE 500
+#define TX_RC_FRAME_RATE 50 //ms
 #define RX_FAILSAFE_DELAY (TX_RC_FRAME_RATE * 8)
 
 #define TX_PING_RATE 2000 

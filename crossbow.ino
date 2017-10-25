@@ -1,9 +1,9 @@
 #define LORA_HARDWARE_SPI
 
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
-// #define DEBUG_SERIAL
+#define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
@@ -255,7 +255,8 @@ void loop(void)
     if (
         currentMillis - qsp.lastFrameTransmitedAt[QSP_FRAME_RC_DATA] > TX_RC_FRAME_RATE && 
         !transmitPayload && 
-        qsp.protocolState == QSP_STATE_IDLE
+        qsp.protocolState == QSP_STATE_IDLE &&
+        ppmReader.isReceiving()
     )
     {
         qsp.lastFrameTransmitedAt[QSP_FRAME_RC_DATA] = currentMillis;
