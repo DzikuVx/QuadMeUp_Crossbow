@@ -56,7 +56,7 @@
 //     }
 // }
 
-void crsfOnByteReceived(CrsfState_t *crsf, uint32_t currentTimeUs, const uint8_t c)
+void crsfOnByteReceived(CrsfState_t *crsf, uint32_t currentTimeUs, uint8_t c)
 {
     uint32_t deltaTimeUs = currentTimeUs - crsf->frameStartTimeUs;
     if (deltaTimeUs > CRSF_TIME_NEEDED_PER_FRAME_US) {

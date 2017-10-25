@@ -3,7 +3,7 @@
 #define DEVICE_MODE_TX
 // #define DEVICE_MODE_RX
 
-// #define DEBUG_SERIAL
+#define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
@@ -162,7 +162,7 @@ void setup(void)
 #endif
 
 #ifdef DEVICE_MODE_TX
-    Serial1.begin(400000);
+    Serial1.begin(420000, SERIAL_8N1);
     qsp.canTransmit = true;
 #endif
 
@@ -219,8 +219,9 @@ void loop(void)
 
 #ifdef DEVICE_MODE_TX
 
+    uint32_t cm = micros();
     while(Serial1.available()) {
-        crsfOnByteReceived(&crsfState, micros(), Serial1.read());
+        crsfOnByteReceived(&crsfState, cm, Serial1.read());
     }
 
 #ifdef DEBUG_PING_PONG
