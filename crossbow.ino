@@ -9,8 +9,8 @@
 // #define WAIT_FOR_SERIAL
 
 #include <LoRa.h>
-// #include <PinChangeInterrupt.h>
 #include "variables.h"
+#include "crsfReceiver.h"
 #include "sbus.h"
 #include "qsp.h"
 
@@ -25,15 +25,11 @@ int ppm[16] = {0};
  * Main defines for device working in TX mode
  */
 #ifdef DEVICE_MODE_TX
-
 // #define OLED_RESET -1
-#include <PPMReader.h>
 // #include <Adafruit_SSD1306.h>
-
-PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT, true);
-// PPMReader ppmReader(11, 2, MODE_PIN_CHANGE_INTERRUPT);
 // Adafruit_SSD1306 display(OLED_RESET);
 
+CrsfState_t crsfState;
 #endif
 
 /*
@@ -166,19 +162,11 @@ void setup(void)
 #endif
 
 #ifdef DEVICE_MODE_TX
-    TCCR1A = 0;  //reset timer1
-    TCCR1B = 0;
-    TCCR1B |= (1 << CS11);  //set timer1 to increment every 0,5 us or 1us on 8MHz
+    Serial1.begin(420000, SERIAL_8N1);
+    qsp.canTransmit = true;
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
-
-/*
- * TX should start talking imediately after power up
- */
-#ifdef DEVICE_MODE_TX
-    qsp.canTransmit = true;
-#endif
 
 #ifdef DEBUG_SERIAL
     qsp.debugConfig |= DEBUG_FLAG_SERIAL;
@@ -231,6 +219,11 @@ void loop(void)
 
 #ifdef DEVICE_MODE_TX
 
+    uint32_t cm = micros();
+    while(Serial1.available()) {
+        crsfOnByteReceived(&crsfState, cm, Serial1.read());
+    }
+
 #ifdef DEBUG_PING_PONG
     //PING frame
     if (
@@ -262,7 +255,7 @@ void loop(void)
         qsp.lastFrameTransmitedAt[QSP_FRAME_RC_DATA] = currentMillis;
 
         qspClearPayload(&qsp);
-        encodeRcDataPayload(&qsp, &ppmReader, PPM_INPUT_CHANNEL_COUNT);
+        encodeRcDataPayload(&qsp, &crsfState, PPM_INPUT_CHANNEL_COUNT);
         qsp.frameToSend = QSP_FRAME_RC_DATA;
 
         transmitPayload = true;
