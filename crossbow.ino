@@ -1,7 +1,7 @@
 #define LORA_HARDWARE_SPI
 
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
@@ -325,6 +325,13 @@ void loop(void)
         lastRxStateTaskTime = currentMillis;
         updateRxDeviceState(&rxDeviceState);
         ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 255, 1000, 2000);
+
+        if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
+            digitalWrite(LED_BUILTIN, HIGH);
+        } else {
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        }
+
     }
 
     /*
