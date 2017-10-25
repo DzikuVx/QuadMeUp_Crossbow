@@ -1,6 +1,6 @@
 #pragma once
 
-#define SBUS_UPDATE_RATE 12 //ms
+#define SBUS_UPDATE_RATE 15 //ms
 #define SBUS_PACKET_LENGTH 25
 
 #define RC_CHANNEL_MIN 990
