@@ -66,7 +66,7 @@ uint8_t getRadioRssi(void)
 
 float getRadioSnr(void)
 {
-    return (uint8_t) constrain(LoRa.packetSnr() * 10, 0, 255);
+    return (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
 }
 
 void radioPacketStart(void)
