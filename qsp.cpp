@@ -1,6 +1,6 @@
 #include "Arduino.h"
 #include "variables.h"
-#include <PPMReader.h>
+#include "crsfReceiver.h"
 
 void qspDecodeRcDataFrame(QspConfiguration_t *qsp, int output[]) {
     int temporaryPpmOutput[PPM_OUTPUT_CHANNEL_COUNT] = {0};
@@ -77,11 +77,11 @@ void decodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
 /**
  * Encode 10 RC channels 
  */
-void encodeRcDataPayload(QspConfiguration_t *qsp, PPMReader *ppmSource, uint8_t noOfChannels)
+void encodeRcDataPayload(QspConfiguration_t *qsp, CrsfState_t *crsfState, uint8_t noOfChannels)
 {
     for (uint8_t i = 0; i < noOfChannels; i++)
     {
-        int cV = constrain(ppmSource->get(i), 1000, 2000);
+        int cV = constrain(crsfState->rcData[i], 1000, 2000);
 
         uint16_t channelValue10 = map(cV, 1000, 2000, 0, 1000) & 0x03ff;
         uint8_t channelValue8 = map(cV, 1000, 2000, 0, 255) & 0xff;
