@@ -11,7 +11,6 @@
 // #define WAIT_FOR_SERIAL
 
 #include <LoRa.h>
-// #include <PinChangeInterrupt.h>
 #include "variables.h"
 #include "sbus.h"
 #include "qsp.h"

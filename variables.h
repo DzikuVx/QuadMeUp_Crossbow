@@ -41,7 +41,6 @@ enum dataStates {
     QSP_STATE_PREAMBLE_RECEIVED,
     QSP_STATE_CHANNEL_RECEIVED,
     QSP_STATE_FRAME_TYPE_RECEIVED,
-    QSP_STATE_PACKET_ID_RECEIVED,
     QSP_STATE_PAYLOAD_RECEIVED,
     QSP_STATE_CRC_RECEIVED
 };
@@ -79,7 +78,6 @@ struct QspConfiguration_t {
     uint32_t lastFrameTransmitedAt[QSP_FRAME_COUNT] = {0};
     uint8_t deviceState = DEVICE_STATE_OK;
     void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
-    uint8_t lastReceivedPacketId = 0;
     bool canTransmit = false;
     bool forcePongFrame = false;
     uint8_t debugConfig = 0;

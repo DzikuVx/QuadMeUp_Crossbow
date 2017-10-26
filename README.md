@@ -13,9 +13,8 @@ Development, not yet functional
 | 1                     | Preamble | "Q" 0x51 |
 | 2                     | Channel ID | channel used for comunication between TX and RX |
 | 3                     | Frame type & Length | bits 7-5 defines frame, bits 4-0 payload length |
-| 4                     | Packet ID | |
 | 5 - 36                | Payload | 32 bytes max |
-| payload length + 5    | CRC | XOR of all previous bytes |
+| payload length + 4    | CRC | XOR of all previous bytes |
 
 ## Frame types
 
@@ -48,7 +47,6 @@ Total length of `RC_DATA` payload is 9 bytes
 | 3     | RX supply volatage, sent in 0,1V      |
 | 4     | RX analog input 1 sent in 0,1V        |
 | 5     | RX analog input 2 sent in 0,1V        |
-| 6     | Last received packet ID               |
 
 ### `PING` and `PONG` frames
 
