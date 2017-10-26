@@ -12,8 +12,8 @@
 #define RSSI_CHANNEL 11
 
 #define RX_RX_HEALTH_FRAME_RATE 503
-#define TX_RC_FRAME_RATE 50 //ms
-#define RX_FAILSAFE_DELAY (TX_RC_FRAME_RATE * 8)
+#define TX_TRANSMIT_SLOT_RATE 57 //ms
+#define RX_FAILSAFE_DELAY (TX_TRANSMIT_SLOT_RATE * 8)
 
 #define TX_PING_RATE 2007
 
@@ -75,13 +75,13 @@ struct QspConfiguration_t {
     uint8_t payloadLength = 0;
     uint8_t frameToSend = 0;
     uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
-    uint32_t lastFrameTransmitedAt[QSP_FRAME_COUNT] = {0};
     uint8_t deviceState = DEVICE_STATE_OK;
     void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
     bool canTransmit = false;
     bool forcePongFrame = false;
     uint8_t debugConfig = 0;
     uint32_t frameDecodingStartedAt = 0;
+    uint32_t lastTxSlotTimestamp = 0;
 };
 
 struct RxDeviceState_t {

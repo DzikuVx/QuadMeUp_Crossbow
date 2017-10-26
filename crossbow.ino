@@ -1,12 +1,12 @@
 #define LORA_HARDWARE_SPI
 
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
-// #define DEBUG_SERIAL
-#define DEBUG_PING_PONG
+#define DEBUG_SERIAL
+// #define DEBUG_PING_PONG
 // #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
 
@@ -90,14 +90,6 @@ void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
 }
 
 #endif
-
-/*
-display.clearDisplay();
-display.setCursor(0,0);
-display.print("Lat:");
-display.print(remoteData.latitude);
-display.display();
-*/
 
 void setup(void)
 {
@@ -193,6 +185,47 @@ void setup(void)
 
 }
 
+int8_t txSendSequence[16] = {
+    QSP_FRAME_PING,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA,
+    QSP_FRAME_RC_DATA
+};
+
+int8_t rxSendSequence[16] = {
+    QSP_FRAME_RX_HEALTH,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    QSP_FRAME_RX_HEALTH,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+};
+
+uint8_t currentSequenceIndex = 0;
+#define TRANSMIT_SEQUENCE_COUNT 16
+
 #ifdef DEVICE_MODE_RX
 
 void updateRxDeviceState(RxDeviceState_t *rxDeviceState) {
@@ -203,6 +236,30 @@ void updateRxDeviceState(RxDeviceState_t *rxDeviceState) {
     rxDeviceState->snr = getRadioSnr();
 }    
 
+int8_t getFrameToTransmit() {
+    int8_t retVal = rxSendSequence[currentSequenceIndex];
+
+    currentSequenceIndex++;
+    if (currentSequenceIndex >= TRANSMIT_SEQUENCE_COUNT) {
+        currentSequenceIndex = 0;
+    }
+
+    return retVal;
+}
+
+#endif
+
+#ifdef DEVICE_MODE_TX
+int8_t getFrameToTransmit() {
+    int8_t retVal = txSendSequence[currentSequenceIndex];
+
+    currentSequenceIndex++;
+    if (currentSequenceIndex >= TRANSMIT_SEQUENCE_COUNT) {
+        currentSequenceIndex = 0;
+    }
+
+    return retVal;
+}
 #endif
 
 void loop(void)
@@ -220,17 +277,52 @@ void loop(void)
         qsp.protocolState = QSP_STATE_IDLE;
     }
 
+#ifdef DEVICE_MODE_TX
+
     if (
-        qsp.forcePongFrame && 
-        !transmitPayload && 
+        abs(currentMillis - qsp.lastTxSlotTimestamp) > TX_TRANSMIT_SLOT_RATE &&
         qsp.protocolState == QSP_STATE_IDLE
-    )
-    {
-        qsp.forcePongFrame = false;
-        qsp.lastFrameTransmitedAt[QSP_FRAME_PONG] = currentMillis;
-        qsp.frameToSend = QSP_FRAME_PONG;
-        transmitPayload = true;
+    ) {
+        
+        int8_t frameToSend = getFrameToTransmit();
+
+        if (frameToSend == QSP_FRAME_RC_DATA && !ppmReader.isReceiving()) {
+            frameToSend = -1;
+        }
+
+        if (frameToSend > -1) {
+
+            qsp.frameToSend = frameToSend;
+            qspClearPayload(&qsp);
+
+            switch (qsp.frameToSend) {
+                case QSP_FRAME_PING:
+                    encodePingPayload(&qsp, micros());
+                    break;
+
+                case QSP_FRAME_RC_DATA:
+                    encodeRcDataPayload(&qsp, &ppmReader, PPM_INPUT_CHANNEL_COUNT);
+                    break;
+            }
+
+            transmitPayload = true;
+        }
+
+        qsp.lastTxSlotTimestamp = currentMillis;
     }
+
+#endif
+
+    // if (
+    //     qsp.forcePongFrame && 
+    //     !transmitPayload && 
+    //     qsp.protocolState == QSP_STATE_IDLE
+    // )
+    // {
+    //     qsp.forcePongFrame = false;
+    //     qsp.frameToSend = QSP_FRAME_PONG;
+    //     transmitPayload = true;
+    // }
 
 
 #ifdef DEVICE_MODE_TX
@@ -269,104 +361,55 @@ void loop(void)
     }
 #endif
 
-#ifdef DEBUG_PING_PONG
-    //PING frame
-    if (
-        currentMillis - qsp.lastFrameTransmitedAt[QSP_FRAME_PING] > TX_PING_RATE && 
-        !transmitPayload && 
-        qsp.protocolState == QSP_STATE_IDLE
-    )
-    {
-        qsp.lastFrameTransmitedAt[QSP_FRAME_PING] = currentMillis;
-
-        qspClearPayload(&qsp);
-        encodePingPayload(&qsp, micros());
-        qsp.frameToSend = QSP_FRAME_PING;
-        
-        transmitPayload = true;
-    }
 #endif
 
-    /*
-     * RC_DATA QSP frame
-     */
-    if (
-        currentMillis - qsp.lastFrameTransmitedAt[QSP_FRAME_RC_DATA] > TX_RC_FRAME_RATE && 
-        !transmitPayload && 
-        qsp.protocolState == QSP_STATE_IDLE &&
-        ppmReader.isReceiving()
-    )
-    {
-        qsp.lastFrameTransmitedAt[QSP_FRAME_RC_DATA] = currentMillis;
+// #ifdef DEVICE_MODE_RX
 
-        qspClearPayload(&qsp);
-        encodeRcDataPayload(&qsp, &ppmReader, PPM_INPUT_CHANNEL_COUNT);
-        qsp.frameToSend = QSP_FRAME_RC_DATA;
+//     if (currentMillis > sbusTime) {
+//         sbusPreparePacket(sbusPacket, ppm, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
+//         Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
 
-        transmitPayload = true;
-    }
+//         sbusTime = currentMillis + SBUS_UPDATE_RATE;
+//     }
 
-#endif
+//     /*
+//      * This routine updates RX device state and updates one of radio channels with RSSI value
+//      */
+//     if (currentMillis - lastRxStateTaskTime > RX_TASK_HEALTH) {
+//         lastRxStateTaskTime = currentMillis;
+//         updateRxDeviceState(&rxDeviceState);
+//         ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 255, 1000, 2000);
 
-#ifdef DEVICE_MODE_RX
+//         if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
+//             digitalWrite(LED_BUILTIN, HIGH);
+//         } else {
+//             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+//         }
 
-    if (currentMillis > sbusTime) {
-        sbusPreparePacket(sbusPacket, ppm, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
-        Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
+//     }
 
-        sbusTime = currentMillis + SBUS_UPDATE_RATE;
-    }
+//     /*
+//      * RX_HEALTH QSP frame
+//      */
+//     if (
+//         currentMillis - qsp.lastFrameTransmitedAt[QSP_FRAME_RX_HEALTH] > RX_RX_HEALTH_FRAME_RATE && 
+//         !transmitPayload && 
+//         qsp.protocolState == QSP_STATE_IDLE
+//     )
+//     {
+//         qspClearPayload(&qsp);
+//         encodeRxHealthPayload(&qsp, &rxDeviceState);
+//         qsp.frameToSend = QSP_FRAME_RX_HEALTH;
 
-    /*
-     * This routine updates RX device state and updates one of radio channels with RSSI value
-     */
-    if (currentMillis - lastRxStateTaskTime > RX_TASK_HEALTH) {
-        lastRxStateTaskTime = currentMillis;
-        updateRxDeviceState(&rxDeviceState);
-        ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 255, 1000, 2000);
-
-        if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
-            digitalWrite(LED_BUILTIN, HIGH);
-        } else {
-            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        }
-
-    }
-
-    /*
-     * RX_HEALTH QSP frame
-     */
-    if (
-        currentMillis - qsp.lastFrameTransmitedAt[QSP_FRAME_RX_HEALTH] > RX_RX_HEALTH_FRAME_RATE && 
-        !transmitPayload && 
-        qsp.protocolState == QSP_STATE_IDLE
-    )
-    {
-        qsp.lastFrameTransmitedAt[QSP_FRAME_RX_HEALTH] = currentMillis;
-        qspClearPayload(&qsp);
-        encodeRxHealthPayload(&qsp, &rxDeviceState);
-        qsp.frameToSend = QSP_FRAME_RX_HEALTH;
-
-        transmitPayload = true;
-    }
-
-#endif
+//         transmitPayload = true;
+//     }
+// #endif
 
     if (qsp.canTransmit && transmitPayload)
     {
         radioPacketStart();
         qspEncodeFrame(&qsp);
         radioPacketEnd();
-
-    #ifdef DEBUG_LED
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(10);
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(70);
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(10);
-        digitalWrite(LED_BUILTIN, LOW);
-    #endif
         transmitPayload = false;
     }
 
