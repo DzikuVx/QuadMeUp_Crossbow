@@ -1,7 +1,7 @@
 #define LORA_HARDWARE_SPI
 
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
@@ -130,7 +130,7 @@ void setup(void)
         while (true);
     }
 
-    LoRa.setSignalBandwidth(250E3);
+    LoRa.setSignalBandwidth(500E3);
     LoRa.setSpreadingFactor(7);
     LoRa.setCodingRate4(5);
 
