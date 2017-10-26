@@ -25,8 +25,8 @@ Development, not yet functional
 | 0010   | 0x2          | Request receiver configuration | TX -> RX |
 | 0011   | 0x3          | Receiver configuration | RX -> TX |
 | 0100   | 0x4          | Set receiver configuration | TX -> RX |
-| 0101   | 0x5          | PING frame | TX -> RX |
-| 0110   | 0x6          | PONG frame | RX -> TX |
+| 0101   | 0x5          | PING frame, uses 9 byte payload | TX -> RX |
+| 0110   | 0x6          | PONG frame, the same payload as PING | RX -> TX |
 
 ### `RC_DATA` frame format
 

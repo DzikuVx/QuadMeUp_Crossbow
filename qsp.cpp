@@ -204,19 +204,6 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
                 qsp->lastFrameReceivedAt[frameId] = millis();
             }
 
-            if (qsp->debugConfig & DEBUG_FLAG_SERIAL) {
-                Serial.print("Frame ");
-                Serial.print(frameId);
-                Serial.println(" received");
-            }
-
-            if (qsp->debugConfig & DEBUG_FLAG_LED) {
-                digitalWrite(LED_BUILTIN, HIGH);
-                delay(10);
-                digitalWrite(LED_BUILTIN, LOW);
-                delay(100);
-            }
-            
             switch (frameId) {
                 case QSP_FRAME_RC_DATA:
                     qspDecodeRcDataFrame(qsp, ppm);
@@ -224,12 +211,6 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
 
                 case QSP_FRAME_RX_HEALTH:
                     decodeRxHealthPayload(qsp, rxDeviceState);
-                    if (qsp->debugConfig & DEBUG_FLAG_SERIAL) {
-                        Serial.print("RX RSSI: ");
-                        Serial.println(rxDeviceState->rssi);
-                        Serial.print("RX SNR: ");
-                        Serial.println(rxDeviceState->snr);
-                    }
                     break;
 
                 case QSP_FRAME_PING:
@@ -251,6 +232,8 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
                     //TODO do something in this case
                     break;
             }
+
+            qsp->transmitWindowOpen = true;
         }
         else
         {

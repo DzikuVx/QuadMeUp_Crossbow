@@ -1,11 +1,11 @@
 #define LORA_HARDWARE_SPI
 
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
-#define DEBUG_SERIAL
+// #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
@@ -63,7 +63,7 @@ uint8_t getRadioRssi(void)
     return map(constrain(LoRa.packetRssi() * -1, 0, 164), 0, 164, 255, 0);
 }
 
-float getRadioSnr(void)
+uint8_t getRadioSnr(void)
 {
     return (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
 }
@@ -209,7 +209,7 @@ int8_t rxSendSequence[16] = {
     -1,
     -1,
     -1,
-    -1,
+    QSP_FRAME_RX_HEALTH,
     -1,
     -1,
     -1,
@@ -217,7 +217,7 @@ int8_t rxSendSequence[16] = {
     -1,
     -1,
     -1,
-    -1,
+    QSP_FRAME_RX_HEALTH,
     -1,
     -1,
     -1
@@ -236,9 +236,15 @@ void updateRxDeviceState(RxDeviceState_t *rxDeviceState) {
     rxDeviceState->snr = getRadioSnr();
 }    
 
-int8_t getFrameToTransmit() {
-    int8_t retVal = rxSendSequence[currentSequenceIndex];
+int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
+    
+    if (qsp->forcePongFrame) {
+        qsp->forcePongFrame = false;
+        return QSP_FRAME_PONG;
+    }
 
+    int8_t retVal = rxSendSequence[currentSequenceIndex];
+    
     currentSequenceIndex++;
     if (currentSequenceIndex >= TRANSMIT_SEQUENCE_COUNT) {
         currentSequenceIndex = 0;
@@ -250,7 +256,7 @@ int8_t getFrameToTransmit() {
 #endif
 
 #ifdef DEVICE_MODE_TX
-int8_t getFrameToTransmit() {
+int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
     int8_t retVal = txSendSequence[currentSequenceIndex];
 
     currentSequenceIndex++;
@@ -284,7 +290,7 @@ void loop(void)
         qsp.protocolState == QSP_STATE_IDLE
     ) {
         
-        int8_t frameToSend = getFrameToTransmit();
+        int8_t frameToSend = getFrameToTransmit(&qsp);
 
         if (frameToSend == QSP_FRAME_RC_DATA && !ppmReader.isReceiving()) {
             frameToSend = -1;
@@ -313,17 +319,70 @@ void loop(void)
 
 #endif
 
-    // if (
-    //     qsp.forcePongFrame && 
-    //     !transmitPayload && 
-    //     qsp.protocolState == QSP_STATE_IDLE
-    // )
-    // {
-    //     qsp.forcePongFrame = false;
-    //     qsp.frameToSend = QSP_FRAME_PONG;
-    //     transmitPayload = true;
-    // }
+#ifdef DEVICE_MODE_RX
 
+    /*
+     * This routine updates RX device state and updates one of radio channels with RSSI value
+     */
+    if (abs(currentMillis - lastRxStateTaskTime) > RX_TASK_HEALTH) {
+        lastRxStateTaskTime = currentMillis;
+        updateRxDeviceState(&rxDeviceState);
+        ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 255, 1000, 2000);
+
+        if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
+            digitalWrite(LED_BUILTIN, HIGH);
+        } else {
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        }
+    }
+
+    /*
+     * Main routine to answer to TX module
+     */
+    if (qsp.transmitWindowOpen && qsp.protocolState == QSP_STATE_IDLE) {
+
+        qsp.transmitWindowOpen = false;
+
+        int8_t frameToSend = getFrameToTransmit(&qsp);
+
+        if (frameToSend > -1) {
+            
+            qsp.frameToSend = frameToSend;
+
+            if (frameToSend != QSP_FRAME_PONG) {
+                qspClearPayload(&qsp);
+            }
+
+            switch (qsp.frameToSend) {
+                case QSP_FRAME_PONG:
+                    /*
+                     * Pong frame just responses with received payload
+                     */
+                    break;
+
+                case QSP_FRAME_RX_HEALTH:
+                    encodeRxHealthPayload(&qsp, &rxDeviceState);
+                    break;
+            }
+
+            transmitPayload = true;
+        }
+
+    }
+
+    if (currentMillis > sbusTime) {
+        sbusPreparePacket(sbusPacket, ppm, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
+        Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
+        sbusTime = currentMillis + SBUS_UPDATE_RATE;
+    }
+
+    if (abs(currentMillis - qsp.lastFrameReceivedAt[QSP_FRAME_RC_DATA]) > RX_FAILSAFE_DELAY) {
+        qsp.deviceState = DEVICE_STATE_FAILSAFE;
+    } else {
+        qsp.deviceState = DEVICE_STATE_OK;
+    }
+
+#endif
 
 #ifdef DEVICE_MODE_TX
 
@@ -363,48 +422,6 @@ void loop(void)
 
 #endif
 
-// #ifdef DEVICE_MODE_RX
-
-//     if (currentMillis > sbusTime) {
-//         sbusPreparePacket(sbusPacket, ppm, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
-//         Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
-
-//         sbusTime = currentMillis + SBUS_UPDATE_RATE;
-//     }
-
-//     /*
-//      * This routine updates RX device state and updates one of radio channels with RSSI value
-//      */
-//     if (currentMillis - lastRxStateTaskTime > RX_TASK_HEALTH) {
-//         lastRxStateTaskTime = currentMillis;
-//         updateRxDeviceState(&rxDeviceState);
-//         ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 255, 1000, 2000);
-
-//         if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
-//             digitalWrite(LED_BUILTIN, HIGH);
-//         } else {
-//             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-//         }
-
-//     }
-
-//     /*
-//      * RX_HEALTH QSP frame
-//      */
-//     if (
-//         currentMillis - qsp.lastFrameTransmitedAt[QSP_FRAME_RX_HEALTH] > RX_RX_HEALTH_FRAME_RATE && 
-//         !transmitPayload && 
-//         qsp.protocolState == QSP_STATE_IDLE
-//     )
-//     {
-//         qspClearPayload(&qsp);
-//         encodeRxHealthPayload(&qsp, &rxDeviceState);
-//         qsp.frameToSend = QSP_FRAME_RX_HEALTH;
-
-//         transmitPayload = true;
-//     }
-// #endif
-
     if (qsp.canTransmit && transmitPayload)
     {
         radioPacketStart();
@@ -413,16 +430,6 @@ void loop(void)
         transmitPayload = false;
     }
 
-    /*
-     * Here we do state handling and similar operations 
-     */
-#ifdef DEVICE_MODE_RX
-    if (abs(currentMillis - qsp.lastFrameReceivedAt[QSP_FRAME_RC_DATA]) > RX_FAILSAFE_DELAY) {
-        qsp.deviceState = DEVICE_STATE_FAILSAFE;
-    } else {
-        qsp.deviceState = DEVICE_STATE_OK;
-    }
-#endif
 }
 
 #ifdef LORA_HARDWARE_SPI
