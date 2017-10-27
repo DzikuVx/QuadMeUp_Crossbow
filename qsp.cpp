@@ -142,7 +142,6 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
 
     if (qsp->protocolState == QSP_STATE_IDLE && incomingByte == QSP_PREAMBLE)
     {
-        //FIXME there should be a way to go back to IDLE if frame did not finished decoding in reasonable time
         //If in IDLE and correct preamble comes, start to decode frame
         qsp->protocolState = QSP_STATE_PREAMBLE_RECEIVED;
         qsp->crc = 0 ^ incomingByte;
@@ -177,6 +176,9 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
     }
     else if (qsp->protocolState == QSP_STATE_FRAME_TYPE_RECEIVED)
     {
+        if (receivedPayload >= QSP_PAYLOAD_LENGTH) {
+            qsp->protocolState = QSP_STATE_IDLE;
+        }
 
         //Now it's time for payload
         qsp->crc ^= incomingByte;
@@ -192,7 +194,6 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
     }
     else if (qsp->protocolState == QSP_STATE_PAYLOAD_RECEIVED)
     {
-
         if (qsp->crc == incomingByte) {
             //CRC is correct
 

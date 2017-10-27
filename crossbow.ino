@@ -1,11 +1,11 @@
 #define LORA_HARDWARE_SPI
 
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
-// #define DEBUG_SERIAL
+#define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
@@ -20,7 +20,7 @@
 #define LORA32U4_RST_PIN    4
 #define LORA32U4_DI0_PIN    7
 
-int ppm[16] = {0};
+volatile int ppm[16] = {0};
 
 /*
  * Main defines for device working in TX mode
@@ -52,8 +52,8 @@ uint32_t lastOledTaskTime = 0;
 /*
  * Start of QSP protocol implementation
  */
-QspConfiguration_t qsp = {};
-RxDeviceState_t rxDeviceState = {};
+volatile QspConfiguration_t qsp = {};
+volatile RxDeviceState_t rxDeviceState = {};
 
 #ifdef LORA_HARDWARE_SPI
 
@@ -134,7 +134,13 @@ void setup(void)
     LoRa.setSpreadingFactor(7);
     LoRa.setCodingRate4(5);
 
+    /*
+     * Use interrupt driven approach only on RX side
+     * TX interrupts breaks PPM readout
+     */ 
+#ifdef DEVICE_MODE_RX
     LoRa.onReceive(onReceive);
+#endif
     LoRa.receive();
 #endif
 
@@ -270,8 +276,22 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 
 void loop(void)
 {
+#ifdef DEVICE_MODE_TX
+    if (LoRa.available()) {
+        qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
+    }
+#endif
+
     uint32_t currentMillis = millis();
     bool transmitPayload = false;
+
+#ifdef DEBUG_SERIAL
+    static uint32_t r = 0;
+    if (currentMillis - r > 1000) {
+        Serial.println(currentMillis / 1000);
+        r = currentMillis;
+    }
+#endif
 
     /*
      * Watchdog for frame decoding stuck somewhere in the middle of a process
@@ -335,7 +355,7 @@ void loop(void)
             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
         }
     }
-
+    
     /*
      * Main routine to answer to TX module
      */
@@ -432,7 +452,6 @@ void loop(void)
 
 }
 
-#ifdef LORA_HARDWARE_SPI
 void onReceive(int packetSize)
 {
     if (packetSize == 0)
@@ -443,4 +462,3 @@ void onReceive(int packetSize)
         qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
     }
 }
-#endif

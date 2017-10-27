@@ -18,7 +18,7 @@
 #define QSP_PREAMBLE 0x51
 #define QSP_PAYLOAD_LENGTH 32
 
-#define QSP_MAX_FRAME_DECODE_TIME 50 //max time that frame can be decoded in ms
+#define QSP_MAX_FRAME_DECODE_TIME 10 //max time that frame can be decoded in ms
 
 #define QSP_FRAME_RC_DATA 0x0
 #define QSP_FRAME_RX_HEALTH 0x1
@@ -83,8 +83,8 @@ struct QspConfiguration_t {
 };
 
 struct RxDeviceState_t {
-    int rssi = 0;
-    float snr = 0;
+    uint8_t rssi = 0;
+    uint8_t snr = 0;
     uint8_t rxVoltage = 0;
     uint8_t a1Voltage = 0;
     uint8_t a2Voltage = 0;
