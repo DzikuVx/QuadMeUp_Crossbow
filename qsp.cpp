@@ -61,6 +61,14 @@ void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
     qsp->payload[3] = rxDeviceState->a1Voltage;
     qsp->payload[4] = rxDeviceState->a2Voltage;
 
+    uint8_t flags = 0;
+
+    if (qsp->deviceState == DEVICE_STATE_FAILSAFE) {
+        flags |= 0x01 << 0;
+    }
+
+    qsp->payload[5] = flags;
+
     qsp->payloadLength = 6;
 }
 
@@ -70,6 +78,7 @@ void decodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
     rxDeviceState->rxVoltage = qsp->payload[2];
     rxDeviceState->a1Voltage = qsp->payload[3];
     rxDeviceState->a2Voltage = qsp->payload[4];
+    rxDeviceState->flags = qsp->payload[5];
 }
 
 /**

@@ -47,6 +47,14 @@ Total length of `RC_DATA` payload is 9 bytes
 | 3     | RX supply volatage, sent in 0,1V      |
 | 4     | RX analog input 1 sent in 0,1V        |
 | 5     | RX analog input 2 sent in 0,1V        |
+| 6     | Flags                                 |
+
+#### Flags
+
+| Bit   | Meaning                               |
+| ----  | ----                                  |
+| 00000001  | Device in Failsafe mode           |
+
 
 ### `PING` and `PONG` frames
 

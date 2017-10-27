@@ -1,7 +1,7 @@
 #define LORA_HARDWARE_SPI
 
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
