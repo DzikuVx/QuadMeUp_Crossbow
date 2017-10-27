@@ -138,9 +138,9 @@ void setup(void)
      * Use interrupt driven approach only on RX side
      * TX interrupts breaks PPM readout
      */ 
-#ifdef DEVICE_MODE_RX
+// #ifdef DEVICE_MODE_RX
     LoRa.onReceive(onReceive);
-#endif
+// #endif
     LoRa.receive();
 #endif
 
@@ -272,11 +272,20 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 }
 #endif
 
+volatile bool readPacket = false;
+uint8_t myRssi = 0;
+uint8_t mySnr = 0;
+
 void loop(void)
 {
 #ifdef DEVICE_MODE_TX
-    if (LoRa.available()) {
-        qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
+    if (readPacket) {
+        while (LoRa.available()) {
+            qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
+        }
+        myRssi = getRadioRssi();
+        mySnr = getRadioSnr();
+        readPacket = false;
     }
 #endif
 
@@ -402,11 +411,11 @@ void loop(void)
         display.setTextColor(WHITE, BLACK);
         display.setCursor(0, 0);
         display.print("TX RSSI: ");
-        display.print(map(getRadioRssi(), 0, 255, 0, 100)); 
+        display.print(map(myRssi, 0, 255, 0, 100)); 
 
         display.setCursor(0, 12);
         display.print("TX SNR: ");
-        display.print(getRadioSnr()); 
+        display.print(mySnr); 
         
         display.setCursor(0, 24);
         display.print("RX RSSI: ");
@@ -442,6 +451,11 @@ void onReceive(int packetSize)
     if (packetSize == 0)
         return;
 
+#ifdef DEVICE_MODE_TX
+    readPacket = true;
+#endif
+
+#ifdef DEVICE_MODE_RX
     while (LoRa.available())
     {
         qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
@@ -449,4 +463,5 @@ void onReceive(int packetSize)
 
     rxDeviceState.rssi = getRadioRssi();
     rxDeviceState.snr = getRadioSnr();
+#endif
 }
