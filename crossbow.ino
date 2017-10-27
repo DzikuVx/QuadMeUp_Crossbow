@@ -1,7 +1,7 @@
 #define LORA_HARDWARE_SPI
 
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
@@ -54,6 +54,7 @@ uint32_t lastOledTaskTime = 0;
  */
 volatile QspConfiguration_t qsp = {};
 volatile RxDeviceState_t rxDeviceState = {};
+volatile TxDeviceState_t txDeviceState = {};
 
 #ifdef LORA_HARDWARE_SPI
 
@@ -272,20 +273,16 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 }
 #endif
 
-volatile bool readPacket = false;
-uint8_t myRssi = 0;
-uint8_t mySnr = 0;
-
 void loop(void)
 {
 #ifdef DEVICE_MODE_TX
-    if (readPacket) {
+    if (txDeviceState.readPacket) {
         while (LoRa.available()) {
             qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
         }
-        myRssi = getRadioRssi();
-        mySnr = getRadioSnr();
-        readPacket = false;
+        txDeviceState.rssi = getRadioRssi();
+        txDeviceState.snr = getRadioSnr();
+        txDeviceState.readPacket = false;
     }
 #endif
 
@@ -411,11 +408,11 @@ void loop(void)
         display.setTextColor(WHITE, BLACK);
         display.setCursor(0, 0);
         display.print("TX RSSI: ");
-        display.print(map(myRssi, 0, 255, 0, 100)); 
+        display.print(map(txDeviceState.rssi, 0, 255, 0, 100)); 
 
         display.setCursor(0, 12);
         display.print("TX SNR: ");
-        display.print(mySnr); 
+        display.print(txDeviceState.snr); 
         
         display.setCursor(0, 24);
         display.print("RX RSSI: ");
@@ -452,7 +449,7 @@ void onReceive(int packetSize)
         return;
 
 #ifdef DEVICE_MODE_TX
-    readPacket = true;
+    txDeviceState.readPacket = true;
 #endif
 
 #ifdef DEVICE_MODE_RX

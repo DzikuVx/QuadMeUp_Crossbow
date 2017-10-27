@@ -11,7 +11,7 @@
 #define RX_TASK_HEALTH 200 //5Hz should be enough
 #define RSSI_CHANNEL 11
 
-#define TX_TRANSMIT_SLOT_RATE 57 //ms
+#define TX_TRANSMIT_SLOT_RATE 50 //ms
 #define RX_FAILSAFE_DELAY (TX_TRANSMIT_SLOT_RATE * 8)
 
 #define CHANNEL_ID 0x01
@@ -80,6 +80,14 @@ struct QspConfiguration_t {
     uint32_t frameDecodingStartedAt = 0;
     uint32_t lastTxSlotTimestamp = 0;
     bool transmitWindowOpen = false;
+};
+
+struct TxDeviceState_t {
+    uint8_t rssi = 0;
+    uint8_t snr = 0;
+    uint8_t flags = 0;
+    uint32_t roundtrip = 0;
+    bool readPacket = false;
 };
 
 struct RxDeviceState_t {
