@@ -5,7 +5,7 @@
 
 #define FEATURE_TX_OLED
 
-#define DEBUG_SERIAL
+// #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
@@ -238,8 +238,6 @@ void updateRxDeviceState(RxDeviceState_t *rxDeviceState) {
     rxDeviceState->rxVoltage = map(analogRead(RX_ADC_PIN_1), 0, 1024, 0, 255);
     rxDeviceState->a1Voltage = map(analogRead(RX_ADC_PIN_2), 0, 1024, 0, 255);
     rxDeviceState->a2Voltage = map(analogRead(RX_ADC_PIN_3), 0, 1024, 0, 255);
-    rxDeviceState->rssi = getRadioRssi();
-    rxDeviceState->snr = getRadioSnr();
 }    
 
 int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
@@ -284,14 +282,6 @@ void loop(void)
 
     uint32_t currentMillis = millis();
     bool transmitPayload = false;
-
-#ifdef DEBUG_SERIAL
-    static uint32_t r = 0;
-    if (currentMillis - r > 1000) {
-        Serial.println(currentMillis / 1000);
-        r = currentMillis;
-    }
-#endif
 
     /*
      * Watchdog for frame decoding stuck somewhere in the middle of a process
@@ -348,7 +338,6 @@ void loop(void)
         lastRxStateTaskTime = currentMillis;
         updateRxDeviceState(&rxDeviceState);
         ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 255, 1000, 2000);
-
         if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
             digitalWrite(LED_BUILTIN, HIGH);
         } else {
@@ -360,19 +349,15 @@ void loop(void)
      * Main routine to answer to TX module
      */
     if (qsp.transmitWindowOpen && qsp.protocolState == QSP_STATE_IDLE) {
-
         qsp.transmitWindowOpen = false;
 
         int8_t frameToSend = getFrameToTransmit(&qsp);
-
         if (frameToSend > -1) {
-            
             qsp.frameToSend = frameToSend;
 
             if (frameToSend != QSP_FRAME_PONG) {
                 qspClearPayload(&qsp);
             }
-
             switch (qsp.frameToSend) {
                 case QSP_FRAME_PONG:
                     /*
@@ -461,4 +446,7 @@ void onReceive(int packetSize)
     {
         qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
     }
+
+    rxDeviceState.rssi = getRadioRssi();
+    rxDeviceState.snr = getRadioSnr();
 }
