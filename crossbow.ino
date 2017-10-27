@@ -1,7 +1,7 @@
 #define LORA_HARDWARE_SPI
 
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
@@ -277,12 +277,13 @@ void loop(void)
 {
 #ifdef DEVICE_MODE_TX
     if (txDeviceState.readPacket) {
-        while (LoRa.available()) {
+        if (LoRa.available()) {
             qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
+        } else {
+            txDeviceState.rssi = getRadioRssi();
+            txDeviceState.snr = getRadioSnr();
+            txDeviceState.readPacket = false;
         }
-        txDeviceState.rssi = getRadioRssi();
-        txDeviceState.snr = getRadioSnr();
-        txDeviceState.readPacket = false;
     }
 #endif
 
