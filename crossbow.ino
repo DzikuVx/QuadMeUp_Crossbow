@@ -277,8 +277,9 @@ void loop(void)
 {
 #ifdef DEVICE_MODE_TX
     if (txDeviceState.readPacket) {
-        if (LoRa.available()) {
-            qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
+        int incomingByte = LoRa.read();
+        if (incomingByte > -1) {
+            qspDecodeIncomingFrame(&qsp, incomingByte, ppm, &rxDeviceState);
         } else {
             txDeviceState.rssi = getRadioRssi();
             txDeviceState.snr = getRadioSnr();
@@ -455,9 +456,12 @@ void onReceive(int packetSize)
 #endif
 
 #ifdef DEVICE_MODE_RX
-    while (LoRa.available())
+
+    int incomingByte;
+
+    while (incomingByte = LoRa.read(), incomingByte > -1)
     {
-        qspDecodeIncomingFrame(&qsp, LoRa.read(), ppm, &rxDeviceState);
+        qspDecodeIncomingFrame(&qsp, incomingByte, ppm, &rxDeviceState);
     }
 
     rxDeviceState.rssi = getRadioRssi();

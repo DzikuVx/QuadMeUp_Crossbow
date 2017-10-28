@@ -30,7 +30,7 @@ void sbusPreparePacket(uint8_t packet[], int channels[], bool isSignalLoss, bool
      * 173-1811 with middle at 992 S.BUS protocol requires
      */
     for (uint8_t i = 0; i < SBUS_CHANNEL_NUMBER; i++) {
-        output[i] = mapsChannelToSbus(channels[i]);
+        output[i] = mapChannelToSbus(channels[i]);
     }
 
     uint8_t stateByte = 0x00;
