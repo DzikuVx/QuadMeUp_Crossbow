@@ -410,27 +410,26 @@ void loop(void)
 
         display.setTextColor(WHITE, BLACK);
         display.setCursor(0, 0);
-        display.print("TX RSSI: ");
-        display.print(map(txDeviceState.rssi, 0, 255, 0, 100)); 
+        display.setTextSize(3);
+        display.print(txDeviceState.rssi); 
 
-        display.setCursor(0, 12);
-        display.print("TX SNR: ");
-        display.print(txDeviceState.snr); 
+        display.setCursor(18, 28);
+        display.setTextSize(2);
+        display.print(txDeviceState.snr);
         
-        display.setCursor(0, 24);
-        display.print("RX RSSI: ");
-        display.print(map(rxDeviceState.rssi, 0, 255, 0, 100)); 
+        display.setCursor(74, 0);
+        display.setTextSize(3);
+        display.print(rxDeviceState.rssi); 
 
-        display.setCursor(0, 36);
-        display.print("RX SNR: ");
+        display.setCursor(92, 28);
+        display.setTextSize(2);
         display.print(rxDeviceState.snr); 
 
-        display.setCursor(0, 46);
-        display.print("Roundtrip: ");
+        display.setCursor(54, 48);
+        display.setTextSize(2);
         display.print(rxDeviceState.roundtrip); 
 
         display.display(); 
-
     }
 #endif
 
