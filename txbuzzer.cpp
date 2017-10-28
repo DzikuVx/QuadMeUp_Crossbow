@@ -1,5 +1,5 @@
 #include "Arduino.h"
-#include "buzzer.h"
+#include "txbuzzer.h"
 
 void buzzerProcess(uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer)
 {

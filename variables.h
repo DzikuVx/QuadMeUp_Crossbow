@@ -1,6 +1,6 @@
 #pragma once
 
-#define OLED_UPDATE_RATE 300
+#define OLED_UPDATE_RATE 500
 
 #define SBUS_UPDATE_RATE 15 //ms
 #define SBUS_PACKET_LENGTH 25
@@ -57,6 +57,8 @@ enum debugConfigFlags {
 
 #define PPM_INPUT_CHANNEL_COUNT 10
 #define PPM_OUTPUT_CHANNEL_COUNT 10
+
+#define TX_BUZZER_PIN A5
 
 #define PPM_CHANNEL_DEFAULT_VALUE 1500  //set the default servo value
 #define PPM_FRAME_LENGTH 30500  //set the PPM frame length in microseconds (1ms = 1000µs)

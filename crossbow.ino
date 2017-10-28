@@ -1,5 +1,3 @@
-#define LORA_HARDWARE_SPI
-
 #define DEVICE_MODE_TX
 // #define DEVICE_MODE_RX
 
@@ -12,15 +10,14 @@
 
 #include <LoRa.h>
 #include "variables.h"
-#include "sbus.h"
 #include "qsp.h"
+
+volatile int ppm[16] = {0};
 
 // LoRa32u4 ports
 #define LORA32U4_SS_PIN     8
 #define LORA32U4_RST_PIN    4
 #define LORA32U4_DI0_PIN    7
-
-volatile int ppm[16] = {0};
 
 /*
  * Main defines for device working in TX mode
@@ -28,6 +25,10 @@ volatile int ppm[16] = {0};
 #ifdef DEVICE_MODE_TX
 #include <PPMReader.h>
 PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT, true);
+
+#include "txbuzzer.h"
+
+BuzzerState_t buzzer;
 
 #ifdef FEATURE_TX_OLED
 
@@ -44,6 +45,9 @@ uint32_t lastOledTaskTime = 0;
  * Main defines for device working in RX mode
  */
 #ifdef DEVICE_MODE_RX
+
+    #include "sbus.h"
+
     uint32_t sbusTime = 0;
     uint8_t sbusPacket[SBUS_PACKET_LENGTH] = {0};
     uint32_t lastRxStateTaskTime = 0;
@@ -56,7 +60,6 @@ volatile QspConfiguration_t qsp = {};
 volatile RxDeviceState_t rxDeviceState = {};
 volatile TxDeviceState_t txDeviceState = {};
 
-#ifdef LORA_HARDWARE_SPI
 
 uint8_t getRadioRssi(void)
 {
@@ -90,8 +93,6 @@ void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
     LoRa.write(dataByte);
 }
 
-#endif
-
 void setup(void)
 {
 #ifdef DEBUG_SERIAL
@@ -105,8 +106,6 @@ void setup(void)
 #else 
     qsp.deviceState = DEVICE_STATE_OK;
 #endif
-
-#ifdef LORA_HARDWARE_SPI
 
 #ifdef WAIT_FOR_SERIAL
     while (!Serial) {
@@ -143,7 +142,6 @@ void setup(void)
     LoRa.onReceive(onReceive);
 // #endif
     LoRa.receive();
-#endif
 
 #ifdef DEVICE_MODE_RX
     //initiallize default ppm values
@@ -163,6 +161,8 @@ void setup(void)
     TCCR1A = 0;  //reset timer1
     TCCR1B = 0;
     TCCR1B |= (1 << CS11);  //set timer1 to increment every 0,5 us or 1us on 8MHz
+
+    pinMode(TX_BUZZER_PIN, OUTPUT);
 
 #ifdef FEATURE_TX_OLED
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
@@ -397,6 +397,8 @@ void loop(void)
 #endif
 
 #ifdef DEVICE_MODE_TX
+
+    buzzerProcess(TX_BUZZER_PIN, currentMillis, &buzzer);
 
 #ifdef FEATURE_TX_OLED
     if (

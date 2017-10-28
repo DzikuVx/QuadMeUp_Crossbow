@@ -19,22 +19,22 @@ enum {
 };
 
 struct BuzzerState_t {
-    bool enabled = true;
-    uint8_t mode = BUZZER_MODE_DOUBLE_CHIRP;
+    bool enabled = false;
+    uint8_t mode = BUZZER_MODE_OFF;
     
     uint32_t updateTime = 0;
 
     uint8_t tick = 0;
     uint8_t element = 0;
     const uint8_t patternMaxTick = 20;
-    const uint8_t patternTickPerdiod = 100;
+    const uint8_t patternTickPerdiod = 75;
 
     const int8_t pattern[PATTERN_MODES_NUMBER][PATTERN_ELEMENT_NUMBER] = {
         {PATTERN_CYCLE_OFF},
         {PATTERN_CYCLE_ON},
         {0, 7, 10, 17},
         {0, 4, 10, 14},
-        {0, 1, 10, 11},
+        {0, 1, PATTERN_CYCLE_IGNORE, PATTERN_CYCLE_IGNORE},
         {0, 1, 2, 3}
     };
 
