@@ -98,6 +98,5 @@ struct RxDeviceState_t {
     uint8_t rxVoltage = 0;
     uint8_t a1Voltage = 0;
     uint8_t a2Voltage = 0;
-    uint32_t roundtrip = 0;
     uint8_t flags = 0;
 };

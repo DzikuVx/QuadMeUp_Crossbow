@@ -143,8 +143,13 @@ void qspClearPayload(QspConfiguration_t *qsp)
     qsp->payloadLength = 0;
 }
 
-void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int ppm[], RxDeviceState_t *rxDeviceState)
-{
+void qspDecodeIncomingFrame(
+    QspConfiguration_t *qsp, 
+    uint8_t incomingByte, 
+    int ppm[], 
+    RxDeviceState_t *rxDeviceState, 
+    TxDeviceState_t *txDeviceState
+) {
     static uint8_t frameId;
     static uint8_t payloadLength;
     static uint8_t receivedPayload;
@@ -228,12 +233,12 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
                     break;
 
                 case QSP_FRAME_PONG:
-                    rxDeviceState->roundtrip = qsp->payload[0];
-                    rxDeviceState->roundtrip += (uint32_t) qsp->payload[1] << 8;
-                    rxDeviceState->roundtrip += (uint32_t) qsp->payload[2] << 16;
-                    rxDeviceState->roundtrip += (uint32_t) qsp->payload[3] << 24;
+                    txDeviceState->roundtrip = qsp->payload[0];
+                    txDeviceState->roundtrip += (uint32_t) qsp->payload[1] << 8;
+                    txDeviceState->roundtrip += (uint32_t) qsp->payload[2] << 16;
+                    txDeviceState->roundtrip += (uint32_t) qsp->payload[3] << 24;
 
-                    rxDeviceState->roundtrip = (micros() - rxDeviceState->roundtrip) / 1000;
+                    txDeviceState->roundtrip = (micros() - txDeviceState->roundtrip) / 1000;
 
                     break;
 
