@@ -41,6 +41,6 @@ struct BuzzerState_t {
 
 };
 
-void buzzerSingleMode(uint8_t mode, uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer);
-void buzzerContinousMode(uint8_t mode, uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer);
+void buzzerSingleMode(uint8_t mode, BuzzerState_t *buzzer);
+void buzzerContinousMode(uint8_t mode, BuzzerState_t *buzzer);
 void buzzerProcess(uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer);

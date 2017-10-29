@@ -13,6 +13,7 @@
 
 #define TX_TRANSMIT_SLOT_RATE 50 //ms
 #define RX_FAILSAFE_DELAY (TX_TRANSMIT_SLOT_RATE * 8)
+#define TX_FAILSAFE_DELAY (RX_FAILSAFE_DELAY * 4)
 
 #define CHANNEL_ID 0x01
 #define QSP_PREAMBLE 0x51
@@ -44,7 +45,8 @@ enum dataStates {
 
 enum deviceStates {
     DEVICE_STATE_OK,
-    DEVICE_STATE_FAILSAFE
+    DEVICE_STATE_FAILSAFE,
+    DEVICE_STATE_UNDETERMINED
 };
 
 enum debugConfigFlags {
@@ -74,7 +76,8 @@ struct QspConfiguration_t {
     uint8_t payloadLength = 0;
     uint8_t frameToSend = 0;
     uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
-    uint8_t deviceState = DEVICE_STATE_OK;
+    uint32_t anyFrameRecivedAt = 0;
+    uint8_t deviceState = DEVICE_STATE_UNDETERMINED;
     void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
     bool canTransmit = false;
     bool forcePongFrame = false;
@@ -90,6 +93,7 @@ struct TxDeviceState_t {
     uint8_t flags = 0;
     uint32_t roundtrip = 0;
     bool readPacket = false;
+    bool isReceiving = false; //Indicates that TX module is receiving frames from RX module
 };
 
 struct RxDeviceState_t {

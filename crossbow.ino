@@ -178,7 +178,7 @@ void setup(void)
     pinMode(TX_BUZZER_PIN, OUTPUT);
 
     //Play single tune to indicate power up
-    buzzerSingleMode(BUZZER_MODE_CHIRP, TX_BUZZER_PIN, millis(), &buzzer);
+    buzzerSingleMode(BUZZER_MODE_CHIRP, &buzzer);
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -275,6 +275,7 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 
 void loop(void)
 {
+
 #ifdef DEVICE_MODE_TX
     if (txDeviceState.readPacket) {
         int incomingByte = LoRa.read();
@@ -290,6 +291,7 @@ void loop(void)
 
     uint32_t currentMillis = millis();
     bool transmitPayload = false;
+    static uint32_t previousAnyFrameReceivedAt = 0;
 
     /*
      * Watchdog for frame decoding stuck somewhere in the middle of a process
@@ -400,6 +402,45 @@ void loop(void)
 #ifdef DEVICE_MODE_TX
 
     buzzerProcess(TX_BUZZER_PIN, currentMillis, &buzzer);
+
+    // This routing enables when TX starts to receive signal from RX for a first time or after 
+    // failsafe
+    if (txDeviceState.isReceiving == false && qsp.anyFrameRecivedAt != 0) {
+        //TX module started to receive data
+        buzzerSingleMode(BUZZER_MODE_DOUBLE_CHIRP, &buzzer);
+        txDeviceState.isReceiving = true;
+        qsp.deviceState = DEVICE_STATE_OK;
+    }
+
+    //Here we detect failsafe state on TX module
+    if (txDeviceState.isReceiving && abs(currentMillis - qsp.anyFrameRecivedAt) > TX_FAILSAFE_DELAY) {
+        txDeviceState.isReceiving = false;
+        rxDeviceState.a1Voltage = 0;
+        rxDeviceState.a2Voltage = 0;
+        rxDeviceState.rxVoltage = 0;
+        rxDeviceState.rssi = 0;
+        rxDeviceState.snr = 0;
+        rxDeviceState.flags = 0;
+        qsp.deviceState = DEVICE_STATE_FAILSAFE;
+        qsp.anyFrameRecivedAt = 0;
+    }
+
+    //FIXME rxDeviceState should be resetted also in RC_HEALT frame is not received in a long period 
+
+    //Handle audible alarms
+    if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
+        //Failsafe detected by TX
+        buzzerContinousMode(BUZZER_MODE_SLOW_BEEP, &buzzer);
+    } else if (txDeviceState.isReceiving && (rxDeviceState.flags & 0x1) == 1) {
+        //Failsafe reported by RX module
+        buzzerContinousMode(BUZZER_MODE_SLOW_BEEP, &buzzer);
+    } else if (txDeviceState.isReceiving && txDeviceState.rssi < 100) {
+        buzzerContinousMode(BUZZER_MODE_DOUBLE_CHIRP, &buzzer);
+    } else if (txDeviceState.isReceiving && txDeviceState.rssi < 128) {
+        buzzerContinousMode(BUZZER_MODE_CHIRP, &buzzer);
+    } else {
+        buzzerContinousMode(BUZZER_MODE_OFF, &buzzer);
+    }
 
 #ifdef FEATURE_TX_OLED
     if (

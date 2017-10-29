@@ -218,6 +218,7 @@ void qspDecodeIncomingFrame(
             if (frameId < QSP_FRAME_COUNT) {
                 qsp->lastFrameReceivedAt[frameId] = millis();
             }
+            qsp->anyFrameRecivedAt = millis();
 
             switch (frameId) {
                 case QSP_FRAME_RC_DATA:

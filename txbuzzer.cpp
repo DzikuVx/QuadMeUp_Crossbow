@@ -5,18 +5,17 @@
  * This method plays selected pattern only once
  * It disables continious mode 
  */
-void buzzerSingleMode(uint8_t mode, uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer) {
+void buzzerSingleMode(uint8_t mode, BuzzerState_t *buzzer) {
     buzzer->singleModeEnabled = true;
     buzzer->enabled = false;
     buzzer->mode = mode;
     buzzer->tick = 0;
 }
 
-void buzzerContinousMode(uint8_t mode, uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer) {
+void buzzerContinousMode(uint8_t mode, BuzzerState_t *buzzer) {
     buzzer->singleModeEnabled = false;
     buzzer->enabled = true;
     buzzer->mode = mode;
-    buzzer->tick = 0;
 }
 
 void buzzerProcess(uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer)
