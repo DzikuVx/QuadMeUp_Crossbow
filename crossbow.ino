@@ -131,8 +131,9 @@ void setup(void)
     }
 
     LoRa.setSignalBandwidth(500E3);
-    LoRa.setSpreadingFactor(7);
-    LoRa.setCodingRate4(5);
+    LoRa.setSpreadingFactor(8);
+    LoRa.setCodingRate4(6);
+    LoRa.enableCrc();
 
     /*
      * Use interrupt driven approach only on RX side
@@ -314,6 +315,7 @@ void loop(void)
 
         if (frameToSend == QSP_FRAME_RC_DATA && !ppmReader.isReceiving()) {
             frameToSend = -1;
+            //FIXME uncomment to enable full Failsafe
         }
 
         if (frameToSend > -1) {

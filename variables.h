@@ -11,7 +11,7 @@
 #define RX_TASK_HEALTH 200 //5Hz should be enough
 #define RSSI_CHANNEL 11
 
-#define TX_TRANSMIT_SLOT_RATE 50 //ms
+#define TX_TRANSMIT_SLOT_RATE 70 //ms
 #define RX_FAILSAFE_DELAY (TX_TRANSMIT_SLOT_RATE * 8)
 #define TX_FAILSAFE_DELAY (RX_FAILSAFE_DELAY * 4)
 
