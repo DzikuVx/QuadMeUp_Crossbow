@@ -1,10 +1,28 @@
 #include "Arduino.h"
 #include "txbuzzer.h"
 
+/**
+ * This method plays selected pattern only once
+ * It disables continious mode 
+ */
+void buzzerSingleMode(uint8_t mode, uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer) {
+    buzzer->singleModeEnabled = true;
+    buzzer->enabled = false;
+    buzzer->mode = mode;
+    buzzer->tick = 0;
+}
+
+void buzzerContinousMode(uint8_t mode, uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer) {
+    buzzer->singleModeEnabled = false;
+    buzzer->enabled = true;
+    buzzer->mode = mode;
+    buzzer->tick = 0;
+}
+
 void buzzerProcess(uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer)
 {
 
-    if (!buzzer->enabled)
+    if (!buzzer->enabled && !buzzer->singleModeEnabled)
     {
         digitalWrite(pin, LOW);
         return;
@@ -42,6 +60,7 @@ void buzzerProcess(uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer)
         if (buzzer->tick >= buzzer->patternMaxTick)
         {
             buzzer->tick = 0;
+            buzzer->singleModeEnabled = false;
         }
         buzzer->updateTime = timestamp + buzzer->patternTickPerdiod;
     }

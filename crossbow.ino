@@ -1,5 +1,5 @@
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
@@ -162,8 +162,6 @@ void setup(void)
     TCCR1B = 0;
     TCCR1B |= (1 << CS11);  //set timer1 to increment every 0,5 us or 1us on 8MHz
 
-    pinMode(TX_BUZZER_PIN, OUTPUT);
-
 #ifdef FEATURE_TX_OLED
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
     display.setTextSize(1);
@@ -172,16 +170,18 @@ void setup(void)
     display.display();
 #endif
 
+    /*
+     * TX should start talking imediately after power up
+     */
+    qsp.canTransmit = true;
+
+    pinMode(TX_BUZZER_PIN, OUTPUT);
+
+    //Play single tune to indicate power up
+    buzzerSingleMode(BUZZER_MODE_CHIRP, TX_BUZZER_PIN, millis(), &buzzer);
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
-
-/*
- * TX should start talking imediately after power up
- */
-#ifdef DEVICE_MODE_TX
-    qsp.canTransmit = true;
-#endif
 
 #ifdef DEBUG_SERIAL
     qsp.debugConfig |= DEBUG_FLAG_SERIAL;

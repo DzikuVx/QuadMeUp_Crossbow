@@ -19,7 +19,8 @@ enum {
 };
 
 struct BuzzerState_t {
-    bool enabled = false;
+    bool enabled = false; //Continous mode buzzer
+    bool singleModeEnabled = false;
     uint8_t mode = BUZZER_MODE_OFF;
     
     uint32_t updateTime = 0;
@@ -40,4 +41,6 @@ struct BuzzerState_t {
 
 };
 
+void buzzerSingleMode(uint8_t mode, uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer);
+void buzzerContinousMode(uint8_t mode, uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer);
 void buzzerProcess(uint8_t pin, uint32_t timestamp, BuzzerState_t *buzzer);
