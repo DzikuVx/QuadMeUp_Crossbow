@@ -1,5 +1,5 @@
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
@@ -292,7 +292,7 @@ void loop(void)
      */
     if (
         qsp.protocolState != QSP_STATE_IDLE && 
-        abs(currentMillis - qsp.frameDecodingStartedAt) > QSP_MAX_FRAME_DECODE_TIME 
+        qsp.frameDecodingStartedAt + QSP_MAX_FRAME_DECODE_TIME < currentMillis 
     ) {
         qsp.protocolState = QSP_STATE_IDLE;
     }
@@ -300,8 +300,8 @@ void loop(void)
 #ifdef DEVICE_MODE_TX
 
     if (
-        abs(currentMillis - qsp.lastTxSlotTimestamp) > TX_TRANSMIT_SLOT_RATE &&
-        qsp.protocolState == QSP_STATE_IDLE
+        qsp.protocolState == QSP_STATE_IDLE &&
+        qsp.lastTxSlotTimestamp + TX_TRANSMIT_SLOT_RATE < currentMillis
     ) {
         
         int8_t frameToSend = getFrameToTransmit(&qsp);
@@ -339,7 +339,7 @@ void loop(void)
     /*
      * This routine updates RX device state and updates one of radio channels with RSSI value
      */
-    if (abs(currentMillis - lastRxStateTaskTime) > RX_TASK_HEALTH) {
+    if (lastRxStateTaskTime + RX_TASK_HEALTH < currentMillis) {
         lastRxStateTaskTime = currentMillis;
         updateRxDeviceState(&rxDeviceState);
         ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 255, 1000, 2000);
@@ -408,7 +408,10 @@ void loop(void)
     }
 
     //Here we detect failsafe state on TX module
-    if (txDeviceState.isReceiving && abs(currentMillis - qsp.anyFrameRecivedAt) > TX_FAILSAFE_DELAY) {
+    if (
+        txDeviceState.isReceiving && 
+        qsp.anyFrameRecivedAt + TX_FAILSAFE_DELAY < currentMillis
+    ) {
         txDeviceState.isReceiving = false;
         rxDeviceState.a1Voltage = 0;
         rxDeviceState.a2Voltage = 0;
@@ -416,6 +419,7 @@ void loop(void)
         rxDeviceState.rssi = 0;
         rxDeviceState.snr = 0;
         rxDeviceState.flags = 0;
+        txDeviceState.roundtrip = 0;
         qsp.deviceState = DEVICE_STATE_FAILSAFE;
         qsp.anyFrameRecivedAt = 0;
     }
