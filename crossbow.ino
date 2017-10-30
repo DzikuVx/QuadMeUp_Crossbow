@@ -134,14 +134,7 @@ void setup(void)
     LoRa.setSpreadingFactor(8);
     LoRa.setCodingRate4(6);
     LoRa.enableCrc();
-
-    /*
-     * Use interrupt driven approach only on RX side
-     * TX interrupts breaks PPM readout
-     */ 
-// #ifdef DEVICE_MODE_RX
     LoRa.onReceive(onReceive);
-// #endif
     LoRa.receive();
 
 #ifdef DEVICE_MODE_RX
@@ -393,7 +386,7 @@ void loop(void)
         sbusTime = currentMillis + SBUS_UPDATE_RATE;
     }
 
-    if (abs(currentMillis - qsp.lastFrameReceivedAt[QSP_FRAME_RC_DATA]) > RX_FAILSAFE_DELAY) {
+    if (qsp.lastFrameReceivedAt[QSP_FRAME_RC_DATA] + RX_FAILSAFE_DELAY < currentMillis) {
         qsp.deviceState = DEVICE_STATE_FAILSAFE;
     } else {
         qsp.deviceState = DEVICE_STATE_OK;
