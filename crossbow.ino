@@ -455,7 +455,7 @@ void loop(void)
         display.setTextColor(WHITE, BLACK);
         display.setCursor(0, 0);
         display.setTextSize(3);
-        display.print(txDeviceState.rssi); 
+        display.print(map(txDeviceState.rssi, 0, 255, 0, 164)); 
 
         display.setCursor(18, 28);
         display.setTextSize(2);
@@ -463,7 +463,7 @@ void loop(void)
         
         display.setCursor(74, 0);
         display.setTextSize(3);
-        display.print(rxDeviceState.rssi); 
+        display.print(map(rxDeviceState.rssi, 0, 255, 0, 164)); 
 
         display.setCursor(92, 28);
         display.setTextSize(2);
