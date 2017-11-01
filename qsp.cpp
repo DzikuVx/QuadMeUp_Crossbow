@@ -60,7 +60,14 @@ void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
     qsp->payload[2] = rxDeviceState->rxVoltage;
     qsp->payload[3] = rxDeviceState->a1Voltage;
     qsp->payload[4] = rxDeviceState->a2Voltage;
-    qsp->payload[5] = qsp->lastReceivedPacketId;
+
+    uint8_t flags = 0;
+
+    if (qsp->deviceState == DEVICE_STATE_FAILSAFE) {
+        flags |= 0x01 << 0;
+    }
+
+    qsp->payload[5] = flags;
 
     qsp->payloadLength = 6;
 }
@@ -71,7 +78,7 @@ void decodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
     rxDeviceState->rxVoltage = qsp->payload[2];
     rxDeviceState->a1Voltage = qsp->payload[3];
     rxDeviceState->a2Voltage = qsp->payload[4];
-    // rxDeviceState->rssi = qsp->payload[0]; //TODO we skipped decoding this byte, figure it out
+    rxDeviceState->flags = qsp->payload[5];
 }
 
 /**
@@ -127,13 +134,6 @@ void encodeRcDataPayload(QspConfiguration_t *qsp, PPMReader *ppmSource, uint8_t 
     qsp->payloadLength = 9;
 }
 
-uint8_t qspGetPacketId()
-{
-    static uint8_t packetId = 0;
-
-    return packetId++;
-}
-
 void qspClearPayload(QspConfiguration_t *qsp)
 {
     for (uint8_t i = 0; i < QSP_PAYLOAD_LENGTH; i++)
@@ -143,16 +143,19 @@ void qspClearPayload(QspConfiguration_t *qsp)
     qsp->payloadLength = 0;
 }
 
-void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int ppm[], RxDeviceState_t *rxDeviceState)
-{
+void qspDecodeIncomingFrame(
+    QspConfiguration_t *qsp, 
+    uint8_t incomingByte, 
+    int ppm[], 
+    RxDeviceState_t *rxDeviceState, 
+    TxDeviceState_t *txDeviceState
+) {
     static uint8_t frameId;
     static uint8_t payloadLength;
     static uint8_t receivedPayload;
-    static uint8_t packetId; //TODO move this to global scope maybe?
 
     if (qsp->protocolState == QSP_STATE_IDLE && incomingByte == QSP_PREAMBLE)
     {
-        //FIXME there should be a way to go back to IDLE if frame did not finished decoding in reasonable time
         //If in IDLE and correct preamble comes, start to decode frame
         qsp->protocolState = QSP_STATE_PREAMBLE_RECEIVED;
         qsp->crc = 0 ^ incomingByte;
@@ -169,7 +172,6 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
             qspClearPayload(qsp);
 
             receivedPayload = 0;
-            packetId = 0;
         }
         else
         {
@@ -188,12 +190,9 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
     }
     else if (qsp->protocolState == QSP_STATE_FRAME_TYPE_RECEIVED)
     {
-        qsp->crc ^= incomingByte;
-        packetId = incomingByte;
-        qsp->protocolState = QSP_STATE_PACKET_ID_RECEIVED;
-    }
-    else if (qsp->protocolState == QSP_STATE_PACKET_ID_RECEIVED)
-    {
+        if (receivedPayload >= QSP_PAYLOAD_LENGTH) {
+            qsp->protocolState = QSP_STATE_IDLE;
+        }
 
         //Now it's time for payload
         qsp->crc ^= incomingByte;
@@ -209,7 +208,6 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
     }
     else if (qsp->protocolState == QSP_STATE_PAYLOAD_RECEIVED)
     {
-
         if (qsp->crc == incomingByte) {
             //CRC is correct
 
@@ -220,22 +218,8 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
             if (frameId < QSP_FRAME_COUNT) {
                 qsp->lastFrameReceivedAt[frameId] = millis();
             }
+            qsp->anyFrameRecivedAt = millis();
 
-            qsp->lastReceivedPacketId = packetId;
-
-            if (qsp->debugConfig & DEBUG_FLAG_SERIAL) {
-                Serial.print("Frame ");
-                Serial.print(frameId);
-                Serial.println(" received");
-            }
-
-            if (qsp->debugConfig & DEBUG_FLAG_LED) {
-                digitalWrite(LED_BUILTIN, HIGH);
-                delay(10);
-                digitalWrite(LED_BUILTIN, LOW);
-                delay(100);
-            }
-            
             switch (frameId) {
                 case QSP_FRAME_RC_DATA:
                     qspDecodeRcDataFrame(qsp, ppm);
@@ -243,12 +227,6 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
 
                 case QSP_FRAME_RX_HEALTH:
                     decodeRxHealthPayload(qsp, rxDeviceState);
-                    if (qsp->debugConfig & DEBUG_FLAG_SERIAL) {
-                        Serial.print("RX RSSI: ");
-                        Serial.println(rxDeviceState->rssi);
-                        Serial.print("RX SNR: ");
-                        Serial.println(rxDeviceState->snr);
-                    }
                     break;
 
                 case QSP_FRAME_PING:
@@ -256,18 +234,13 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
                     break;
 
                 case QSP_FRAME_PONG:
-                    if (qsp->debugConfig & DEBUG_FLAG_SERIAL) {
+                    txDeviceState->roundtrip = qsp->payload[0];
+                    txDeviceState->roundtrip += (uint32_t) qsp->payload[1] << 8;
+                    txDeviceState->roundtrip += (uint32_t) qsp->payload[2] << 16;
+                    txDeviceState->roundtrip += (uint32_t) qsp->payload[3] << 24;
 
-                        uint32_t incoming = 0;
+                    txDeviceState->roundtrip = (micros() - txDeviceState->roundtrip) / 1000;
 
-                        incoming = qsp->payload[0];
-                        incoming += (uint32_t) qsp->payload[1] << 8;
-                        incoming += (uint32_t) qsp->payload[2] << 16;
-                        incoming += (uint32_t) qsp->payload[3] << 24;
-
-                        Serial.print("Rountrip: ");
-                        Serial.println((micros() - incoming) / 1000);
-                    }
                     break;
 
                 default:
@@ -275,6 +248,8 @@ void qspDecodeIncomingFrame(QspConfiguration_t *qsp, uint8_t incomingByte, int p
                     //TODO do something in this case
                     break;
             }
+
+            qsp->transmitWindowOpen = true;
         }
         else
         {
@@ -303,9 +278,6 @@ void qspEncodeFrame(QspConfiguration_t *qsp) {
     uint8_t data = qsp->payloadLength & 0x0f;
     data |= (qsp->frameToSend << 4) & 0xf0;
     qsp->hardwareWriteFunction(data, qsp);
-
-    //Write packet ID
-    qsp->hardwareWriteFunction(qspGetPacketId(), qsp);
 
     //Write payload
     for (uint8_t i = 0; i < qsp->payloadLength; i++)

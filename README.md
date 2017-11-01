@@ -13,9 +13,8 @@ Development, not yet functional
 | 1                     | Preamble | "Q" 0x51 |
 | 2                     | Channel ID | channel used for comunication between TX and RX |
 | 3                     | Frame type & Length | bits 7-5 defines frame, bits 4-0 payload length |
-| 4                     | Packet ID | |
 | 5 - 36                | Payload | 32 bytes max |
-| payload length + 5    | CRC | XOR of all previous bytes |
+| payload length + 4    | CRC | XOR of all previous bytes |
 
 ## Frame types
 
@@ -26,8 +25,8 @@ Development, not yet functional
 | 0010   | 0x2          | Request receiver configuration | TX -> RX |
 | 0011   | 0x3          | Receiver configuration | RX -> TX |
 | 0100   | 0x4          | Set receiver configuration | TX -> RX |
-| 0101   | 0x5          | PING frame | TX -> RX |
-| 0110   | 0x6          | PONG frame | RX -> TX |
+| 0101   | 0x5          | PING frame, uses 9 byte payload | TX -> RX |
+| 0110   | 0x6          | PONG frame, the same payload as PING | RX -> TX |
 
 ### `RC_DATA` frame format
 
@@ -48,7 +47,14 @@ Total length of `RC_DATA` payload is 9 bytes
 | 3     | RX supply volatage, sent in 0,1V      |
 | 4     | RX analog input 1 sent in 0,1V        |
 | 5     | RX analog input 2 sent in 0,1V        |
-| 6     | Last received packet ID               |
+| 6     | Flags                                 |
+
+#### Flags
+
+| Bit   | Meaning                               |
+| ----  | ----                                  |
+| 00000001  | Device in Failsafe mode           |
+
 
 ### `PING` and `PONG` frames
 
