@@ -1,3 +1,6 @@
+ATMEGA328p can achieve 400 000 bauds. U2Xx=1 and UBRx=4
+
+
 /*
 FIXME this should work, but does not...
 
