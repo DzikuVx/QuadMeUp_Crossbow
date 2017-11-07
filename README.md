@@ -4,7 +4,7 @@ _QuadMeUp Crossbow_ is a DIY project that gives 5km (at least) of RC link for UA
 
 # Current state
 
-Development, not yet functional
+Development, ready for testing
 
 # Protocol
 
@@ -61,3 +61,8 @@ Total length of `RC_DATA` payload is 9 bytes
 `PING` and `PONG` frames are to determine packet roundrip between **TX** and **RX** module.
 **TX** sends `PING` frame with curent `micros`. If **RX** receives `PING` frame, it respons
 its payload as `PONG` frame. 
+
+
+# RX module connection diagram
+
+![Diagram](docs/RX_module_schem.png)
