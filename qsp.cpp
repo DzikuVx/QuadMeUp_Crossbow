@@ -161,7 +161,7 @@ void qspDecodeIncomingFrame(
         {
             qsp->frameDecodingStartedAt = millis();
             qsp->protocolState = QSP_STATE_CHANNEL_RECEIVED;
-            qsp->crc ^= incomingByte;
+            qsp->crc = 0 ^ incomingByte;
 
             qspClearPayload(qsp);
 

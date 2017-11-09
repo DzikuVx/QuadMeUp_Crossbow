@@ -272,14 +272,14 @@ void loop(void)
 
 #ifdef DEVICE_MODE_TX
     if (txDeviceState.readPacket) {
-        int incomingByte = LoRa.read();
-        if (incomingByte > -1) {
+        int incomingByte;
+        while (incomingByte = LoRa.read(), incomingByte > -1)
+        {
             qspDecodeIncomingFrame(&qsp, incomingByte, ppm, &rxDeviceState, &txDeviceState);
-        } else {
-            txDeviceState.rssi = getRadioRssi();
-            txDeviceState.snr = getRadioSnr();
-            txDeviceState.readPacket = false;
         }
+        txDeviceState.rssi = getRadioRssi();
+        txDeviceState.snr = getRadioSnr();
+        txDeviceState.readPacket = false;
     }
 #endif
 
