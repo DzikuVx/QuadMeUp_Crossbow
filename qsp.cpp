@@ -154,18 +154,12 @@ void qspDecodeIncomingFrame(
     static uint8_t payloadLength;
     static uint8_t receivedPayload;
 
-    if (qsp->protocolState == QSP_STATE_IDLE && incomingByte == QSP_PREAMBLE)
-    {
-        //If in IDLE and correct preamble comes, start to decode frame
-        qsp->protocolState = QSP_STATE_PREAMBLE_RECEIVED;
-        qsp->crc = 0 ^ incomingByte;
-        qsp->frameDecodingStartedAt = millis();
-    }
-    else if (qsp->protocolState == QSP_STATE_PREAMBLE_RECEIVED)
+    if (qsp->protocolState == QSP_STATE_IDLE)
     {
         // Check if incomming channel ID is the same as receiver
         if (incomingByte == CHANNEL_ID)
         {
+            qsp->frameDecodingStartedAt = millis();
             qsp->protocolState = QSP_STATE_CHANNEL_RECEIVED;
             qsp->crc ^= incomingByte;
 
@@ -269,8 +263,6 @@ void qspEncodeFrame(QspConfiguration_t *qsp) {
     //Zero CRC
     qsp->crc = 0;
 
-    //Write preamble
-    qsp->hardwareWriteFunction(QSP_PREAMBLE, qsp);
     //Write CHANNEL_ID
     qsp->hardwareWriteFunction(CHANNEL_ID, qsp);
 

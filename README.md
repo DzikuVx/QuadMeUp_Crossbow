@@ -10,11 +10,10 @@ Development, ready for testing
 
 | Byte                  | Description | Notes |
 | ----                  | ----        | ---- |
-| 1                     | Preamble | "Q" 0x51 |
-| 2                     | Channel ID | channel used for comunication between TX and RX |
-| 3                     | Frame type & Length | bits 7-5 defines frame, bits 4-0 payload length |
-| 5 - 36                | Payload | 32 bytes max |
-| payload length + 4    | CRC | XOR of all previous bytes |
+| 1                     | Channel ID | channel used for comunication between TX and RX |
+| 2                     | Frame type & Length | bits 7-5 defines frame, bits 4-0 payload length |
+| 3 - 34                | Payload | 32 bytes max |
+| payload length + 3    | CRC | XOR of all previous bytes |
 
 ## Frame types
 
