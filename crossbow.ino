@@ -59,7 +59,7 @@ uint32_t lastOledTaskTime = 0;
 volatile QspConfiguration_t qsp = {};
 volatile RxDeviceState_t rxDeviceState = {};
 volatile TxDeviceState_t txDeviceState = {};
-
+volatile RadioState_t radioState = {};
 
 uint8_t getRadioRssi(void)
 {
@@ -93,6 +93,33 @@ void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
     LoRa.write(dataByte);
 }
 
+void hopFrequency(RadioState_t *radioState) {
+    radioState->channelEntryMillis = millis();
+    radioState->channel++;
+    if (radioState->channel >= RADIO_CHANNEL_COUNT) {
+        radioState->channel = 0;
+    }
+    //And set hardware
+    LoRa.setFrequency(
+        radioState->radioChannels[radioState->channelHopSequence[radioState->channel]]
+    );
+}
+
+void onQspReceived(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+
+    /*
+     * For TX module we do nothing in this callback ATM
+     */
+
+    /*
+     * For RX module we switch channel after each successful receive
+     */
+#ifdef DEVICE_MODE_RX
+    hopFrequency(radioState);
+#endif
+
+}
+
 void setup(void)
 {
 #ifdef DEBUG_SERIAL
@@ -100,6 +127,7 @@ void setup(void)
 #endif
 
     qsp.hardwareWriteFunction = writeToRadio;
+    qsp.onReceiveFunction = onQspReceived;
 
 #ifdef DEVICE_MODE_RX
     qsp.deviceState = DEVICE_STATE_FAILSAFE;
@@ -122,7 +150,7 @@ void setup(void)
         LORA32U4_DI0_PIN
     );
     
-    if (!LoRa.begin(868E6))
+    if (!LoRa.begin(radioState.radioChannels[radioState.channelHopSequence[radioState.channel]]))
     {
     #ifdef DEBUG_SERIAL
         Serial.println("LoRa init failed. Check your connections.");
@@ -130,9 +158,9 @@ void setup(void)
         while (true);
     }
 
-    LoRa.setSignalBandwidth(500E3);
-    LoRa.setSpreadingFactor(8);
-    LoRa.setCodingRate4(6);
+    LoRa.setSignalBandwidth(radioState.loraBandwidth);
+    LoRa.setSpreadingFactor(radioState.loraSpreadingFactor);
+    LoRa.setCodingRate4(radioState.loraCodingRate);
     LoRa.enableCrc();
     LoRa.onReceive(onReceive);
     LoRa.receive();
@@ -275,7 +303,7 @@ void loop(void)
         int incomingByte;
         while (incomingByte = LoRa.read(), incomingByte > -1)
         {
-            qspDecodeIncomingFrame(&qsp, incomingByte, ppm, &rxDeviceState, &txDeviceState);
+            qspDecodeIncomingFrame(&qsp, incomingByte, ppm, &rxDeviceState, &txDeviceState, &radioState);
         }
         txDeviceState.rssi = getRadioRssi();
         txDeviceState.snr = getRadioSnr();
@@ -335,6 +363,13 @@ void loop(void)
 #endif
 
 #ifdef DEVICE_MODE_RX
+
+    /*
+     * if frame did not arrived in reasonable time, hop to next channel
+     */
+    if (radioState.channelEntryMillis + radioState.dwellTime < currentMillis) {
+        hopFrequency(&radioState);
+    }
 
     /*
      * This routine updates RX device state and updates one of radio channels with RSSI value
@@ -481,6 +516,10 @@ void loop(void)
         radioPacketStart();
         qspEncodeFrame(&qsp);
         radioPacketEnd();
+    #ifdef DEVICE_MODE_TX
+        //Hop
+        hopFrequency(&radioState);
+    #endif
         transmitPayload = false;
     }
 
@@ -501,7 +540,7 @@ void onReceive(int packetSize)
 
     while (incomingByte = LoRa.read(), incomingByte > -1)
     {
-        qspDecodeIncomingFrame(&qsp, incomingByte, ppm, &rxDeviceState, &txDeviceState);
+        qspDecodeIncomingFrame(&qsp, incomingByte, ppm, &rxDeviceState, &txDeviceState, &radioState);
     }
 
     rxDeviceState.rssi = getRadioRssi();

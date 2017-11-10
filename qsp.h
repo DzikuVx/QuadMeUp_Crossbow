@@ -14,7 +14,8 @@ void qspDecodeIncomingFrame(
     uint8_t incomingByte, 
     int ppm[], 
     RxDeviceState_t *rxDeviceState,
-    TxDeviceState_t *txDeviceState
+    TxDeviceState_t *txDeviceState,
+    RadioState_t *radioState
 );
 void qspClearPayload(QspConfiguration_t *qsp);
 void qspEncodeFrame(QspConfiguration_t *qsp);
