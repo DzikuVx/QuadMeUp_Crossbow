@@ -67,24 +67,6 @@ enum debugConfigFlags {
 #define PPM_SIGNAL_POSITIVE_STATE 1  //set polarity of the pulses: 1 is positive, 0 is negative
 #define PPM_OUTPUT_PIN 10  //set PPM signal output pin on the arduino
 
-struct QspConfiguration_t {
-    uint8_t protocolState = QSP_STATE_IDLE;
-    uint8_t crc = 0;
-    uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};
-    uint8_t payloadLength = 0;
-    uint8_t frameToSend = 0;
-    uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
-    uint32_t anyFrameRecivedAt = 0;
-    uint8_t deviceState = DEVICE_STATE_UNDETERMINED;
-    void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
-    bool canTransmit = false;
-    bool forcePongFrame = false;
-    uint8_t debugConfig = 0;
-    uint32_t frameDecodingStartedAt = 0;
-    uint32_t lastTxSlotTimestamp = 0;
-    bool transmitWindowOpen = false;
-};
-
 struct TxDeviceState_t {
     uint8_t rssi = 0;
     uint8_t snr = 0;
@@ -101,4 +83,50 @@ struct RxDeviceState_t {
     uint8_t a1Voltage = 0;
     uint8_t a2Voltage = 0;
     uint8_t flags = 0;
+};
+
+/*
+ * Here we keep configuration of radio itself
+ */
+#define RADIO_CHANNEL_COUNT 5
+struct RadioState_t {
+    const uint32_t dwellTime = TX_TRANSMIT_SLOT_RATE * 2; 
+    const uint32_t radioChannels[RADIO_CHANNEL_COUNT] = {
+        867750E3,
+        868000E3,
+        868250E3,
+        868500E3,
+        868750E3
+    };
+    const uint8_t channelHopSequence[RADIO_CHANNEL_COUNT] = {
+        1,
+        4,
+        0,
+        2,
+        3
+    };
+    uint32_t loraBandwidth = 500E3;
+    uint8_t loraSpreadingFactor = 8;
+    uint8_t loraCodingRate = 6;
+    uint8_t channel = 0;
+    uint8_t channelEntryMillis = 0;
+};
+
+struct QspConfiguration_t {
+    uint8_t protocolState = QSP_STATE_IDLE;
+    uint8_t crc = 0;
+    uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};
+    uint8_t payloadLength = 0;
+    uint8_t frameToSend = 0;
+    uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
+    uint32_t anyFrameRecivedAt = 0;
+    uint8_t deviceState = DEVICE_STATE_UNDETERMINED;
+    void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
+    void (* onReceiveFunction)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, RadioState_t*);
+    bool canTransmit = false;
+    bool forcePongFrame = false;
+    uint8_t debugConfig = 0;
+    uint32_t frameDecodingStartedAt = 0;
+    uint32_t lastTxSlotTimestamp = 0;
+    bool transmitWindowOpen = false;
 };
