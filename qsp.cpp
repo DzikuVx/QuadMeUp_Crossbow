@@ -148,7 +148,8 @@ void qspDecodeIncomingFrame(
     uint8_t incomingByte, 
     int ppm[], 
     RxDeviceState_t *rxDeviceState, 
-    TxDeviceState_t *txDeviceState
+    TxDeviceState_t *txDeviceState,
+    RadioState_t *radioState
 ) {
     static uint8_t frameId;
     static uint8_t payloadLength;
@@ -242,6 +243,11 @@ void qspDecodeIncomingFrame(
             }
 
             qsp->transmitWindowOpen = true;
+
+            /*
+             * Do a callback hen frame has been sucessfully received
+             */
+            qsp->onReceiveFunction(qsp, txDeviceState, rxDeviceState, radioState);
         }
         else
         {
