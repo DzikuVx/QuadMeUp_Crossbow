@@ -214,14 +214,7 @@ void qspDecodeIncomingFrame(
                 qsp->lastFrameReceivedAt[frameId] = millis();
             }
             qsp->anyFrameRecivedAt = millis();
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-            qsp->frameId = frameId;
-=======
->>>>>>> Revert "Priority change"
 
->>>>>>> Priority change
             switch (frameId) {
                 case QSP_FRAME_RC_DATA:
                     qspDecodeRcDataFrame(qsp, ppm);

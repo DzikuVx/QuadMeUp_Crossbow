@@ -11,15 +11,7 @@
 #define RX_TASK_HEALTH 200 //5Hz should be enough
 #define RSSI_CHANNEL 11
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 #define TX_TRANSMIT_SLOT_RATE 67 //ms
-=======
-#define TX_TRANSMIT_SLOT_RATE 80 //ms
->>>>>>> Priority change
-=======
-#define TX_TRANSMIT_SLOT_RATE 70 //ms
->>>>>>> Revert "Priority change"
 #define RX_FAILSAFE_DELAY (TX_TRANSMIT_SLOT_RATE * 8)
 #define TX_FAILSAFE_DELAY (RX_FAILSAFE_DELAY * 4)
 
@@ -99,11 +91,11 @@ struct RxDeviceState_t {
 struct RadioState_t {
     const uint32_t dwellTime = TX_TRANSMIT_SLOT_RATE * 2; 
     const uint32_t radioChannels[RADIO_CHANNEL_COUNT] = {
-        867750E3,
-        868000E3,
-        868250E3,
-        868500E3,
-        868750E3
+        867750000,
+        868000000,
+        868250000,
+        868500000,
+        868750000
     };
     const uint8_t channelHopSequence[RADIO_CHANNEL_COUNT] = {
         1,
@@ -112,11 +104,11 @@ struct RadioState_t {
         2,
         3
     };
-    uint32_t loraBandwidth = 250E3;
+    uint32_t loraBandwidth = 250000;
     uint8_t loraSpreadingFactor = 7;
     uint8_t loraCodingRate = 6;
     uint8_t channel = 0;
-    uint8_t channelEntryMillis = 0;
+    uint32_t channelEntryMillis = 0;
 };
 
 struct QspConfiguration_t {

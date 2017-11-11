@@ -96,6 +96,7 @@ void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
 }
 
 void hopFrequency(RadioState_t *radioState) {
+
     radioState->channelEntryMillis = millis();
     radioState->channel++;
     if (radioState->channel >= RADIO_CHANNEL_COUNT) {
@@ -105,6 +106,13 @@ void hopFrequency(RadioState_t *radioState) {
     LoRa.setFrequency(
         radioState->radioChannels[radioState->channelHopSequence[radioState->channel]]
     );
+
+    // static uint32_t prev = 0;        
+    // Serial.print(millis() - prev);
+    // Serial.print(" ");
+    // Serial.println(radioState->radioChannels[radioState->channelHopSequence[radioState->channel]]);
+    // prev = millis();
+    
 }
 
 void onQspReceived(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
@@ -152,7 +160,9 @@ void setup(void)
         LORA32U4_DI0_PIN
     );
     
-    if (!LoRa.begin(radioState.radioChannels[radioState.channelHopSequence[radioState.channel]]))
+    if (!LoRa.begin(
+        radioState.radioChannels[radioState.channelHopSequence[radioState.channel]]
+    ))
     {
     #ifdef DEBUG_SERIAL
         Serial.println("LoRa init failed. Check your connections.");
@@ -331,7 +341,6 @@ void loop(void)
     }
 
 #ifdef DEVICE_MODE_TX
-
     if (
         qsp.protocolState == QSP_STATE_IDLE &&
         qsp.lastTxSlotTimestamp + TX_TRANSMIT_SLOT_RATE < currentMillis
@@ -439,6 +448,10 @@ void loop(void)
         radioPacketStart();
         qspEncodeFrame(&qsp);
         radioPacketEnd();
+    #ifdef DEVICE_MODE_TX
+        //Hop
+        hopFrequency(&radioState);
+    #endif
         transmitPayload = false;
     }
 
@@ -523,18 +536,6 @@ void loop(void)
 #endif
 
 #endif
-
-    if (qsp.canTransmit && transmitPayload)
-    {
-        radioPacketStart();
-        qspEncodeFrame(&qsp);
-        radioPacketEnd();
-    #ifdef DEVICE_MODE_TX
-        //Hop
-        hopFrequency(&radioState);
-    #endif
-        transmitPayload = false;
-    }
 
 }
 
