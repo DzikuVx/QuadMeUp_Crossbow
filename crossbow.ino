@@ -394,8 +394,16 @@ void loop(void)
 
 #endif
 
-#ifdef DEVICE_MODE_TX
+    if (qsp.canTransmit && transmitPayload)
+    {
+        radioPacketStart();
+        qspEncodeFrame(&qsp);
+        radioPacketEnd();
+        transmitPayload = false;
+    }
 
+#ifdef DEVICE_MODE_TX
+    
     buzzerProcess(TX_BUZZER_PIN, currentMillis, &buzzer);
 
     // This routing enables when TX starts to receive signal from RX for a first time or after 
@@ -475,14 +483,7 @@ void loop(void)
 #endif
 
 #endif
-
-    if (qsp.canTransmit && transmitPayload)
-    {
-        radioPacketStart();
-        qspEncodeFrame(&qsp);
-        radioPacketEnd();
-        transmitPayload = false;
-    }
+    
 
 }
 
