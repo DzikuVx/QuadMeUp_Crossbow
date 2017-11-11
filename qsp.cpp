@@ -285,5 +285,5 @@ void encodePingPayload(QspConfiguration_t *qsp, uint32_t currentMicros) {
     qsp->payload[2] = (currentMicros >> 16) & 255;
     qsp->payload[3] = (currentMicros >> 24) & 255;
 
-    qsp->payloadLength = 9;
+    qsp->payloadLength = 4;
 }

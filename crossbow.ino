@@ -131,8 +131,8 @@ void setup(void)
         while (true);
     }
 
-    LoRa.setSignalBandwidth(500E3);
-    LoRa.setSpreadingFactor(8);
+    LoRa.setSignalBandwidth(250E3);
+    LoRa.setSpreadingFactor(7);
     LoRa.setCodingRate4(6);
     LoRa.enableCrc();
     LoRa.onReceive(onReceive);
