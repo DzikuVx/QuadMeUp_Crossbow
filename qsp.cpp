@@ -215,8 +215,11 @@ void qspDecodeIncomingFrame(
             }
             qsp->anyFrameRecivedAt = millis();
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
             qsp->frameId = frameId;
+=======
+>>>>>>> Revert "Priority change"
 
 >>>>>>> Priority change
             switch (frameId) {
@@ -256,7 +259,6 @@ void qspDecodeIncomingFrame(
         }
         else
         {
-            // Serial.println("wrong CRC");
             //CRC failed, frame has to be rejected
             //TODO do something in this case or something
         }

@@ -12,10 +12,14 @@
 #define RSSI_CHANNEL 11
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #define TX_TRANSMIT_SLOT_RATE 67 //ms
 =======
 #define TX_TRANSMIT_SLOT_RATE 80 //ms
 >>>>>>> Priority change
+=======
+#define TX_TRANSMIT_SLOT_RATE 70 //ms
+>>>>>>> Revert "Priority change"
 #define RX_FAILSAFE_DELAY (TX_TRANSMIT_SLOT_RATE * 8)
 #define TX_FAILSAFE_DELAY (RX_FAILSAFE_DELAY * 4)
 
@@ -93,7 +97,7 @@ struct RxDeviceState_t {
  */
 #define RADIO_CHANNEL_COUNT 5
 struct RadioState_t {
-    const uint32_t dwellTime = TX_TRANSMIT_SLOT_RATE * 4; 
+    const uint32_t dwellTime = TX_TRANSMIT_SLOT_RATE * 2; 
     const uint32_t radioChannels[RADIO_CHANNEL_COUNT] = {
         867750E3,
         868000E3,
@@ -112,7 +116,7 @@ struct RadioState_t {
     uint8_t loraSpreadingFactor = 7;
     uint8_t loraCodingRate = 6;
     uint8_t channel = 0;
-    uint32_t channelEntryMillis = 0;
+    uint8_t channelEntryMillis = 0;
 };
 
 struct QspConfiguration_t {
@@ -132,5 +136,4 @@ struct QspConfiguration_t {
     uint32_t frameDecodingStartedAt = 0;
     uint32_t lastTxSlotTimestamp = 0;
     bool transmitWindowOpen = false;
-    uint8_t frameId = 0;
 };
