@@ -12,7 +12,7 @@
 #include "variables.h"
 #include "qsp.h"
 
-volatile int ppm[16] = {0};
+int ppm[16] = {0};
 
 // LoRa32u4 ports
 #define LORA32U4_SS_PIN     8
@@ -56,10 +56,11 @@ uint32_t lastOledTaskTime = 0;
 /*
  * Start of QSP protocol implementation
  */
-volatile QspConfiguration_t qsp = {};
-volatile RxDeviceState_t rxDeviceState = {};
-volatile TxDeviceState_t txDeviceState = {};
+QspConfiguration_t qsp = {};
+RxDeviceState_t rxDeviceState = {};
+TxDeviceState_t txDeviceState = {};
 
+volatile bool doReadPacket = false;
 
 uint8_t getRadioRssi(void)
 {
@@ -270,22 +271,25 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 void loop(void)
 {
 
-#ifdef DEVICE_MODE_TX
-    if (txDeviceState.readPacket) {
+    if (doReadPacket) {
         int incomingByte;
         while (incomingByte = LoRa.read(), incomingByte > -1)
         {
             qspDecodeIncomingFrame(&qsp, incomingByte, ppm, &rxDeviceState, &txDeviceState);
         }
+    #ifdef DEVICE_MODE_TX
         txDeviceState.rssi = getRadioRssi();
         txDeviceState.snr = getRadioSnr();
-        txDeviceState.readPacket = false;
+    #endif
+    #ifdef DEVICE_MODE_RX
+        rxDeviceState.rssi = getRadioRssi();
+        rxDeviceState.snr = getRadioSnr();
+    #endif
+        doReadPacket = false;
     }
-#endif
 
     uint32_t currentMillis = millis();
     bool transmitPayload = false;
-    static uint32_t previousAnyFrameReceivedAt = 0;
 
     /*
      * Watchdog for frame decoding stuck somewhere in the middle of a process
@@ -307,7 +311,7 @@ void loop(void)
         int8_t frameToSend = getFrameToTransmit(&qsp);
 
         if (frameToSend == QSP_FRAME_RC_DATA && !ppmReader.isReceiving()) {
-            frameToSend = -1;
+            // frameToSend = -1;
             //FIXME uncomment to enable full Failsafe
         }
 
@@ -492,20 +496,5 @@ void onReceive(int packetSize)
     if (packetSize == 0)
         return;
 
-#ifdef DEVICE_MODE_TX
-    txDeviceState.readPacket = true;
-#endif
-
-#ifdef DEVICE_MODE_RX
-
-    int incomingByte;
-
-    while (incomingByte = LoRa.read(), incomingByte > -1)
-    {
-        qspDecodeIncomingFrame(&qsp, incomingByte, ppm, &rxDeviceState, &txDeviceState);
-    }
-
-    rxDeviceState.rssi = getRadioRssi();
-    rxDeviceState.snr = getRadioSnr();
-#endif
+    doReadPacket = true;
 }

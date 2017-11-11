@@ -1,6 +1,6 @@
 #pragma once
 
-#define OLED_UPDATE_RATE 500
+#define OLED_UPDATE_RATE 750
 
 #define SBUS_UPDATE_RATE 15 //ms
 #define SBUS_PACKET_LENGTH 25
@@ -18,7 +18,7 @@
 #define CHANNEL_ID 0x01
 #define QSP_PAYLOAD_LENGTH 32
 
-#define QSP_MAX_FRAME_DECODE_TIME 5 //max time that frame can be decoded in ms
+#define QSP_MAX_FRAME_DECODE_TIME 10 //max time that frame can be decoded in ms
 
 #define QSP_FRAME_RC_DATA 0x0
 #define QSP_FRAME_RX_HEALTH 0x1
@@ -90,7 +90,6 @@ struct TxDeviceState_t {
     uint8_t snr = 0;
     uint8_t flags = 0;
     uint32_t roundtrip = 0;
-    bool readPacket = false;
     bool isReceiving = false; //Indicates that TX module is receiving frames from RX module
 };
 

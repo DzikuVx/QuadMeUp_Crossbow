@@ -179,7 +179,7 @@ void qspDecodeIncomingFrame(
 
         frameId = (incomingByte >> 4) & 0x0f;
         payloadLength = incomingByte & 0x0f;
-
+        
         qsp->protocolState = QSP_STATE_FRAME_TYPE_RECEIVED;
     }
     else if (qsp->protocolState == QSP_STATE_FRAME_TYPE_RECEIVED)
@@ -213,7 +213,6 @@ void qspDecodeIncomingFrame(
                 qsp->lastFrameReceivedAt[frameId] = millis();
             }
             qsp->anyFrameRecivedAt = millis();
-
             switch (frameId) {
                 case QSP_FRAME_RC_DATA:
                     qspDecodeRcDataFrame(qsp, ppm);
@@ -234,7 +233,6 @@ void qspDecodeIncomingFrame(
                     txDeviceState->roundtrip += (uint32_t) qsp->payload[3] << 24;
 
                     txDeviceState->roundtrip = (micros() - txDeviceState->roundtrip) / 1000;
-
                     break;
 
                 default:
