@@ -1,5 +1,5 @@
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
@@ -123,7 +123,7 @@ void setup(void)
         LORA32U4_DI0_PIN
     );
     
-    if (!LoRa.begin(868E6))
+    if (!LoRa.begin(870E6))
     {
     #ifdef DEBUG_SERIAL
         Serial.println("LoRa init failed. Check your connections.");
@@ -311,7 +311,7 @@ void loop(void)
         int8_t frameToSend = getFrameToTransmit(&qsp);
 
         if (frameToSend == QSP_FRAME_RC_DATA && !ppmReader.isReceiving()) {
-            // frameToSend = -1;
+            frameToSend = -1;
             //FIXME uncomment to enable full Failsafe
         }
 
