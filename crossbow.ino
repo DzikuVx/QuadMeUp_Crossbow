@@ -3,7 +3,7 @@
 
 #define FEATURE_TX_OLED
 
-// #define DEBUG_SERIAL
+#define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 // #define WAIT_FOR_SERIAL
@@ -96,7 +96,6 @@ void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
 }
 
 void hopFrequency(RadioState_t *radioState) {
-    radioState->channelEntryMillis = millis();
     radioState->channel++;
     if (radioState->channel >= RADIO_CHANNEL_COUNT) {
         radioState->channel = 0;
@@ -105,6 +104,13 @@ void hopFrequency(RadioState_t *radioState) {
     LoRa.setFrequency(
         radioState->radioChannels[radioState->channelHopSequence[radioState->channel]]
     );
+    radioState->channelEntryMillis = millis();
+
+    static uint32_t prev = 0;
+
+    Serial.println(millis() - prev);
+
+    prev = millis();
 }
 
 void onQspReceived(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
@@ -112,12 +118,23 @@ void onQspReceived(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDe
     /*
      * For TX module we do nothing in this callback ATM
      */
-
+    
     /*
      * For RX module we switch channel after each successful receive
      */
 #ifdef DEVICE_MODE_RX
-    hopFrequency(radioState);
+
+// static uint32_t regularCount = 0;
+// regularCount++;
+// Serial.print("N: ");
+// Serial.println(regularCount);
+
+    // hopFrequency(radioState);
+
+
+    // static uint32_t prev = 0;
+    // Serial.println(millis() - prev);
+    // prev = millis();
 #endif
 
 }
@@ -368,13 +385,16 @@ void loop(void)
 #endif
 
 #ifdef DEVICE_MODE_RX
-
+    static uint32_t emergencyCount = 0;
     /*
      * if frame did not arrived in reasonable time, hop to next channel
      */
-    if (radioState.channelEntryMillis + radioState.dwellTime < currentMillis) {
-        hopFrequency(&radioState);
-    }
+    // if (radioState.channelEntryMillis + radioState.dwellTime < currentMillis) {
+    //     hopFrequency(&radioState);
+    //     emergencyCount++;
+    //     Serial.print("E: ");
+    //     Serial.println(emergencyCount);
+    // }
 
     /*
      * This routine updates RX device state and updates one of radio channels with RSSI value
