@@ -1,5 +1,5 @@
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 
@@ -74,18 +74,6 @@ uint8_t getRadioSnr(void)
     return (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
 }
 
-void radioPacketStart(void)
-{
-    LoRa.beginPacket();
-}
-
-void radioPacketEnd(void)
-{
-    LoRa.endPacket();
-    //After ending packet, put device into receive mode again
-    LoRa.receive();
-}
-
 void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
 {
     //Compute CRC
@@ -103,16 +91,11 @@ void hopFrequency(RadioState_t *radioState) {
         radioState->channel = 0;
     }
     //And set hardware
+    LoRa.sleep();
     LoRa.setFrequency(
         radioState->radioChannels[radioState->channelHopSequence[radioState->channel]]
     );
-
-    // static uint32_t prev = 0;        
-    // Serial.print(millis() - prev);
-    // Serial.print(" ");
-    // Serial.println(radioState->radioChannels[radioState->channelHopSequence[radioState->channel]]);
-    // prev = millis();
-    
+    LoRa.idle();
 }
 
 void onQspReceived(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
@@ -126,6 +109,7 @@ void onQspReceived(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDe
      */
 #ifdef DEVICE_MODE_RX
     hopFrequency(radioState);
+    LoRa.receive(); //Put radio back into receive mode
 #endif
 
 }
@@ -445,13 +429,17 @@ void loop(void)
 
     if (qsp.canTransmit && transmitPayload)
     {
-        radioPacketStart();
+        LoRa.beginPacket();
         qspEncodeFrame(&qsp);
-        radioPacketEnd();
+        LoRa.endPacket();
+        
     #ifdef DEVICE_MODE_TX
         //Hop
         hopFrequency(&radioState);
     #endif
+
+        //After ending packet, put device into receive mode again
+        LoRa.receive();
         transmitPayload = false;
     }
 

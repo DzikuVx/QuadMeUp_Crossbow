@@ -87,7 +87,7 @@ struct RxDeviceState_t {
 /*
  * Here we keep configuration of radio itself
  */
-#define RADIO_CHANNEL_COUNT 5
+#define RADIO_CHANNEL_COUNT 6
 struct RadioState_t {
     const uint32_t dwellTime = TX_TRANSMIT_SLOT_RATE * 2; 
     const uint32_t radioChannels[RADIO_CHANNEL_COUNT] = {
@@ -95,14 +95,16 @@ struct RadioState_t {
         868000000,
         868250000,
         868500000,
-        868750000
+        868750000,
+        867500000
     };
     const uint8_t channelHopSequence[RADIO_CHANNEL_COUNT] = {
         1,
         4,
         0,
         2,
-        3
+        3,
+        5
     };
     uint32_t loraBandwidth = 250000;
     uint8_t loraSpreadingFactor = 7;
