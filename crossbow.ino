@@ -1,15 +1,16 @@
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
+#define FORCE_TX_WITHOUT_INPUT
 
 // #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
-// #define WAIT_FOR_SERIAL
 
 #include <LoRa.h>
 #include "variables.h"
+#include "main_variables.h"
 #include "qsp.h"
 
 int ppm[16] = {0};
@@ -59,30 +60,16 @@ uint32_t lastOledTaskTime = 0;
 QspConfiguration_t qsp = {};
 RxDeviceState_t rxDeviceState = {};
 TxDeviceState_t txDeviceState = {};
-
-volatile bool doReadPacket = false;
+volatile RadioState_t radioState;
 
 uint8_t getRadioRssi(void)
 {
-    //Map from -164:0 to 0:255
-    return map(constrain(LoRa.packetRssi() * -1, 0, 164), 0, 164, 255, 0);
+    return 164 - constrain(LoRa.packetRssi() * -1, 0, 164);
 }
 
 uint8_t getRadioSnr(void)
 {
     return (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
-}
-
-void radioPacketStart(void)
-{
-    LoRa.beginPacket();
-}
-
-void radioPacketEnd(void)
-{
-    LoRa.endPacket();
-    //After ending packet, put device into receive mode again
-    LoRa.receive();
 }
 
 void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
@@ -108,12 +95,6 @@ void setup(void)
     qsp.deviceState = DEVICE_STATE_OK;
 #endif
 
-#ifdef WAIT_FOR_SERIAL
-    while (!Serial) {
-        ; // wait for serial port to connect. Needed for native USB
-    }
-#endif
-
     /*
      * Setup hardware
      */
@@ -123,7 +104,7 @@ void setup(void)
         LORA32U4_DI0_PIN
     );
     
-    if (!LoRa.begin(870E6))
+    if (!LoRa.begin(radioState.frequency))
     {
     #ifdef DEBUG_SERIAL
         Serial.println("LoRa init failed. Check your connections.");
@@ -131,9 +112,9 @@ void setup(void)
         while (true);
     }
 
-    LoRa.setSignalBandwidth(250E3);
-    LoRa.setSpreadingFactor(7);
-    LoRa.setCodingRate4(6);
+    LoRa.setSignalBandwidth(radioState.loraBandwidth);
+    LoRa.setSpreadingFactor(radioState.loraSpreadingFactor);
+    LoRa.setCodingRate4(radioState.loraCodingRate);
     LoRa.enableCrc();
     LoRa.onReceive(onReceive);
     LoRa.receive();
@@ -187,44 +168,6 @@ void setup(void)
 
 }
 
-int8_t txSendSequence[16] = {
-    QSP_FRAME_PING,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA,
-    QSP_FRAME_RC_DATA
-};
-
-int8_t rxSendSequence[16] = {
-    QSP_FRAME_RX_HEALTH,
-    -1,
-    -1,
-    -1,
-    QSP_FRAME_RX_HEALTH,
-    -1,
-    -1,
-    -1,
-    QSP_FRAME_RX_HEALTH,
-    -1,
-    -1,
-    -1,
-    QSP_FRAME_RX_HEALTH,
-    -1,
-    -1,
-    -1
-};
-
 uint8_t currentSequenceIndex = 0;
 #define TRANSMIT_SEQUENCE_COUNT 16
 
@@ -271,21 +214,13 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 void loop(void)
 {
 
-    if (doReadPacket) {
-        int incomingByte;
-        while (incomingByte = LoRa.read(), incomingByte > -1)
-        {
-            qspDecodeIncomingFrame(&qsp, incomingByte, ppm, &rxDeviceState, &txDeviceState);
+    if (radioState.bytesToRead != NO_DATA_TO_READ) {
+
+        for (uint8_t i = 0; i < radioState.bytesToRead; i++) {
+            qspDecodeIncomingFrame(&qsp, radioState.data[i], ppm, &rxDeviceState, &txDeviceState);
         }
-    #ifdef DEVICE_MODE_TX
-        txDeviceState.rssi = getRadioRssi();
-        txDeviceState.snr = getRadioSnr();
-    #endif
-    #ifdef DEVICE_MODE_RX
-        rxDeviceState.rssi = getRadioRssi();
-        rxDeviceState.snr = getRadioSnr();
-    #endif
-        doReadPacket = false;
+
+        radioState.bytesToRead = NO_DATA_TO_READ;
     }
 
     uint32_t currentMillis = millis();
@@ -310,10 +245,12 @@ void loop(void)
         
         int8_t frameToSend = getFrameToTransmit(&qsp);
 
+    #ifndef FORCE_TX_WITHOUT_INPUT
         if (frameToSend == QSP_FRAME_RC_DATA && !ppmReader.isReceiving()) {
             frameToSend = -1;
             //FIXME uncomment to enable full Failsafe
         }
+    #endif
 
         if (frameToSend > -1) {
 
@@ -346,7 +283,7 @@ void loop(void)
     if (lastRxStateTaskTime + RX_TASK_HEALTH < currentMillis) {
         lastRxStateTaskTime = currentMillis;
         updateRxDeviceState(&rxDeviceState);
-        ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 255, 1000, 2000);
+        ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 164, 1000, 2000);
         if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
             digitalWrite(LED_BUILTIN, HIGH);
         } else {
@@ -375,7 +312,7 @@ void loop(void)
                     break;
 
                 case QSP_FRAME_RX_HEALTH:
-                    encodeRxHealthPayload(&qsp, &rxDeviceState);
+                    encodeRxHealthPayload(&qsp, &rxDeviceState, &radioState);
                     break;
             }
 
@@ -400,9 +337,11 @@ void loop(void)
 
     if (qsp.canTransmit && transmitPayload)
     {
-        radioPacketStart();
+        LoRa.beginPacket();
         qspEncodeFrame(&qsp);
-        radioPacketEnd();
+        LoRa.endPacket();
+        //After ending packet, put device into receive mode again
+        LoRa.receive();
         transmitPayload = false;
     }
 
@@ -445,9 +384,9 @@ void loop(void)
     } else if (txDeviceState.isReceiving && (rxDeviceState.flags & 0x1) == 1) {
         //Failsafe reported by RX module
         buzzerContinousMode(BUZZER_MODE_SLOW_BEEP, &buzzer);
-    } else if (txDeviceState.isReceiving && txDeviceState.rssi < 100) {
+    } else if (txDeviceState.isReceiving && radioState.rssi < 100) {
         buzzerContinousMode(BUZZER_MODE_DOUBLE_CHIRP, &buzzer);
-    } else if (txDeviceState.isReceiving && txDeviceState.rssi < 128) {
+    } else if (txDeviceState.isReceiving && radioState.rssi < 128) {
         buzzerContinousMode(BUZZER_MODE_CHIRP, &buzzer);
     } else {
         buzzerContinousMode(BUZZER_MODE_OFF, &buzzer);
@@ -464,15 +403,15 @@ void loop(void)
         display.setTextColor(WHITE, BLACK);
         display.setCursor(0, 0);
         display.setTextSize(3);
-        display.print(map(txDeviceState.rssi, 0, 255, 0, 164)); 
+        display.print(radioState.rssi); 
 
         display.setCursor(18, 28);
         display.setTextSize(2);
-        display.print(txDeviceState.snr);
+        display.print(radioState.snr);
         
         display.setCursor(74, 0);
         display.setTextSize(3);
-        display.print(map(rxDeviceState.rssi, 0, 255, 0, 164)); 
+        display.print(rxDeviceState.rssi); 
 
         display.setCursor(92, 28);
         display.setTextSize(2);
@@ -496,5 +435,21 @@ void onReceive(int packetSize)
     if (packetSize == 0)
         return;
 
-    doReadPacket = true;
+    if (packetSize >= MIN_PACKET_SIZE && packetSize <= MAX_PACKET_SIZE) {
+        //We have a packet candidate that might contain a valid QSP packet
+        radioState.bytesToRead = packetSize;
+        for (int i = 0; i < packetSize; i++) {
+            radioState.data[i] = LoRa.read();
+        }
+        radioState.rssi = getRadioRssi();
+        radioState.snr = getRadioSnr();
+    }
+    
+    /*
+    If data has been read from radio, flush whetever else there might be left
+    Including packets that are not valid by putting rafio to sleep and then to 
+    recive mode again
+    */
+    LoRa.sleep();
+    LoRa.receive();
 }

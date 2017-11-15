@@ -1,3 +1,5 @@
+#include "Arduino.h"
+
 #pragma once
 
 #define OLED_UPDATE_RATE 750
@@ -67,6 +69,22 @@ enum debugConfigFlags {
 #define PPM_SIGNAL_POSITIVE_STATE 1  //set polarity of the pulses: 1 is positive, 0 is negative
 #define PPM_OUTPUT_PIN 10  //set PPM signal output pin on the arduino
 
+#define MIN_PACKET_SIZE 3 //Min theorethical size of valid packet 
+#define MAX_PACKET_SIZE 20 //Max theorethical size of valid packet
+
+#define NO_DATA_TO_READ -1
+
+struct RadioState_t {
+    uint32_t frequency = 867000000;
+    uint32_t loraBandwidth = 250000;
+    uint8_t loraSpreadingFactor = 7;
+    uint8_t loraCodingRate = 6;
+    int8_t bytesToRead = -1;
+    uint8_t rssi = 0;
+    uint8_t snr = 0;
+    uint8_t data[20] = {0}; //Max size of packet that can be processed in QSP
+};
+
 struct QspConfiguration_t {
     uint8_t protocolState = QSP_STATE_IDLE;
     uint8_t crc = 0;
@@ -86,8 +104,6 @@ struct QspConfiguration_t {
 };
 
 struct TxDeviceState_t {
-    uint8_t rssi = 0;
-    uint8_t snr = 0;
     uint8_t flags = 0;
     uint32_t roundtrip = 0;
     bool isReceiving = false; //Indicates that TX module is receiving frames from RX module

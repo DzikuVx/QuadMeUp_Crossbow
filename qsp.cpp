@@ -54,9 +54,9 @@ void qspComputeCrc(QspConfiguration_t *qsp, uint8_t dataByte)
     qsp->crc ^= dataByte;
 }
 
-void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState) {
-    qsp->payload[0] = rxDeviceState->rssi;
-    qsp->payload[1] = rxDeviceState->snr;
+void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+    qsp->payload[0] = radioState->rssi;
+    qsp->payload[1] = radioState->snr;
     qsp->payload[2] = rxDeviceState->rxVoltage;
     qsp->payload[3] = rxDeviceState->a1Voltage;
     qsp->payload[4] = rxDeviceState->a2Voltage;
