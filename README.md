@@ -13,7 +13,7 @@ Development, ready for testing
 | 1                     | Channel ID | channel used for comunication between TX and RX |
 | 2                     | Frame type & Length | bits 7-5 defines frame, bits 4-0 payload length |
 | 3 - 34                | Payload | 32 bytes max |
-| payload length + 3    | CRC | XOR of all previous bytes |
+| payload length + 3    | CRC | using crc8_dvb_s2 method |
 
 ## Frame types
 

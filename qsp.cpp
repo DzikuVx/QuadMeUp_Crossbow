@@ -49,9 +49,22 @@ uint8_t get10bitLowShift(uint8_t channel) {
     return 8 - get10bitHighShift(channel);
 }
 
+uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a)
+{
+    crc ^= a;
+    for (int ii = 0; ii < 8; ++ii) {
+        if (crc & 0x80) {
+            crc = (crc << 1) ^ 0xD5;
+        } else {
+            crc = crc << 1;
+        }
+    }
+    return crc;
+}
+
 void qspComputeCrc(QspConfiguration_t *qsp, uint8_t dataByte)
 {
-    qsp->crc ^= dataByte;
+    qsp->crc = crc8_dvb_s2(qsp->crc, dataByte);
 }
 
 void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
@@ -161,8 +174,8 @@ void qspDecodeIncomingFrame(
         {
             qsp->frameDecodingStartedAt = millis();
             qsp->protocolState = QSP_STATE_CHANNEL_RECEIVED;
-            qsp->crc = 0 ^ incomingByte;
-
+            qsp->crc = 0;
+            qspComputeCrc(qsp, incomingByte);
             qspClearPayload(qsp);
 
             receivedPayload = 0;
@@ -175,7 +188,7 @@ void qspDecodeIncomingFrame(
     else if (qsp->protocolState == QSP_STATE_CHANNEL_RECEIVED)
     {
         //Frame ID and payload length
-        qsp->crc ^= incomingByte;
+        qspComputeCrc(qsp, incomingByte);
 
         frameId = (incomingByte >> 4) & 0x0f;
         payloadLength = incomingByte & 0x0f;
@@ -189,7 +202,7 @@ void qspDecodeIncomingFrame(
         }
 
         //Now it's time for payload
-        qsp->crc ^= incomingByte;
+        qspComputeCrc(qsp, incomingByte);
         qsp->payload[receivedPayload] = incomingByte;
 
         receivedPayload++;
