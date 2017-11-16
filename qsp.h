@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include <PPMReader.h>
 
-void qspDecodeRcDataFrame(QspConfiguration_t *qsp, int output[]);
+void qspDecodeRcDataFrame(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSate);
 void decodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState);
 
 uint8_t get10bitHighShift(uint8_t channel);
@@ -12,7 +12,6 @@ void encodeRcDataPayload(QspConfiguration_t *qsp, PPMReader *ppmSource, uint8_t 
 void qspDecodeIncomingFrame(
     QspConfiguration_t *qsp, 
     uint8_t incomingByte, 
-    int ppm[], 
     RxDeviceState_t *rxDeviceState,
     TxDeviceState_t *txDeviceState
 );

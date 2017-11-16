@@ -2,7 +2,7 @@
 #include "variables.h"
 #include <PPMReader.h>
 
-void qspDecodeRcDataFrame(QspConfiguration_t *qsp, int output[]) {
+void qspDecodeRcDataFrame(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSate) {
     int temporaryPpmOutput[PPM_OUTPUT_CHANNEL_COUNT] = {0};
     //TODO fix it, baby :)
 
@@ -37,7 +37,7 @@ void qspDecodeRcDataFrame(QspConfiguration_t *qsp, int output[]) {
      * Copy tremporary to real output
      */
     for (uint8_t i = 0; i < PPM_OUTPUT_CHANNEL_COUNT; i++) {
-        output[i] = temporaryPpmOutput[i];
+        rxDeviceSate->channels[i] = temporaryPpmOutput[i];
     }
 }
 
@@ -159,7 +159,6 @@ void qspClearPayload(QspConfiguration_t *qsp)
 void qspDecodeIncomingFrame(
     QspConfiguration_t *qsp, 
     uint8_t incomingByte, 
-    int ppm[], 
     RxDeviceState_t *rxDeviceState, 
     TxDeviceState_t *txDeviceState
 ) {
@@ -228,7 +227,7 @@ void qspDecodeIncomingFrame(
             qsp->anyFrameRecivedAt = millis();
             switch (frameId) {
                 case QSP_FRAME_RC_DATA:
-                    qspDecodeRcDataFrame(qsp, ppm);
+                    qspDecodeRcDataFrame(qsp, rxDeviceState);
                     break;
 
                 case QSP_FRAME_RX_HEALTH:
