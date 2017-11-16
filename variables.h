@@ -85,24 +85,6 @@ struct RadioState_t {
     uint8_t data[20] = {0}; //Max size of packet that can be processed in QSP
 };
 
-struct QspConfiguration_t {
-    uint8_t protocolState = QSP_STATE_IDLE;
-    uint8_t crc = 0;
-    uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};
-    uint8_t payloadLength = 0;
-    uint8_t frameToSend = 0;
-    uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
-    uint32_t anyFrameRecivedAt = 0;
-    uint8_t deviceState = DEVICE_STATE_UNDETERMINED;
-    void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
-    bool canTransmit = false;
-    bool forcePongFrame = false;
-    uint8_t debugConfig = 0;
-    uint32_t frameDecodingStartedAt = 0;
-    uint32_t lastTxSlotTimestamp = 0;
-    bool transmitWindowOpen = false;
-};
-
 struct TxDeviceState_t {
     uint8_t flags = 0;
     uint32_t roundtrip = 0;
@@ -117,4 +99,25 @@ struct RxDeviceState_t {
     uint8_t a2Voltage = 0;
     uint8_t flags = 0;
     int16_t channels[16] = {};
+};
+
+struct QspConfiguration_t {
+    uint8_t protocolState = QSP_STATE_IDLE;
+    uint8_t crc = 0;
+    uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};
+    uint8_t payloadLength = 0;
+    uint8_t frameToSend = 0;
+    uint8_t frameId = 0;
+    uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
+    uint32_t anyFrameRecivedAt = 0;
+    uint8_t deviceState = DEVICE_STATE_UNDETERMINED;
+    void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
+    void (* onSuccessCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, RadioState_t*);
+    void (* onFailureCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, RadioState_t*);    
+    bool canTransmit = false;
+    bool forcePongFrame = false;
+    uint8_t debugConfig = 0;
+    uint32_t frameDecodingStartedAt = 0;
+    uint32_t lastTxSlotTimestamp = 0;
+    bool transmitWindowOpen = false;
 };

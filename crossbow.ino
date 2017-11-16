@@ -1,5 +1,5 @@
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
 #define FORCE_TX_WITHOUT_INPUT
@@ -79,6 +79,50 @@ void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
     LoRa.write(dataByte);
 }
 
+void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+    //If devide received a valid frame, that means it can start to talk
+    qsp->canTransmit = true;
+
+    //Store the last timestamp when frame was received
+    if (qsp->frameId < QSP_FRAME_COUNT) {
+        qsp->lastFrameReceivedAt[qsp->frameId] = millis();
+    }
+    qsp->anyFrameRecivedAt = millis();
+    switch (qsp->frameId) {
+        case QSP_FRAME_RC_DATA:
+            qspDecodeRcDataFrame(qsp, rxDeviceState);
+            break;
+
+        case QSP_FRAME_RX_HEALTH:
+            decodeRxHealthPayload(qsp, rxDeviceState);
+            break;
+
+        case QSP_FRAME_PING:
+            qsp->forcePongFrame = true;
+            break;
+
+        case QSP_FRAME_PONG:
+            txDeviceState->roundtrip = qsp->payload[0];
+            txDeviceState->roundtrip += (uint32_t) qsp->payload[1] << 8;
+            txDeviceState->roundtrip += (uint32_t) qsp->payload[2] << 16;
+            txDeviceState->roundtrip += (uint32_t) qsp->payload[3] << 24;
+
+            txDeviceState->roundtrip = (micros() - txDeviceState->roundtrip) / 1000;
+            break;
+
+        default:
+            //Unknown frame
+            //TODO do something in this case
+            break;
+    }
+
+    qsp->transmitWindowOpen = true;
+}
+
+void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+
+}
+
 void setup(void)
 {
 #ifdef DEBUG_SERIAL
@@ -86,6 +130,8 @@ void setup(void)
 #endif
 
     qsp.hardwareWriteFunction = writeToRadio;
+    qsp.onSuccessCallback = onQspSuccess;
+    qsp.onFailureCallback = onQspFailure;
 
 #ifdef DEVICE_MODE_RX
     qsp.deviceState = DEVICE_STATE_FAILSAFE;
@@ -215,7 +261,7 @@ void loop(void)
     if (radioState.bytesToRead != NO_DATA_TO_READ) {
 
         for (uint8_t i = 0; i < radioState.bytesToRead; i++) {
-            qspDecodeIncomingFrame(&qsp, radioState.data[i], &rxDeviceState, &txDeviceState);
+            qspDecodeIncomingFrame(&qsp, radioState.data[i], &rxDeviceState, &txDeviceState, &radioState);
         }
 
         radioState.bytesToRead = NO_DATA_TO_READ;

@@ -160,7 +160,8 @@ void qspDecodeIncomingFrame(
     QspConfiguration_t *qsp, 
     uint8_t incomingByte, 
     RxDeviceState_t *rxDeviceState, 
-    TxDeviceState_t *txDeviceState
+    TxDeviceState_t *txDeviceState,
+    RadioState_t *radioState
 ) {
     static uint8_t frameId;
     static uint8_t payloadLength;
@@ -189,7 +190,7 @@ void qspDecodeIncomingFrame(
         //Frame ID and payload length
         qspComputeCrc(qsp, incomingByte);
 
-        frameId = (incomingByte >> 4) & 0x0f;
+        qsp->frameId = (incomingByte >> 4) & 0x0f;
         payloadLength = incomingByte & 0x0f;
         
         qsp->protocolState = QSP_STATE_FRAME_TYPE_RECEIVED;
@@ -216,49 +217,9 @@ void qspDecodeIncomingFrame(
     {
         if (qsp->crc == incomingByte) {
             //CRC is correct
-
-            //If devide received a valid frame, that means it can start to talk
-            qsp->canTransmit = true;
-
-            //Store the last timestamp when frame was received
-            if (frameId < QSP_FRAME_COUNT) {
-                qsp->lastFrameReceivedAt[frameId] = millis();
-            }
-            qsp->anyFrameRecivedAt = millis();
-            switch (frameId) {
-                case QSP_FRAME_RC_DATA:
-                    qspDecodeRcDataFrame(qsp, rxDeviceState);
-                    break;
-
-                case QSP_FRAME_RX_HEALTH:
-                    decodeRxHealthPayload(qsp, rxDeviceState);
-                    break;
-
-                case QSP_FRAME_PING:
-                    qsp->forcePongFrame = true;
-                    break;
-
-                case QSP_FRAME_PONG:
-                    txDeviceState->roundtrip = qsp->payload[0];
-                    txDeviceState->roundtrip += (uint32_t) qsp->payload[1] << 8;
-                    txDeviceState->roundtrip += (uint32_t) qsp->payload[2] << 16;
-                    txDeviceState->roundtrip += (uint32_t) qsp->payload[3] << 24;
-
-                    txDeviceState->roundtrip = (micros() - txDeviceState->roundtrip) / 1000;
-                    break;
-
-                default:
-                    //Unknown frame
-                    //TODO do something in this case
-                    break;
-            }
-
-            qsp->transmitWindowOpen = true;
-        }
-        else
-        {
-            //CRC failed, frame has to be rejected
-            //TODO do something in this case or something
+            qsp->onSuccessCallback(qsp, txDeviceState, rxDeviceState, radioState);
+        } else {
+            qsp->onFailureCallback(qsp, txDeviceState, rxDeviceState, radioState);
         }
 
         // In both cases switch to listening for next preamble
