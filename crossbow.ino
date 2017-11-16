@@ -13,8 +13,6 @@
 #include "main_variables.h"
 #include "qsp.h"
 
-int ppm[16] = {0};
-
 // LoRa32u4 ports
 #define LORA32U4_SS_PIN     8
 #define LORA32U4_RST_PIN    4
@@ -81,6 +79,50 @@ void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
     LoRa.write(dataByte);
 }
 
+void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+    //If devide received a valid frame, that means it can start to talk
+    qsp->canTransmit = true;
+
+    //Store the last timestamp when frame was received
+    if (qsp->frameId < QSP_FRAME_COUNT) {
+        qsp->lastFrameReceivedAt[qsp->frameId] = millis();
+    }
+    qsp->anyFrameRecivedAt = millis();
+    switch (qsp->frameId) {
+        case QSP_FRAME_RC_DATA:
+            qspDecodeRcDataFrame(qsp, rxDeviceState);
+            break;
+
+        case QSP_FRAME_RX_HEALTH:
+            decodeRxHealthPayload(qsp, rxDeviceState);
+            break;
+
+        case QSP_FRAME_PING:
+            qsp->forcePongFrame = true;
+            break;
+
+        case QSP_FRAME_PONG:
+            txDeviceState->roundtrip = qsp->payload[0];
+            txDeviceState->roundtrip += (uint32_t) qsp->payload[1] << 8;
+            txDeviceState->roundtrip += (uint32_t) qsp->payload[2] << 16;
+            txDeviceState->roundtrip += (uint32_t) qsp->payload[3] << 24;
+
+            txDeviceState->roundtrip = (micros() - txDeviceState->roundtrip) / 1000;
+            break;
+
+        default:
+            //Unknown frame
+            //TODO do something in this case
+            break;
+    }
+
+    qsp->transmitWindowOpen = true;
+}
+
+void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+
+}
+
 void setup(void)
 {
 #ifdef DEBUG_SERIAL
@@ -88,6 +130,8 @@ void setup(void)
 #endif
 
     qsp.hardwareWriteFunction = writeToRadio;
+    qsp.onSuccessCallback = onQspSuccess;
+    qsp.onFailureCallback = onQspFailure;
 
 #ifdef DEVICE_MODE_RX
     qsp.deviceState = DEVICE_STATE_FAILSAFE;
@@ -123,7 +167,7 @@ void setup(void)
     //initiallize default ppm values
     for (int i = 0; i < 16; i++)
     {
-        ppm[i] = PPM_CHANNEL_DEFAULT_VALUE;
+        rxDeviceState.channels[i] = PPM_CHANNEL_DEFAULT_VALUE;
     }
 
     pinMode(RX_ADC_PIN_1, INPUT);
@@ -217,7 +261,7 @@ void loop(void)
     if (radioState.bytesToRead != NO_DATA_TO_READ) {
 
         for (uint8_t i = 0; i < radioState.bytesToRead; i++) {
-            qspDecodeIncomingFrame(&qsp, radioState.data[i], ppm, &rxDeviceState, &txDeviceState);
+            qspDecodeIncomingFrame(&qsp, radioState.data[i], &rxDeviceState, &txDeviceState, &radioState);
         }
 
         radioState.bytesToRead = NO_DATA_TO_READ;
@@ -283,7 +327,7 @@ void loop(void)
     if (lastRxStateTaskTime + RX_TASK_HEALTH < currentMillis) {
         lastRxStateTaskTime = currentMillis;
         updateRxDeviceState(&rxDeviceState);
-        ppm[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 164, 1000, 2000);
+        rxDeviceState.channels[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 164, 1000, 2000);
         if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
             digitalWrite(LED_BUILTIN, HIGH);
         } else {
@@ -322,7 +366,7 @@ void loop(void)
     }
 
     if (currentMillis > sbusTime) {
-        sbusPreparePacket(sbusPacket, ppm, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
+        sbusPreparePacket(sbusPacket, rxDeviceState.channels, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
         Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
         sbusTime = currentMillis + SBUS_UPDATE_RATE;
     }
