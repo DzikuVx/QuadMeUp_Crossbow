@@ -61,6 +61,9 @@ Total length of `RC_DATA` payload is 9 bytes
 **TX** sends `PING` frame with curent `micros`. If **RX** receives `PING` frame, it respons
 its payload as `PONG` frame. 
 
+# TX module connection diagram
+
+![Diagram](docs/TX_module_schem.png)
 
 # RX module connection diagram
 
