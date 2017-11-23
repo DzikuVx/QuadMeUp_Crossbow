@@ -156,10 +156,14 @@ void setup(void)
         while (true);
     }
 
+    //Configure LoRa module
     LoRa.setSignalBandwidth(radioState.loraBandwidth);
     LoRa.setSpreadingFactor(radioState.loraSpreadingFactor);
     LoRa.setCodingRate4(radioState.loraCodingRate);
+    LoRa.setTxPower(radioState.loraTxPower);
     LoRa.enableCrc();
+    
+    //Setup ISR callback and start receiving
     LoRa.onReceive(onReceive);
     LoRa.receive();
 

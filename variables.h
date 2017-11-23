@@ -79,6 +79,7 @@ struct RadioState_t {
     uint32_t loraBandwidth = 250000;
     uint8_t loraSpreadingFactor = 7;
     uint8_t loraCodingRate = 6;
+    uint8_t loraTxPower = 17; // Defines output power of TX, defined in dBm range from 2-17
     int8_t bytesToRead = -1;
     uint8_t rssi = 0;
     uint8_t snr = 0;
