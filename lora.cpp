@@ -60,8 +60,7 @@ LoRaClass::LoRaClass() :
   _implicitHeaderMode(0),
   _onReceive(NULL)
 {
-  // overide Stream timeout value
-  setTimeout(0);
+
 }
 
 int LoRaClass::begin(long frequency)
@@ -248,28 +247,6 @@ int LoRaClass::read()
   _packetIndex++;
 
   return readRegister(REG_FIFO);
-}
-
-int LoRaClass::peek()
-{
-  if (!available()) {
-    return -1;
-  }
-
-  // store current FIFO address
-  int currentAddress = readRegister(REG_FIFO_ADDR_PTR);
-
-  // read
-  uint8_t b = readRegister(REG_FIFO);
-
-  // restore FIFO address
-  writeRegister(REG_FIFO_ADDR_PTR, currentAddress);
-
-  return b;
-}
-
-void LoRaClass::flush()
-{
 }
 
 void LoRaClass::onReceive(void(*callback)(int))

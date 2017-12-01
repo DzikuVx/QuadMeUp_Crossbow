@@ -16,7 +16,7 @@
 #define PA_OUTPUT_RFO_PIN      0
 #define PA_OUTPUT_PA_BOOST_PIN 1
 
-class LoRaClass : public Stream {
+class LoRaClass {
 public:
   LoRaClass();
 
@@ -30,15 +30,10 @@ public:
   int packetRssi();
   float packetSnr();
 
-  // from Print
-  virtual size_t write(uint8_t byte);
-  virtual size_t write(const uint8_t *buffer, size_t size);
-
-  // from Stream
-  virtual int available();
-  virtual int read();
-  virtual int peek();
-  virtual void flush();
+  size_t write(uint8_t byte);
+  size_t write(const uint8_t *buffer, size_t size);
+  int available();
+  int read();
 
   void onReceive(void(*callback)(int));
 
@@ -55,10 +50,6 @@ public:
   void setSyncWord(int sw);
   void enableCrc();
   void disableCrc();
-
-  // deprecated
-  void crc() { enableCrc(); }
-  void noCrc() { disableCrc(); }
 
   byte random();
 
