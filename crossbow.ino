@@ -8,7 +8,7 @@
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 
-#include <LoRa.h>
+#include "lora.h"
 #include "variables.h"
 #include "main_variables.h"
 #include "qsp.h"
