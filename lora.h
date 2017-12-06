@@ -34,6 +34,7 @@ public:
   size_t write(const uint8_t *buffer, size_t size);
   int available();
   int read();
+  int fastRead();
 
   void onReceive(void(*callback)(int));
 

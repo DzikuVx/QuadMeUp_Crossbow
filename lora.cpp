@@ -238,15 +238,19 @@ int LoRaClass::available()
   return (readRegister(REG_RX_NB_BYTES) - _packetIndex);
 }
 
+int LoRaClass::fastRead() {
+  _packetIndex++;
+  
+  return readRegister(REG_FIFO);
+}
+
 int LoRaClass::read()
 {
   if (!available()) {
     return -1;
   }
 
-  _packetIndex++;
-
-  return readRegister(REG_FIFO);
+  return fastRead();
 }
 
 void LoRaClass::onReceive(void(*callback)(int))

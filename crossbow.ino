@@ -487,7 +487,7 @@ void onReceive(int packetSize)
         //We have a packet candidate that might contain a valid QSP packet
         radioState.bytesToRead = packetSize;
         for (int i = 0; i < packetSize; i++) {
-            radioState.data[i] = LoRa.read();
+            radioState.data[i] = LoRa.fastRead();
         }
         radioState.rssi = getRadioRssi();
         radioState.snr = getRadioSnr();
