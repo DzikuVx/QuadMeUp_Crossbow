@@ -1,8 +1,8 @@
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 #define FEATURE_TX_OLED
-#define FORCE_TX_WITHOUT_INPUT
+// #define FORCE_TX_WITHOUT_INPUT
 
 // #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
@@ -264,9 +264,15 @@ void loop(void)
 
     if (radioState.bytesToRead != NO_DATA_TO_READ) {
 
-        for (uint8_t i = 0; i < radioState.bytesToRead; i++) {
-            qspDecodeIncomingFrame(&qsp, radioState.data[i], &rxDeviceState, &txDeviceState, &radioState);
+        for (int i = 0; i < radioState.bytesToRead; i++) {
+            qspDecodeIncomingFrame(&qsp, LoRa.fastRead(), &rxDeviceState, &txDeviceState, &radioState);            
         }
+        radioState.rssi = getRadioRssi();
+        radioState.snr = getRadioSnr();
+
+        //After reading, flush radio buffer, we have no need for whatever might be over there
+        LoRa.sleep();
+        LoRa.receive();
 
         radioState.bytesToRead = NO_DATA_TO_READ;
     }
@@ -483,21 +489,21 @@ void onReceive(int packetSize)
     if (packetSize == 0)
         return;
 
-    if (packetSize >= MIN_PACKET_SIZE && packetSize <= MAX_PACKET_SIZE) {
-        //We have a packet candidate that might contain a valid QSP packet
-        radioState.bytesToRead = packetSize;
-        for (int i = 0; i < packetSize; i++) {
-            radioState.data[i] = LoRa.fastRead();
-        }
-        radioState.rssi = getRadioRssi();
-        radioState.snr = getRadioSnr();
-    }
-    
     /*
-    If data has been read from radio, flush whetever else there might be left
-    Including packets that are not valid by putting rafio to sleep and then to 
-    recive mode again
-    */
-    LoRa.sleep();
-    LoRa.receive();
+     * We can start reading only when radio is not reading.
+     * If not reading, then we might start
+     */
+    if (radioState.bytesToRead == NO_DATA_TO_READ) {
+
+        if (packetSize >= MIN_PACKET_SIZE && packetSize <= MAX_PACKET_SIZE) {
+            //We have a packet candidate that might contain a valid QSP packet
+            radioState.bytesToRead = packetSize;
+        } else {
+            /*
+            That packet was not very interesting, just flush it, we have no use
+            */
+            LoRa.sleep();
+            LoRa.receive();
+        }
+    }
 }
