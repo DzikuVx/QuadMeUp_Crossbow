@@ -208,12 +208,17 @@ float LoRaClass::packetSnr()
   return ((int8_t)readRegister(REG_PKT_SNR_VALUE)) * 0.25;
 }
 
-size_t LoRaClass::write(uint8_t byte)
+void LoRaClass::write(uint8_t data)
 {
-  return write(&byte, sizeof(byte));
+  int currentLength = readRegister(REG_PAYLOAD_LENGTH);
+
+  writeRegister(REG_FIFO, data);
+
+  // update length
+  writeRegister(REG_PAYLOAD_LENGTH, currentLength + 1);
 }
 
-size_t LoRaClass::write(const uint8_t *buffer, size_t size)
+void LoRaClass::write(uint8_t buffer[], size_t size)
 {
   int currentLength = readRegister(REG_PAYLOAD_LENGTH);
 
@@ -222,15 +227,10 @@ size_t LoRaClass::write(const uint8_t *buffer, size_t size)
     size = MAX_PKT_LENGTH - currentLength;
   }
 
-  // write data
-  for (size_t i = 0; i < size; i++) {
-    writeRegister(REG_FIFO, buffer[i]);
-  }
+  writeRegister(REG_FIFO, buffer, size);
 
   // update length
   writeRegister(REG_PAYLOAD_LENGTH, currentLength + size);
-
-  return size;
 }
 
 int LoRaClass::available()
@@ -242,6 +242,11 @@ int LoRaClass::fastRead() {
   _packetIndex++;
   
   return readRegister(REG_FIFO);
+}
+
+void LoRaClass::read(uint8_t buffer[], uint8_t size) {
+  _packetIndex += size;
+  return readRegister(REG_FIFO, buffer, size);
 }
 
 int LoRaClass::read()
@@ -496,6 +501,29 @@ uint8_t LoRaClass::singleTransfer(uint8_t address, uint8_t value)
   digitalWrite(_ss, HIGH);
 
   return response;
+}
+
+void LoRaClass::writeRegister(uint8_t address, uint8_t buffer[], size_t size)
+{
+  bufferTransfer(address | 0x80, buffer, size);
+}
+
+void LoRaClass::readRegister(uint8_t address, uint8_t buffer[], size_t size)
+{
+  bufferTransfer(address & 0x7f, buffer, size);
+}
+
+void LoRaClass::bufferTransfer(uint8_t address, uint8_t buffer[], uint8_t size) {
+  uint8_t response;
+  
+  digitalWrite(_ss, LOW);
+
+  SPI.beginTransaction(_spiSettings);
+  SPI.transfer(address);
+  SPI.transfer(buffer, size);
+  SPI.endTransaction();
+
+  digitalWrite(_ss, HIGH); 
 }
 
 void LoRaClass::onDio0Rise()

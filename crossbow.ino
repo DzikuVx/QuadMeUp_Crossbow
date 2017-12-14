@@ -1,10 +1,10 @@
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
-#define FEATURE_TX_OLED
-// #define FORCE_TX_WITHOUT_INPUT
+// #define FEATURE_TX_OLED
+#define FORCE_TX_WITHOUT_INPUT
 
-// #define DEBUG_SERIAL
+#define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 
@@ -263,10 +263,14 @@ void loop(void)
 {
 
     if (radioState.bytesToRead != NO_DATA_TO_READ) {
+        static uint8_t tmpBuffer[20];
+
+        LoRa.read(tmpBuffer, radioState.bytesToRead);
 
         for (int i = 0; i < radioState.bytesToRead; i++) {
-            qspDecodeIncomingFrame(&qsp, LoRa.fastRead(), &rxDeviceState, &txDeviceState, &radioState);            
+            qspDecodeIncomingFrame(&qsp, tmpBuffer[i], &rxDeviceState, &txDeviceState, &radioState);            
         }
+        
         radioState.rssi = getRadioRssi();
         radioState.snr = getRadioSnr();
 
