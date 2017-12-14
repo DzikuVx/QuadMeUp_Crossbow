@@ -21,6 +21,10 @@ int mapChannelToSbus(int in) {
     return (((long) in * 1605l) / 1000l) - 1417;
 }
 
+int mapSbusToChannel(int in) {
+    return map(in, 173, 1811, 990, 2010);
+}
+
 void sbusPreparePacket(uint8_t packet[], int channels[], bool isSignalLoss, bool isFailsafe){
     
     static int output[SBUS_CHANNEL_NUMBER] = {0};
@@ -67,4 +71,62 @@ void sbusPreparePacket(uint8_t packet[], int channels[], bool isSignalLoss, bool
     
     packet[23] = stateByte; //Flags byte
     packet[24] = SBUS_FRAME_FOOTER; //Footer
+}
+
+void sbusRead(HardwareSerial &_serial, SbusInput_t *sbusInput) {
+    static byte buffer[25];
+	static byte buffer_index = 0;
+
+    static uint32_t _decoderErrorFrames;
+    static uint32_t _goodFrames;
+
+	while (_serial.available()) {
+		byte rx = _serial.read();
+		if (buffer_index == 0 && rx != SBUS_FRAME_HEADER) {
+			//incorrect start byte, out of sync
+			_decoderErrorFrames++;
+			continue;
+		}
+
+        buffer[buffer_index] = rx;
+        buffer_index++;
+
+		if (buffer_index == 25) {
+			buffer_index = 0;
+			if (buffer[24] != SBUS_FRAME_FOOTER) {
+				//incorrect end byte, out of sync
+				_decoderErrorFrames++;
+				continue;
+			}
+			_goodFrames++;
+
+			sbusInput->channels[0]  = ((buffer[1]    |buffer[2]<<8)                 & 0x07FF);
+			sbusInput->channels[1]  = ((buffer[2]>>3 |buffer[3]<<5)                 & 0x07FF);
+			sbusInput->channels[2]  = ((buffer[3]>>6 |buffer[4]<<2 |buffer[5]<<10)  & 0x07FF);
+			sbusInput->channels[3]  = ((buffer[5]>>1 |buffer[6]<<7)                 & 0x07FF);
+			sbusInput->channels[4]  = ((buffer[6]>>4 |buffer[7]<<4)                 & 0x07FF);
+			sbusInput->channels[5]  = ((buffer[7]>>7 |buffer[8]<<1 |buffer[9]<<9)   & 0x07FF);
+			sbusInput->channels[6]  = ((buffer[9]>>2 |buffer[10]<<6)                & 0x07FF);
+			sbusInput->channels[7]  = ((buffer[10]>>5|buffer[11]<<3)                & 0x07FF);
+			sbusInput->channels[8]  = ((buffer[12]   |buffer[13]<<8)                & 0x07FF);
+			sbusInput->channels[9]  = ((buffer[13]>>3|buffer[14]<<5)                & 0x07FF);
+			sbusInput->channels[10] = ((buffer[14]>>6|buffer[15]<<2|buffer[16]<<10) & 0x07FF);
+			sbusInput->channels[11] = ((buffer[16]>>1|buffer[17]<<7)                & 0x07FF);
+			sbusInput->channels[12] = ((buffer[17]>>4|buffer[18]<<4)                & 0x07FF);
+			sbusInput->channels[13] = ((buffer[18]>>7|buffer[19]<<1|buffer[20]<<9)  & 0x07FF);
+			sbusInput->channels[14] = ((buffer[20]>>2|buffer[21]<<6)                & 0x07FF);
+			sbusInput->channels[15] = ((buffer[21]>>5|buffer[22]<<3)                & 0x07FF);
+
+			for (uint8_t channelIndex = 0; channelIndex < SBUS_CHANNEL_NUMBER; channelIndex++) {
+                sbusInput->channels[channelIndex] = mapSbusToChannel(sbusInput->channels[channelIndex]);
+            }
+
+            //FIXME remove this debug
+            static uint32_t prev = 0;
+			sbusInput->lastChannelReceivedAt = millis();
+            Serial.println(sbusInput->lastChannelReceivedAt - prev);
+            prev = sbusInput->lastChannelReceivedAt;
+        }
+        
+	}
 }
