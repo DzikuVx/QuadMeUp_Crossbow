@@ -83,7 +83,6 @@ struct RadioState_t {
     int8_t bytesToRead = -1;
     uint8_t rssi = 0;
     uint8_t snr = 0;
-    uint8_t data[20] = {0}; //Max size of packet that can be processed in QSP
 };
 
 struct TxDeviceState_t {
