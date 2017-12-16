@@ -1,10 +1,10 @@
 #define DEVICE_MODE_TX
 // #define DEVICE_MODE_RX
 
-#define FEATURE_TX_OLED
-// #define FORCE_TX_WITHOUT_INPUT
+// #define FEATURE_TX_OLED
+#define FORCE_TX_WITHOUT_INPUT
 
-// #define DEBUG_SERIAL
+#define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 
@@ -59,6 +59,8 @@ QspConfiguration_t qsp = {};
 RxDeviceState_t rxDeviceState = {};
 TxDeviceState_t txDeviceState = {};
 volatile RadioState_t radioState;
+
+uint8_t tmpBuffer[MAX_PACKET_SIZE];
 
 uint8_t getRadioRssi(void)
 {
@@ -263,10 +265,12 @@ void loop(void)
 {
 
     if (radioState.bytesToRead != NO_DATA_TO_READ) {
+        LoRa.read(tmpBuffer, radioState.bytesToRead);
 
         for (int i = 0; i < radioState.bytesToRead; i++) {
-            qspDecodeIncomingFrame(&qsp, LoRa.fastRead(), &rxDeviceState, &txDeviceState, &radioState);            
+            qspDecodeIncomingFrame(&qsp, tmpBuffer[i], &rxDeviceState, &txDeviceState, &radioState);            
         }
+        
         radioState.rssi = getRadioRssi();
         radioState.snr = getRadioSnr();
 
@@ -391,8 +395,12 @@ void loop(void)
 
     if (qsp.canTransmit && transmitPayload)
     {
+        uint8_t size;
         LoRa.beginPacket();
-        qspEncodeFrame(&qsp);
+        //Prepare packet
+        qspEncodeFrame(&qsp, tmpBuffer, &size);
+        //Sent it to radio in one SPI transaction
+        LoRa.write(tmpBuffer, size);
         LoRa.endPacket();
         //After ending packet, put device into receive mode again
         LoRa.receive();
