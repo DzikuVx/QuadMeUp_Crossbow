@@ -230,26 +230,27 @@ void qspDecodeIncomingFrame(
 /**
  * Encode frame is corrent format and write to hardware
  */
-void qspEncodeFrame(QspConfiguration_t *qsp) {
+void qspEncodeFrame(QspConfiguration_t *qsp, uint8_t buffer[], uint8_t *size) {
     //Zero CRC
     qsp->crc = 0;
 
-    //Write CHANNEL_ID
-    qsp->hardwareWriteFunction(CHANNEL_ID, qsp);
+    qspComputeCrc(qsp, CHANNEL_ID);
+    buffer[0] = CHANNEL_ID;
 
     //Write frame type and length
     uint8_t data = qsp->payloadLength & 0x0f;
     data |= (qsp->frameToSend << 4) & 0xf0;
-    qsp->hardwareWriteFunction(data, qsp);
+    qspComputeCrc(qsp, data);
+    buffer[1] = data;
 
-    //Write payload
     for (uint8_t i = 0; i < qsp->payloadLength; i++)
     {
-        qsp->hardwareWriteFunction(qsp->payload[i], qsp);
+        qspComputeCrc(qsp, qsp->payload[i]);
+        buffer[i + 2] = qsp->payload[i];
     }
 
-    //Finally write CRC
-    qsp->hardwareWriteFunction(qsp->crc, qsp);
+    buffer[qsp->payloadLength + 2] = qsp->crc;
+    *size = qsp->payloadLength + 3; //Total length of QSP frame
 }
 
 void encodePingPayload(QspConfiguration_t *qsp, uint32_t currentMicros) {

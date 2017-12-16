@@ -30,11 +30,12 @@ public:
   int packetRssi();
   float packetSnr();
 
-  size_t write(uint8_t byte);
-  size_t write(const uint8_t *buffer, size_t size);
+  void write(uint8_t byte);
+  void write(uint8_t buffer[], size_t size);
   int available();
   int read();
   int fastRead();
+  void read(uint8_t buffer[], uint8_t size);
 
   void onReceive(void(*callback)(int));
 
@@ -68,6 +69,10 @@ private:
   uint8_t readRegister(uint8_t address);
   void writeRegister(uint8_t address, uint8_t value);
   uint8_t singleTransfer(uint8_t address, uint8_t value);
+
+  void readRegister(uint8_t address, uint8_t buffer[], size_t size);
+  void writeRegister(uint8_t address, uint8_t buffer[], size_t size);
+  void bufferTransfer(uint8_t address, uint8_t buffer[], uint8_t size);
 
   static void onDio0Rise();
 
