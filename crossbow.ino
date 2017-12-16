@@ -4,7 +4,7 @@
 // #define FEATURE_TX_OLED
 // #define FORCE_TX_WITHOUT_INPUT
 
-#define DEBUG_SERIAL
+// #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 
@@ -341,7 +341,10 @@ void loop(void)
     if (lastRxStateTaskTime + RX_TASK_HEALTH < currentMillis) {
         lastRxStateTaskTime = currentMillis;
         updateRxDeviceState(&rxDeviceState);
-        rxDeviceState.channels[RSSI_CHANNEL - 1] = map(radioState.rssi, 0, 164, 1000, 2000);
+
+        uint8_t output = constrain(radioState.rssi - 40, 0, 100);
+
+        rxDeviceState.channels[RSSI_CHANNEL - 1] = (output * 10) + 1000;
         if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
             digitalWrite(LED_BUILTIN, HIGH);
         } else {
