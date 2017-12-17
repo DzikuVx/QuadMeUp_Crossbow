@@ -27,7 +27,7 @@ public:
   int endPacket();
 
   void endPacketAsync();
-  bool isTransmitting()
+  bool isTransmitting();
 
   int parsePacket(int size = 0);
   int packetRssi();

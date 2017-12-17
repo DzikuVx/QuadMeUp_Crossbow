@@ -1,7 +1,7 @@
 #define DEVICE_MODE_TX
 // #define DEVICE_MODE_RX
 
-#define FEATURE_TX_OLED
+// #define FEATURE_TX_OLED
 // #define FORCE_TX_WITHOUT_INPUT
 
 // #define DEBUG_SERIAL
@@ -168,6 +168,7 @@ void setup(void)
     //Setup ISR callback and start receiving
     LoRa.onReceive(onReceive);
     LoRa.receive();
+    radioState.deviceState = RADIO_STATE_RX;
 
 #ifdef DEVICE_MODE_RX
     //initiallize default ppm values
@@ -261,8 +262,22 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 }
 #endif
 
+/*
+ * 
+ * Main loop starts here!
+ * 
+ */
 void loop(void)
 {
+
+    /*
+     * Detect the moment when radio module stopped transmittig and put it
+     * back in to receive state
+     */
+    if (radioState.deviceState == RADIO_STATE_TX && !LoRa.isTransmitting()) {
+        LoRa.receive();
+        radioState.deviceState = RADIO_STATE_RX;
+    }
 
     if (radioState.bytesToRead != NO_DATA_TO_READ) {
         LoRa.read(tmpBuffer, radioState.bytesToRead);
@@ -277,6 +292,7 @@ void loop(void)
         //After reading, flush radio buffer, we have no need for whatever might be over there
         LoRa.sleep();
         LoRa.receive();
+        radioState.deviceState = RADIO_STATE_RX;
 
         radioState.bytesToRead = NO_DATA_TO_READ;
     }
@@ -404,9 +420,11 @@ void loop(void)
         qspEncodeFrame(&qsp, tmpBuffer, &size);
         //Sent it to radio in one SPI transaction
         LoRa.write(tmpBuffer, size);
-        LoRa.endPacket();
-        //After ending packet, put device into receive mode again
-        LoRa.receive();
+        LoRa.endPacketAsync();
+
+        //Set state to be able to detect the moment when TX is done
+        radioState.deviceState = RADIO_STATE_TX;
+
         transmitPayload = false;
     }
 
@@ -515,6 +533,7 @@ void onReceive(int packetSize)
             */
             LoRa.sleep();
             LoRa.receive();
+            radioState.deviceState = RADIO_STATE_RX;
         }
     }
 }
