@@ -4,18 +4,16 @@ _QuadMeUp Crossbow_ is a DIY project that gives 5km (at least) of RC link for UA
 
 # Current state
 
-Development, not yet functional
+Development, ready for testing
 
 # Protocol
 
 | Byte                  | Description | Notes |
 | ----                  | ----        | ---- |
-| 1                     | Preamble | "Q" 0x51 |
-| 2                     | Channel ID | channel used for comunication between TX and RX |
-| 3                     | Frame type & Length | bits 7-5 defines frame, bits 4-0 payload length |
-| 4                     | Packet ID | |
-| 5 - 36                | Payload | 32 bytes max |
-| payload length + 5    | CRC | XOR of all previous bytes |
+| 1                     | Channel ID | channel used for comunication between TX and RX |
+| 2                     | Frame type & Length | bits 7-5 defines frame, bits 4-0 payload length |
+| 3 - 34                | Payload | 32 bytes max |
+| payload length + 3    | CRC | using crc8_dvb_s2 method |
 
 ## Frame types
 
@@ -26,8 +24,8 @@ Development, not yet functional
 | 0010   | 0x2          | Request receiver configuration | TX -> RX |
 | 0011   | 0x3          | Receiver configuration | RX -> TX |
 | 0100   | 0x4          | Set receiver configuration | TX -> RX |
-| 0101   | 0x5          | PING frame | TX -> RX |
-| 0110   | 0x6          | PONG frame | RX -> TX |
+| 0101   | 0x5          | PING frame, uses 9 byte payload | TX -> RX |
+| 0110   | 0x6          | PONG frame, the same payload as PING | RX -> TX |
 
 ### `RC_DATA` frame format
 
@@ -48,10 +46,25 @@ Total length of `RC_DATA` payload is 9 bytes
 | 3     | RX supply volatage, sent in 0,1V      |
 | 4     | RX analog input 1 sent in 0,1V        |
 | 5     | RX analog input 2 sent in 0,1V        |
-| 6     | Last received packet ID               |
+| 6     | Flags                                 |
+
+#### Flags
+
+| Bit   | Meaning                               |
+| ----  | ----                                  |
+| 00000001  | Device in Failsafe mode           |
+
 
 ### `PING` and `PONG` frames
 
 `PING` and `PONG` frames are to determine packet roundrip between **TX** and **RX** module.
 **TX** sends `PING` frame with curent `micros`. If **RX** receives `PING` frame, it respons
 its payload as `PONG` frame. 
+
+# TX module connection diagram
+
+![Diagram](docs/TX_module_schem.png)
+
+# RX module connection diagram
+
+![Diagram](docs/RX_module_schem.png)

@@ -12,6 +12,15 @@
 #define SBUS_STATE_FAILSAFE 0x08
 #define SBUS_STATE_SIGNALLOSS 0x04
 
+/*
+Precomputed mapping from 990-2010 to 173:1811
+equivalent to 
+map(channels[i], RC_CHANNEL_MIN, RC_CHANNEL_MAX, SBUS_MIN_OFFSET, SBUS_MAX_OFFSET);
+*/
+int mapChannelToSbus(int in) {
+    return (((long) in * 1605l) / 1000l) - 1417;
+}
+
 void sbusPreparePacket(uint8_t packet[], int channels[], bool isSignalLoss, bool isFailsafe){
     
     static int output[SBUS_CHANNEL_NUMBER] = {0};
@@ -21,7 +30,7 @@ void sbusPreparePacket(uint8_t packet[], int channels[], bool isSignalLoss, bool
      * 173-1811 with middle at 992 S.BUS protocol requires
      */
     for (uint8_t i = 0; i < SBUS_CHANNEL_NUMBER; i++) {
-        output[i] = map(channels[i], RC_CHANNEL_MIN, RC_CHANNEL_MAX, SBUS_MIN_OFFSET, SBUS_MAX_OFFSET);
+        output[i] = mapChannelToSbus(channels[i]);
     }
 
     uint8_t stateByte = 0x00;
