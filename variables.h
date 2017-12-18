@@ -111,7 +111,6 @@ struct QspConfiguration_t {
     uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
     uint32_t anyFrameRecivedAt = 0;
     uint8_t deviceState = DEVICE_STATE_UNDETERMINED;
-    void (* hardwareWriteFunction)(uint8_t, QspConfiguration_t*);
     void (* onSuccessCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, RadioState_t*);
     void (* onFailureCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, RadioState_t*);    
     bool canTransmit = false;

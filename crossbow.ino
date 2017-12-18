@@ -1,10 +1,10 @@
-#define DEVICE_MODE_TX
-// #define DEVICE_MODE_RX
+// #define DEVICE_MODE_TX
+#define DEVICE_MODE_RX
 
 // #define FEATURE_TX_OLED
-#define FORCE_TX_WITHOUT_INPUT
+// #define FORCE_TX_WITHOUT_INPUT
 
-#define DEBUG_SERIAL
+// #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 
@@ -74,15 +74,6 @@ uint8_t getRadioSnr(void)
     return (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
 }
 
-void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
-{
-    //Compute CRC
-    qspComputeCrc(qsp, dataByte);
-
-    //Write to radio
-    LoRa.write(dataByte);
-}
-
 void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
     //If devide received a valid frame, that means it can start to talk
     qsp->canTransmit = true;
@@ -133,7 +124,6 @@ void setup(void)
     Serial.begin(115200);
 #endif
 
-    qsp.hardwareWriteFunction = writeToRadio;
     qsp.onSuccessCallback = onQspSuccess;
     qsp.onFailureCallback = onQspFailure;
 
@@ -347,7 +337,10 @@ void loop(void)
     if (lastRxStateTaskTime + RX_TASK_HEALTH < currentMillis) {
         lastRxStateTaskTime = currentMillis;
         updateRxDeviceState(&rxDeviceState);
-        rxDeviceState.channels[RSSI_CHANNEL - 1] = map(rxDeviceState.rssi, 0, 164, 1000, 2000);
+
+        uint8_t output = constrain(radioState.rssi - 40, 0, 100);
+
+        rxDeviceState.channels[RSSI_CHANNEL - 1] = (output * 10) + 1000;
         if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
             digitalWrite(LED_BUILTIN, HIGH);
         } else {
