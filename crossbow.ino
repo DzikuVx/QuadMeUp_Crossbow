@@ -270,6 +270,8 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 void loop(void)
 {
 
+    uint32_t currentMillis = millis();
+
     /*
      * Detect the moment when radio module stopped transmittig and put it
      * back in to receive state
@@ -297,7 +299,6 @@ void loop(void)
         radioState.bytesToRead = NO_DATA_TO_READ;
     }
 
-    uint32_t currentMillis = millis();
     bool transmitPayload = false;
 
     /*
