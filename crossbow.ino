@@ -58,7 +58,7 @@ uint32_t lastOledTaskTime = 0;
 QspConfiguration_t qsp = {};
 RxDeviceState_t rxDeviceState = {};
 TxDeviceState_t txDeviceState = {};
-volatile RadioState_t radioState;
+volatile RadioState_t radioState = {};
 
 uint8_t tmpBuffer[MAX_PACKET_SIZE];
 
@@ -81,7 +81,7 @@ void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
     LoRa.write(dataByte);
 }
 
-void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
     //If devide received a valid frame, that means it can start to talk
     qsp->canTransmit = true;
 
@@ -121,7 +121,7 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
     qsp->transmitWindowOpen = true;
 }
 
-void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
 
 }
 
