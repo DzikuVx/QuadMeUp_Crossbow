@@ -1,10 +1,10 @@
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 // #define FEATURE_TX_OLED
 // #define FORCE_TX_WITHOUT_INPUT
 
-// #define DEBUG_SERIAL
+#define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 
@@ -60,7 +60,7 @@ uint32_t lastOledTaskTime = 0;
 QspConfiguration_t qsp = {};
 RxDeviceState_t rxDeviceState = {};
 TxDeviceState_t txDeviceState = {};
-volatile RadioState_t radioState;
+volatile RadioState_t radioState = {};
 
 uint8_t tmpBuffer[MAX_PACKET_SIZE];
 
@@ -74,7 +74,7 @@ uint8_t getRadioSnr(void)
     return (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
 }
 
-void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
     //If devide received a valid frame, that means it can start to talk
     qsp->canTransmit = true;
 
@@ -114,7 +114,7 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
     qsp->transmitWindowOpen = true;
 }
 
-void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
 
 }
 
@@ -160,6 +160,7 @@ void setup(void)
     //Setup ISR callback and start receiving
     LoRa.onReceive(onReceive);
     LoRa.receive();
+    radioState.deviceState = RADIO_STATE_RX;
 
 #ifdef DEVICE_MODE_RX
     //initiallize default ppm values
@@ -253,8 +254,29 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 }
 #endif
 
+/*
+ * 
+ * Main loop starts here!
+ * 
+ */
 void loop(void)
 {
+
+    uint32_t currentMillis = millis();
+
+    /*
+     * Detect the moment when radio module stopped transmittig and put it
+     * back in to receive state
+     */
+    if (
+        currentMillis > radioState.nextTxCheckMillis &&
+        radioState.deviceState == RADIO_STATE_TX && 
+        !LoRa.isTransmitting()
+    ) {
+        LoRa.receive();
+        radioState.deviceState = RADIO_STATE_RX;
+        radioState.nextTxCheckMillis = currentMillis + 1; //We check of TX done every 1ms
+    }
 
     if (radioState.bytesToRead != NO_DATA_TO_READ) {
         LoRa.read(tmpBuffer, radioState.bytesToRead);
@@ -269,11 +291,11 @@ void loop(void)
         //After reading, flush radio buffer, we have no need for whatever might be over there
         LoRa.sleep();
         LoRa.receive();
+        radioState.deviceState = RADIO_STATE_RX;
 
         radioState.bytesToRead = NO_DATA_TO_READ;
     }
 
-    uint32_t currentMillis = millis();
     bool transmitPayload = false;
 
     /*
@@ -293,6 +315,7 @@ void loop(void)
     }
 
     if (
+        radioState.deviceState == RADIO_STATE_RX &&
         qsp.protocolState == QSP_STATE_IDLE &&
         qsp.lastTxSlotTimestamp + TX_TRANSMIT_SLOT_RATE < currentMillis
     ) {
@@ -400,9 +423,11 @@ void loop(void)
         qspEncodeFrame(&qsp, tmpBuffer, &size);
         //Sent it to radio in one SPI transaction
         LoRa.write(tmpBuffer, size);
-        LoRa.endPacket();
-        //After ending packet, put device into receive mode again
-        LoRa.receive();
+        LoRa.endPacketAsync();
+
+        //Set state to be able to detect the moment when TX is done
+        radioState.deviceState = RADIO_STATE_TX;
+
         transmitPayload = false;
     }
 
@@ -493,9 +518,6 @@ void loop(void)
 
 void onReceive(int packetSize)
 {
-    if (packetSize == 0)
-        return;
-
     /*
      * We can start reading only when radio is not reading.
      * If not reading, then we might start
@@ -511,6 +533,7 @@ void onReceive(int packetSize)
             */
             LoRa.sleep();
             LoRa.receive();
+            radioState.deviceState = RADIO_STATE_RX;
         }
     }
 }

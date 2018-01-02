@@ -26,6 +26,9 @@ public:
   int beginPacket(int implicitHeader = false);
   int endPacket();
 
+  void endPacketAsync();
+  bool isTransmitting();
+
   int parsePacket(int size = 0);
   int packetRssi();
   float packetSnr();

@@ -3,12 +3,17 @@
         {
             "name": "Win32",
             "includePath": [
-                "C:\\Users\\pspyc\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.6.19\\cores\\arduino"
+                "${workspaceRoot}",
+                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino",
+                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\libraries",
+                "C:\\Users\\pspyc\\Documents\\Arduino\\libraries",
+                "C:\\Users\\pspyc\\Documents\\Arduino\\libraries\\PPMReader"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": false,
                 "path": [
-                    "C:\\Users\\pspyc\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.6.19\\cores\\arduino",
+                    "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino",
+                    "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\libraries",
                     "${workspaceRoot}",
                     "C:\\Users\\pspyc\\Documents\\Arduino\\libraries"
                 ]

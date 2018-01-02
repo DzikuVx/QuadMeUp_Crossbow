@@ -153,6 +153,29 @@ int LoRaClass::endPacket()
   return 1;
 }
 
+//https://github.com/sandeepmistry/arduino-LoRa/pull/62/files
+void LoRaClass::endPacketAsync()
+{
+  // put in TX mode
+  writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_TX);
+
+  // apparently this grace time is required for the radio
+  delayMicroseconds(150);
+}
+
+//https://github.com/sandeepmistry/arduino-LoRa/pull/62/files
+bool LoRaClass::isTransmitting()
+{
+  if ((readRegister(REG_OP_MODE) & MODE_TX) == MODE_TX)
+    return true;
+
+  if (!(readRegister(REG_IRQ_FLAGS) & IRQ_TX_DONE_MASK) == 0)
+    // clear IRQ's
+    writeRegister(REG_IRQ_FLAGS, IRQ_TX_DONE_MASK);
+
+  return false;
+} 
+
 int LoRaClass::parsePacket(int size)
 {
   int packetLength = 0;
