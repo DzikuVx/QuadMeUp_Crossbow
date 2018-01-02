@@ -67,7 +67,7 @@ void qspComputeCrc(QspConfiguration_t *qsp, uint8_t dataByte)
     qsp->crc = crc8_dvb_s2(qsp->crc, dataByte);
 }
 
-void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState, RadioState_t *radioState) {
+void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
     qsp->payload[0] = radioState->rssi;
     qsp->payload[1] = radioState->snr;
     qsp->payload[2] = rxDeviceState->rxVoltage;
