@@ -319,6 +319,7 @@ void loop(void)
 #ifdef DEVICE_MODE_TX
 
     if (
+        radioState.deviceState == RADIO_STATE_RX &&
         qsp.protocolState == QSP_STATE_IDLE &&
         qsp.lastTxSlotTimestamp + TX_TRANSMIT_SLOT_RATE < currentMillis
     ) {
