@@ -72,15 +72,6 @@ uint8_t getRadioSnr(void)
     return (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
 }
 
-void writeToRadio(uint8_t dataByte, QspConfiguration_t *qsp)
-{
-    //Compute CRC
-    qspComputeCrc(qsp, dataByte);
-
-    //Write to radio
-    LoRa.write(dataByte);
-}
-
 void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
     //If devide received a valid frame, that means it can start to talk
     qsp->canTransmit = true;
@@ -131,7 +122,6 @@ void setup(void)
     Serial.begin(115200);
 #endif
 
-    qsp.hardwareWriteFunction = writeToRadio;
     qsp.onSuccessCallback = onQspSuccess;
     qsp.onFailureCallback = onQspFailure;
 
