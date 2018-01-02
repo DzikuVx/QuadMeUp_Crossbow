@@ -74,6 +74,9 @@ enum debugConfigFlags {
 
 #define NO_DATA_TO_READ -1
 
+#define RADIO_STATE_TX 1
+#define RADIO_STATE_RX 2
+
 struct RadioState_t {
     uint32_t frequency = 867000000;
     uint32_t loraBandwidth = 250000;
@@ -83,6 +86,8 @@ struct RadioState_t {
     int8_t bytesToRead = -1;
     uint8_t rssi = 0;
     uint8_t snr = 0;
+    uint8_t deviceState = RADIO_STATE_RX;
+    uint32_t nextTxCheckMillis = 0;
 };
 
 struct TxDeviceState_t {
@@ -111,8 +116,8 @@ struct QspConfiguration_t {
     uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
     uint32_t anyFrameRecivedAt = 0;
     uint8_t deviceState = DEVICE_STATE_UNDETERMINED;
-    void (* onSuccessCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, RadioState_t*);
-    void (* onFailureCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, RadioState_t*);    
+    void (* onSuccessCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, volatile RadioState_t*);
+    void (* onFailureCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, volatile RadioState_t*);    
     bool canTransmit = false;
     bool forcePongFrame = false;
     uint8_t debugConfig = 0;
