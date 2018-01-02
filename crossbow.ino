@@ -1,10 +1,10 @@
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
 // #define FEATURE_TX_OLED
 // #define FORCE_TX_WITHOUT_INPUT
 
-// #define DEBUG_SERIAL
+#define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 
@@ -276,9 +276,14 @@ void loop(void)
      * Detect the moment when radio module stopped transmittig and put it
      * back in to receive state
      */
-    if (radioState.deviceState == RADIO_STATE_TX && !LoRa.isTransmitting()) {
+    if (
+        currentMillis > radioState.nextTxCheckMillis &&
+        radioState.deviceState == RADIO_STATE_TX && 
+        !LoRa.isTransmitting()
+    ) {
         LoRa.receive();
         radioState.deviceState = RADIO_STATE_RX;
+        radioState.nextTxCheckMillis = currentMillis + 1; //We check of TX done every 1ms
     }
 
     if (radioState.bytesToRead != NO_DATA_TO_READ) {
@@ -516,9 +521,6 @@ void loop(void)
 
 void onReceive(int packetSize)
 {
-    if (packetSize == 0)
-        return;
-
     /*
      * We can start reading only when radio is not reading.
      * If not reading, then we might start

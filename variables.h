@@ -87,6 +87,7 @@ struct RadioState_t {
     uint8_t rssi = 0;
     uint8_t snr = 0;
     uint8_t deviceState = RADIO_STATE_RX;
+    uint32_t nextTxCheckMillis = 0;
 };
 
 struct TxDeviceState_t {
