@@ -180,6 +180,9 @@ void setup(void)
     TCCR1B |= (1 << CS11);  //set timer1 to increment every 0,5 us or 1us on 8MHz
 
 #ifdef FEATURE_TX_OLED
+
+    Wire.setClock(400000);
+
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
     display.setTextSize(1);
     display.setTextColor(WHITE);
