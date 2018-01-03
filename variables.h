@@ -125,3 +125,8 @@ struct QspConfiguration_t {
     uint32_t lastTxSlotTimestamp = 0;
     bool transmitWindowOpen = false;
 };
+
+struct SbusInput_t {
+    int16_t channels[16] = {};
+    uint32_t lastChannelReceivedAt = 0;
+};
