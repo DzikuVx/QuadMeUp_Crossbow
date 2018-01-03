@@ -264,7 +264,8 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
  */
 void loop(void)
 {
-
+    debugPhase = DEBUG_LOOP_START;
+    
     uint32_t currentMillis = millis();
 
     /*
@@ -444,7 +445,9 @@ void loop(void)
 
 #ifdef DEVICE_MODE_TX
     
+    debugPhase = DEBUG_BUZZER_START;
     buzzerProcess(TX_BUZZER_PIN, currentMillis, &buzzer);
+    debugPhase = DEBUG_BUZZER_END;
 
     // This routing enables when TX starts to receive signal from RX for a first time or after 
     // failsafe
@@ -521,9 +524,9 @@ void loop(void)
         display.display(); 
     }
 #endif
-
-#endif
     
+#endif
+    debugPhase = DEBUG_LOOP_END;
 
 }
 
