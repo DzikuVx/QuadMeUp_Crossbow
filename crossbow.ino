@@ -12,6 +12,7 @@
 #include "variables.h"
 #include "main_variables.h"
 #include "qsp.h"
+#include "sbus.h"
 
 // LoRa32u4 ports
 #define LORA32U4_SS_PIN     8
@@ -22,8 +23,12 @@
  * Main defines for device working in TX mode
  */
 #ifdef DEVICE_MODE_TX
-#include <PPMReader.h>
-PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT, true);
+// #include <PPMReader.h>
+// PPMReader ppmReader(PPM_INPUT_PIN, PPM_INPUT_INTERRUPT, true);
+
+SbusInput_t sbusInput = {};
+
+// FUTABA_SBUS sBus;
 
 #include "txbuzzer.h"
 
@@ -44,9 +49,6 @@ uint32_t lastOledTaskTime = 0;
  * Main defines for device working in RX mode
  */
 #ifdef DEVICE_MODE_RX
-
-    #include "sbus.h"
-
     uint32_t sbusTime = 0;
     uint8_t sbusPacket[SBUS_PACKET_LENGTH] = {0};
     uint32_t lastRxStateTaskTime = 0;
@@ -170,14 +172,9 @@ void setup(void)
     pinMode(RX_ADC_PIN_1, INPUT);
     pinMode(RX_ADC_PIN_2, INPUT);
     pinMode(RX_ADC_PIN_3, INPUT);
-
-    Serial1.begin(100000, SERIAL_8E2);
 #endif
 
 #ifdef DEVICE_MODE_TX
-    TCCR1A = 0;  //reset timer1
-    TCCR1B = 0;
-    TCCR1B |= (1 << CS11);  //set timer1 to increment every 0,5 us or 1us on 8MHz
 
 #ifdef FEATURE_TX_OLED
 
@@ -210,6 +207,11 @@ void setup(void)
     qsp.debugConfig |= DEBUG_FLAG_LED;
 #endif
 
+    /*
+     * Prepare Serial1 for S.Bus processing
+     */
+    Serial1.begin(100000, SERIAL_8N2);
+    // sBus.begin();
 }
 
 uint8_t currentSequenceIndex = 0;
@@ -311,6 +313,10 @@ void loop(void)
 
 #ifdef DEVICE_MODE_TX
 
+    if (Serial1.available()) {
+        sbusRead(Serial1, &sbusInput);
+    }
+
     if (
         radioState.deviceState == RADIO_STATE_RX &&
         qsp.protocolState == QSP_STATE_IDLE &&
@@ -320,9 +326,12 @@ void loop(void)
         int8_t frameToSend = getFrameToTransmit(&qsp);
 
     #ifndef FORCE_TX_WITHOUT_INPUT
-        if (frameToSend == QSP_FRAME_RC_DATA && !ppmReader.isReceiving()) {
+        /*
+         * If module is not receiving data from radio, do not send RC DATA
+         * This is the only way to trigger failsafe in that case
+         */
+        if (frameToSend == QSP_FRAME_RC_DATA && !isReceivingSbus(&sbusInput)) {
             frameToSend = -1;
-            //FIXME uncomment to enable full Failsafe
         }
     #endif
 
@@ -337,7 +346,7 @@ void loop(void)
                     break;
 
                 case QSP_FRAME_RC_DATA:
-                    encodeRcDataPayload(&qsp, &ppmReader, PPM_INPUT_CHANNEL_COUNT);
+                    encodeRcDataPayload(&qsp, sbusInput.channels, PPM_INPUT_CHANNEL_COUNT);
                     break;
             }
 
