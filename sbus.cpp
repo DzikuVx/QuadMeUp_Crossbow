@@ -12,6 +12,8 @@
 #define SBUS_STATE_FAILSAFE 0x08
 #define SBUS_STATE_SIGNALLOSS 0x04
 
+#define SBUS_IS_RECEIVING_THRESHOLD 250 //If there is no SBUS input for 250ms, assume connection is broken
+
 /*
 Precomputed mapping from 990-2010 to 173:1811
 equivalent to 
@@ -22,6 +24,7 @@ int mapChannelToSbus(int in) {
 }
 
 int mapSbusToChannel(int in) {
+    //TODO, speed up this processing
     return map(in, 173, 1811, 990, 2010);
 }
 
@@ -121,12 +124,12 @@ void sbusRead(HardwareSerial &_serial, SbusInput_t *sbusInput) {
                 sbusInput->channels[channelIndex] = mapSbusToChannel(sbusInput->channels[channelIndex]);
             }
 
-            //FIXME remove this debug
-            static uint32_t prev = 0;
 			sbusInput->lastChannelReceivedAt = millis();
-            Serial.println(sbusInput->lastChannelReceivedAt - prev);
-            prev = sbusInput->lastChannelReceivedAt;
         }
         
 	}
+}
+
+bool isReceivingSbus(SbusInput_t *sbusInput) {
+    return  !(millis() - sbusInput->lastChannelReceivedAt > SBUS_IS_RECEIVING_THRESHOLD);
 }

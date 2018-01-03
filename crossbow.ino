@@ -323,8 +323,11 @@ void loop(void)
         int8_t frameToSend = getFrameToTransmit(&qsp);
 
     #ifndef FORCE_TX_WITHOUT_INPUT
-    //FIXME detect if taranis is really transmitting here
-        if (frameToSend == QSP_FRAME_RC_DATA && false) {
+        /*
+         * If module is not receiving data from radio, do not send RC DATA
+         * This is the only way to trigger failsafe in that case
+         */
+        if (frameToSend == QSP_FRAME_RC_DATA && !isReceivingSbus(&sbusInput)) {
             frameToSend = -1;
         }
     #endif
