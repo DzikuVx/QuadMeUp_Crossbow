@@ -172,6 +172,11 @@ void setup(void)
     pinMode(RX_ADC_PIN_1, INPUT);
     pinMode(RX_ADC_PIN_2, INPUT);
     pinMode(RX_ADC_PIN_3, INPUT);
+
+    /*
+     * Prepare Serial1 for S.Bus processing
+     */
+    Serial1.begin(100000, SERIAL_8E2);
 #endif
 
 #ifdef DEVICE_MODE_TX
@@ -196,6 +201,11 @@ void setup(void)
 
     //Play single tune to indicate power up
     buzzerSingleMode(BUZZER_MODE_CHIRP, &buzzer);
+
+    /*
+     * Prepare Serial1 for S.Bus processing
+     */
+    Serial1.begin(100000, SERIAL_8N2);
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -207,11 +217,6 @@ void setup(void)
     qsp.debugConfig |= DEBUG_FLAG_LED;
 #endif
 
-    /*
-     * Prepare Serial1 for S.Bus processing
-     */
-    Serial1.begin(100000, SERIAL_8N2);
-    // sBus.begin();
 }
 
 uint8_t currentSequenceIndex = 0;
