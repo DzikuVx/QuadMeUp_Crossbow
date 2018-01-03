@@ -54,6 +54,19 @@ enum debugConfigFlags {
     DEBUG_FLAG_LED      = 0b00000010
 };
 
+enum ppmDebugPhases {
+    DEBUG_RECEIVE_START = 0,
+    DEBUG_RECEIVE_END   = 1,
+    DEBUG_TX_START      = 2,
+    DEBUG_TX_END        = 3,
+    DEBUG_READ_START    = 4,
+    DEBUG_READ_END      = 5,
+    DEBUG_BUZZER_START  = 6,
+    DEBUG_BUZZER_END    = 7,
+    DEBUG_LOOP_END      = 8,
+    DEBUG_LOOP_START    = 9
+};
+
 #define PPM_INPUT_PIN       0 // Has to be one of Interrupt pins
 #define PPM_INPUT_INTERRUPT 2 // For Pro Micro 1, For Pro Mini 0
 

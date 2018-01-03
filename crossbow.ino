@@ -60,6 +60,8 @@ RxDeviceState_t rxDeviceState = {};
 TxDeviceState_t txDeviceState = {};
 volatile RadioState_t radioState = {};
 
+volatile uint8_t debugPhase;
+
 uint8_t tmpBuffer[MAX_PACKET_SIZE];
 
 uint8_t getRadioRssi(void)
@@ -262,7 +264,8 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
  */
 void loop(void)
 {
-
+    debugPhase = DEBUG_LOOP_START;
+    
     uint32_t currentMillis = millis();
 
     /*
@@ -280,6 +283,7 @@ void loop(void)
     }
 
     if (radioState.bytesToRead != NO_DATA_TO_READ) {
+        debugPhase = DEBUG_READ_START;
         LoRa.read(tmpBuffer, radioState.bytesToRead);
 
         for (int i = 0; i < radioState.bytesToRead; i++) {
@@ -295,6 +299,7 @@ void loop(void)
         radioState.deviceState = RADIO_STATE_RX;
 
         radioState.bytesToRead = NO_DATA_TO_READ;
+        debugPhase = DEBUG_READ_END;
     }
 
     bool transmitPayload = false;
@@ -310,6 +315,14 @@ void loop(void)
     }
 
 #ifdef DEVICE_MODE_TX
+
+    static int prev = 0;
+
+    if (abs(ppmReader.get(0) - prev) > 10) {
+        Serial.println(debugPhase);
+    }
+
+    prev = ppmReader.get(0);
 
     if (
         radioState.deviceState == RADIO_STATE_RX &&
@@ -414,6 +427,7 @@ void loop(void)
 
     if (qsp.canTransmit && transmitPayload)
     {
+        debugPhase = DEBUG_TX_START;
         uint8_t size;
         LoRa.beginPacket();
         //Prepare packet
@@ -426,11 +440,14 @@ void loop(void)
         radioState.deviceState = RADIO_STATE_TX;
 
         transmitPayload = false;
+        debugPhase = DEBUG_TX_END;
     }
 
 #ifdef DEVICE_MODE_TX
     
+    debugPhase = DEBUG_BUZZER_START;
     buzzerProcess(TX_BUZZER_PIN, currentMillis, &buzzer);
+    debugPhase = DEBUG_BUZZER_END;
 
     // This routing enables when TX starts to receive signal from RX for a first time or after 
     // failsafe
@@ -507,14 +524,15 @@ void loop(void)
         display.display(); 
     }
 #endif
-
-#endif
     
+#endif
+    debugPhase = DEBUG_LOOP_END;
 
 }
 
 void onReceive(int packetSize)
 {
+    debugPhase = DEBUG_RECEIVE_START;
     /*
      * We can start reading only when radio is not reading.
      * If not reading, then we might start
@@ -533,4 +551,5 @@ void onReceive(int packetSize)
             radioState.deviceState = RADIO_STATE_RX;
         }
     }
+    debugPhase = DEBUG_RECEIVE_END;
 }
