@@ -17,27 +17,23 @@ void qspDecodeRcDataFrame(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSate
     temporaryPpmOutput[8] = (qsp->payload[8] >> 4) & 0b00001111;
     temporaryPpmOutput[9] = qsp->payload[8] & 0b00001111;
 
-    //10bit channels
-    temporaryPpmOutput[0] = map(temporaryPpmOutput[0], 0, 1000, 1000, 2000);
-    temporaryPpmOutput[1] = map(temporaryPpmOutput[1], 0, 1000, 1000, 2000);
-    temporaryPpmOutput[2] = map(temporaryPpmOutput[2], 0, 1000, 1000, 2000);
-    temporaryPpmOutput[3] = map(temporaryPpmOutput[3], 0, 1000, 1000, 2000);
+    //10bit channels are passed as is
 
-    //8bit channels
-    temporaryPpmOutput[4] = map(temporaryPpmOutput[4], 0, 0xff, 1000, 2000);
-    temporaryPpmOutput[5] = map(temporaryPpmOutput[5], 0, 0xff, 1000, 2000);
+    //8bit channels needs to be shifted left 2 places
+    temporaryPpmOutput[4] = temporaryPpmOutput[4] << 2;
+    temporaryPpmOutput[5] = temporaryPpmOutput[5] << 2;
 
-    //4bit channels
-    temporaryPpmOutput[6] = map(temporaryPpmOutput[6], 0, 0x0f, 1000, 2000);
-    temporaryPpmOutput[7] = map(temporaryPpmOutput[7], 0, 0x0f, 1000, 2000);
-    temporaryPpmOutput[8] = map(temporaryPpmOutput[8], 0, 0x0f, 1000, 2000);
-    temporaryPpmOutput[9] = map(temporaryPpmOutput[9], 0, 0x0f, 1000, 2000);
+    //4bit channels needs to be shifted left 6 places
+    temporaryPpmOutput[6] = temporaryPpmOutput[6] << 6;
+    temporaryPpmOutput[7] = temporaryPpmOutput[7] << 6;
+    temporaryPpmOutput[8] = temporaryPpmOutput[8] << 6;
+    temporaryPpmOutput[9] = temporaryPpmOutput[9] << 6;
 
     /*
-     * Copy tremporary to real output
+     * Copy tremporary to real output and add missing 1000
      */
     for (uint8_t i = 0; i < PPM_OUTPUT_CHANNEL_COUNT; i++) {
-        rxDeviceSate->channels[i] = temporaryPpmOutput[i];
+        rxDeviceSate->channels[i] = temporaryPpmOutput[i] + 1000;
     }
 }
 
@@ -101,11 +97,11 @@ void encodeRcDataPayload(QspConfiguration_t *qsp, int channels[], uint8_t noOfCh
 {
     for (uint8_t i = 0; i < noOfChannels; i++)
     {
-        int cV = constrain(channels[i], 1000, 2000);
+        int cV = constrain(channels[i], 1000, 2000) - 1000;
 
-        uint16_t channelValue10 = map(cV, 1000, 2000, 0, 1000) & 0x03ff;
-        uint8_t channelValue8 = map(cV, 1000, 2000, 0, 255) & 0xff;
-        uint8_t channelValue4 = map(cV, 1000, 2000, 0, 15) & 0x0f;
+        uint16_t channelValue10 = cV & 0x03ff;
+        uint8_t channelValue8   = (cV >> 2) & 0xff;
+        uint8_t channelValue4   = (cV >> 6) & 0x0f;
 
         if (i < 4)
         {
