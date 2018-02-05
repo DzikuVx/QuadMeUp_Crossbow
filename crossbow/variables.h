@@ -55,7 +55,6 @@ enum debugConfigFlags {
 };
 
 #define PPM_INPUT_PIN       0 // Has to be one of Interrupt pins
-#define PPM_INPUT_INTERRUPT 2 // For Pro Micro 1, For Pro Mini 0
 
 #define PPM_INPUT_CHANNEL_COUNT 10
 #define PPM_OUTPUT_CHANNEL_COUNT 10
@@ -124,9 +123,4 @@ struct QspConfiguration_t {
     uint32_t frameDecodingStartedAt = 0;
     uint32_t lastTxSlotTimestamp = 0;
     bool transmitWindowOpen = false;
-};
-
-struct SbusInput_t {
-    int16_t channels[16] = {};
-    uint32_t lastChannelReceivedAt = 0;
 };
