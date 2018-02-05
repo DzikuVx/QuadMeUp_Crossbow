@@ -28,7 +28,7 @@ int mapSbusToChannel(int in) {
     return map(in, 173, 1811, 990, 2010);
 }
 
-void sbusPreparePacket(uint8_t packet[], int channels[], bool isSignalLoss, bool isFailsafe){
+void sbusPreparePacket(uint8_t packet[], int16_t channels[], bool isSignalLoss, bool isFailsafe){
     
     static int output[SBUS_CHANNEL_NUMBER] = {0};
     

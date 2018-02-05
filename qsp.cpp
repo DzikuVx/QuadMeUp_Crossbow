@@ -93,7 +93,7 @@ void decodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
 /**
  * Encode 10 RC channels 
  */
-void encodeRcDataPayload(QspConfiguration_t *qsp, int channels[], uint8_t noOfChannels)
+void encodeRcDataPayload(QspConfiguration_t *qsp, int16_t channels[], uint8_t noOfChannels)
 {
     for (uint8_t i = 0; i < noOfChannels; i++)
     {
