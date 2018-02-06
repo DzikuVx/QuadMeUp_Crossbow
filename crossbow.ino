@@ -3,6 +3,8 @@
 
 // #define FEATURE_TX_OLED
 // #define FORCE_TX_WITHOUT_INPUT
+//#define LORA32U4  1
+#define LORA_M0  1
 
 #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
@@ -14,10 +16,17 @@
 #include "qsp.h"
 #include "sbus.h"
 
-// LoRa32u4 ports
-#define LORA32U4_SS_PIN     8
-#define LORA32U4_RST_PIN    4
-#define LORA32U4_DI0_PIN    7
+#ifdef LORA32U4
+ #define LORA_SS_PIN     8
+ #define LORA_RST_PIN    4
+ #define LORA_DI0_PIN    7
+#elif defined(LORA_M0)
+ #define LORA_SS_PIN     8
+ #define LORA_RST_PIN    4
+ #define LORA_DI0_PIN    3
+#else
+ #error please select hardware
+#endif
 
 /*
  * Main defines for device working in TX mode
@@ -35,6 +44,7 @@ SbusInput_t sbusInput = {};
 BuzzerState_t buzzer;
 
 #ifdef FEATURE_TX_OLED
+#include "Wire.h"
 
 #define OLED_RESET -1
 #include <Adafruit_SSD1306.h>
@@ -137,9 +147,9 @@ void setup(void)
      * Setup hardware
      */
     LoRa.setPins(
-        LORA32U4_SS_PIN,
-        LORA32U4_RST_PIN,
-        LORA32U4_DI0_PIN
+        LORA_SS_PIN,
+        LORA_RST_PIN,
+        LORA_DI0_PIN
     );
     
     if (!LoRa.begin(radioState.frequency))
