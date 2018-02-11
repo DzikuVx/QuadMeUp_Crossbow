@@ -1,1 +1,4 @@
 build
+ppm_reader.*
+config_tx_ppm.h
+.DS_Store
