@@ -1,0 +1,33 @@
+language: c
+env:
+  matrix:
+      - BOARD="adafruit:samd:adafruit_feather_m0" CONFIG="tx_sbus"
+      - BOARD="adafruit:samd:adafruit_feather_m0" CONFIG="rx"
+      - BOARD="adafruit:avr:feather32u4"          CONFIG="tx_sbus"
+      - BOARD="adafruit:avr:feather32u4"          CONFIG="rx"
+before_install:
+  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
+  - sleep 3
+  - export DISPLAY=:1.0
+  - wget http://downloads.arduino.cc/arduino-1.8.5-linux64.tar.xz
+  - tar xf arduino-1.8.5-linux64.tar.xz
+  - sudo mv arduino-1.8.5 /usr/local/share/arduino
+  - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+  - arduino --pref "boardsmanager.additional.urls=https://adafruit.github.io/arduino-board-index/package_adafruit_index.json" --save-prefs
+  - if [[ "$BOARD" =~ "adafruit:avr:" ]]; then
+      arduino --install-boards adafruit:avr   > /tmp/install_boards.log || cat /tmp/install_boards.log ;
+    fi
+  - if [[ "$BOARD" =~ "adafruit:samd:" ]]; then
+      arduino --install-boards arduino:samd   > /tmp/install_boards.log || cat /tmp/install_boards.log ;
+      arduino --install-boards adafruit:samd  > /tmp/install_boards.log || cat /tmp/install_boards.log ;
+    fi
+  - arduino --pref "boardsmanager.additional.urls=" --save-prefs
+install:
+  - arduino --install-library "Adafruit SSD1306","Adafruit GFX Library"
+script:
+  - cp -f $PWD/crossbow/configurations/config_${CONFIG}.h $PWD/crossbow/config.h &&
+    arduino --verify --board $BOARD $PWD/crossbow/crossbow.ino
+notifications:
+  email:
+    on_success: change
+    on_failure: change
