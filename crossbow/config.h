@@ -6,8 +6,8 @@
 
 #define FEATURE_TX_OLED
 // #define FORCE_TX_WITHOUT_INPUT
-#define FEATURE_TX_INPUT_PPM
-// #define FEATURE_TX_INPUT_SBUS
+// #define FEATURE_TX_INPUT_PPM
+#define FEATURE_TX_INPUT_SBUS
 
 // #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
