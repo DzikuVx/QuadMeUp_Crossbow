@@ -161,6 +161,7 @@ void qspDecodeIncomingFrame(
     static uint8_t frameId;
     static uint8_t payloadLength;
     static uint8_t receivedPayload;
+    static uint8_t receivedChannel;
 
     if (qsp->protocolState == QSP_STATE_IDLE)
     {
@@ -187,8 +188,7 @@ void qspDecodeIncomingFrame(
 
         qsp->frameId = (incomingByte >> 4) & 0x0f;
         payloadLength = qspFrameLengths[qsp->frameId];
-        //4 bytes are now free to use for something else
-        // payloadLength = incomingByte & 0x0f;
+        receivedChannel = incomingByte & 0x0f;
         
         qsp->protocolState = QSP_STATE_FRAME_TYPE_RECEIVED;
     }
@@ -214,6 +214,7 @@ void qspDecodeIncomingFrame(
     {
         if (qsp->crc == incomingByte) {
             //CRC is correct
+            radioState->lastReceivedChannel = receivedChannel;
             qsp->onSuccessCallback(qsp, txDeviceState, rxDeviceState, radioState);
         } else {
             qsp->onFailureCallback(qsp, txDeviceState, rxDeviceState, radioState);
