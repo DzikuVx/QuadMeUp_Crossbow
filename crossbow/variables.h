@@ -31,6 +31,16 @@
 #define QSP_FRAME_PONG 0x6
 #define QSP_FRAME_COUNT 0x7
 
+static const uint8_t qspFrameLengths[QSP_FRAME_COUNT] = {
+    9, //QSP_FRAME_RC_DATA
+    6, //QSP_FRAME_RX_HEALTH
+    0, //QSP_FRAME_GET_RX_CONFIG -> Not used
+    0, //QSP_FRAME_RX_CONFIG -> Not used
+    0, //QSP_FRAME_SET_RX_CONFIG -> Not used
+    4, //QSP_FRAME_PING
+    4, //QSP_FRAME_PONG
+};
+
 #define RX_ADC_PIN_1 A0
 #define RX_ADC_PIN_2 A1
 #define RX_ADC_PIN_3 A2
