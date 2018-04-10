@@ -77,7 +77,7 @@ void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
 
     qsp->payload[5] = flags;
 
-    qsp->payloadLength = 6;
+    qsp->payloadLength = qspFrameLengths[QSP_FRAME_RX_HEALTH];
 }
 
 void decodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState) {
@@ -139,7 +139,7 @@ void encodeRcDataPayload(QspConfiguration_t *qsp, volatile int16_t channels[], u
         }
     }
 
-    qsp->payloadLength = 9;
+    qsp->payloadLength = qspFrameLengths[QSP_FRAME_RC_DATA];
 }
 
 void qspClearPayload(QspConfiguration_t *qsp)
@@ -186,7 +186,9 @@ void qspDecodeIncomingFrame(
         qspComputeCrc(qsp, incomingByte);
 
         qsp->frameId = (incomingByte >> 4) & 0x0f;
-        payloadLength = incomingByte & 0x0f;
+        payloadLength = qspFrameLengths[qsp->frameId];
+        //4 bytes are now free to use for something else
+        // payloadLength = incomingByte & 0x0f;
         
         qsp->protocolState = QSP_STATE_FRAME_TYPE_RECEIVED;
     }
@@ -233,7 +235,9 @@ void qspEncodeFrame(QspConfiguration_t *qsp, uint8_t buffer[], uint8_t *size) {
     buffer[0] = CHANNEL_ID;
 
     //Write frame type and length
-    uint8_t data = qsp->payloadLength & 0x0f;
+    // We are no longer sending payload length, so 4 bits are now free for other usages
+    // uint8_t data = qsp->payloadLength & 0x0f;
+    uint8_t data = 0;
     data |= (qsp->frameToSend << 4) & 0xf0;
     qspComputeCrc(qsp, data);
     buffer[1] = data;
@@ -254,5 +258,5 @@ void encodePingPayload(QspConfiguration_t *qsp, uint32_t currentMicros) {
     qsp->payload[2] = (currentMicros >> 16) & 255;
     qsp->payload[3] = (currentMicros >> 24) & 255;
 
-    qsp->payloadLength = 4;
+    qsp->payloadLength = qspFrameLengths[QSP_FRAME_PING];
 }
