@@ -8,7 +8,6 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 
 #include "config.h"
 
-
 #include "lora.h"
 #include "variables.h"
 #include "main_variables.h"

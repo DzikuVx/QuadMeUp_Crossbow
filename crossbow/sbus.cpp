@@ -21,12 +21,14 @@ equivalent to
 map(channels[i], RC_CHANNEL_MIN, RC_CHANNEL_MAX, SBUS_MIN_OFFSET, SBUS_MAX_OFFSET);
 */
 int mapChannelToSbus(int in) {
-    return (((long) in * 1605l) / 1000l) - 1417;
+    return ((long) in * 1605l / 1000l) - 1417;
 }
 
+/*
+Precomputed mapping from 173:1811 to 990-2010
+*/
 int mapSbusToChannel(int in) {
-    //TODO, speed up this processing
-    return map(in, 173, 1811, 990, 2010);
+    return (((long) in - 173l) * 1020l / 1638l) + 990;
 }
 
 void sbusPreparePacket(uint8_t packet[], int16_t channels[], bool isSignalLoss, bool isFailsafe){
