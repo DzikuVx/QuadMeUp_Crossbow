@@ -161,6 +161,7 @@ void qspDecodeIncomingFrame(
     static uint8_t frameId;
     static uint8_t payloadLength;
     static uint8_t receivedPayload;
+    static uint8_t receivedChannel;
 
     if (qsp->protocolState == QSP_STATE_IDLE)
     {
@@ -187,9 +188,7 @@ void qspDecodeIncomingFrame(
 
         qsp->frameId = (incomingByte >> 4) & 0x0f;
         payloadLength = qspFrameLengths[qsp->frameId];
-        //4 bytes are now free to use for something else
-        // payloadLength = incomingByte & 0x0f;
-        
+        receivedChannel = incomingByte & 0x0f;
         qsp->protocolState = QSP_STATE_FRAME_TYPE_RECEIVED;
     }
     else if (qsp->protocolState == QSP_STATE_FRAME_TYPE_RECEIVED)
@@ -214,6 +213,7 @@ void qspDecodeIncomingFrame(
     {
         if (qsp->crc == incomingByte) {
             //CRC is correct
+            radioState->lastReceivedChannel = receivedChannel;
             qsp->onSuccessCallback(qsp, txDeviceState, rxDeviceState, radioState);
         } else {
             qsp->onFailureCallback(qsp, txDeviceState, rxDeviceState, radioState);
@@ -227,7 +227,7 @@ void qspDecodeIncomingFrame(
 /**
  * Encode frame is corrent format and write to hardware
  */
-void qspEncodeFrame(QspConfiguration_t *qsp, uint8_t buffer[], uint8_t *size) {
+void qspEncodeFrame(QspConfiguration_t *qsp, volatile RadioState_t *radioState, uint8_t buffer[], uint8_t *size) {
     //Zero CRC
     qsp->crc = 0;
 
@@ -237,7 +237,7 @@ void qspEncodeFrame(QspConfiguration_t *qsp, uint8_t buffer[], uint8_t *size) {
     //Write frame type and length
     // We are no longer sending payload length, so 4 bits are now free for other usages
     // uint8_t data = qsp->payloadLength & 0x0f;
-    uint8_t data = 0;
+    uint8_t data = radioState->channel;
     data |= (qsp->frameToSend << 4) & 0xf0;
     qspComputeCrc(qsp, data);
     buffer[1] = data;

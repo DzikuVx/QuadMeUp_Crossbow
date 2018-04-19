@@ -32,7 +32,13 @@
                     "~/Documents/Arduino/libraries/"
                 ]
             },
-            "intelliSenseMode": "clang-x64"
+            "intelliSenseMode": "clang-x64",
+            "defines": [
+                "SPI_HAS_NOTUSINGINTERRUPT",
+                "FEATURE_TX_INPUT_SBUS",
+                "DEVICE_MODE_TX",
+                "DEVICE_MODE_RX"
+            ]
         }
     ],
     "version": 3

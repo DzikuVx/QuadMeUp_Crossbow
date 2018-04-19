@@ -91,9 +91,47 @@ uint8_t getRadioSnr(void)
     return (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
 }
 
+uint32_t getFrequencyForChannel(uint8_t channel) {
+    return RADIO_FREQUENCY_MIN + (RADIO_CHANNEL_WIDTH * channel);
+}
+
+uint8_t getNextChannel(uint8_t channel) {
+    return (channel + RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
+}
+
+uint8_t getPrevChannel(uint8_t channel) {
+    return (RADIO_CHANNEL_COUNT + channel - RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
+}
+
+void hopFrequency(volatile RadioState_t *radioState, bool forward, uint8_t fromChannel, uint32_t timestamp) {
+    radioState->channelEntryMillis = timestamp;
+
+    if (forward) {
+        radioState->channel = getNextChannel(fromChannel);
+    } else {
+        radioState->channel = getPrevChannel(fromChannel);
+    }
+
+    // And set hardware
+    LoRa.sleep();
+    LoRa.setFrequency(
+        getFrequencyForChannel(radioState->channel)
+    );
+    LoRa.idle();
+}
+
 void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
-    //If devide received a valid frame, that means it can start to talk
+    //If recide received a valid frame, that means it can start to talk
     qsp->canTransmit = true;
+
+    /*
+     * RX module hops to next channel after frame has been received
+     */
+#ifdef DEVICE_MODE_RX
+    hopFrequency(radioState, true, radioState->lastReceivedChannel, millis());
+    radioState->failedDwellsCount = 0; // We received a frame, so we can just reset this counter
+    LoRa.receive(); //Put radio back into receive mode
+#endif
 
     //Store the last timestamp when frame was received
     if (qsp->frameId < QSP_FRAME_COUNT) {
@@ -159,7 +197,7 @@ void setup(void)
         LORA_DI0_PIN
     );
 
-    if (!LoRa.begin(radioState.frequency))
+    if (!LoRa.begin(getFrequencyForChannel(radioState.channel)))
     {
     #ifdef DEBUG_SERIAL
         Serial.println("LoRa init failed. Check your connections.");
@@ -289,6 +327,40 @@ void loop(void)
     uint32_t currentMillis = millis();
 
     /*
+     * This routine handles resync of TX/RX while hoppping frequencies
+     */
+#ifdef DEVICE_MODE_RX
+
+    //In the beginning just keep jumping forward and try to resync over lost single frames
+    if (radioState.failedDwellsCount < 6 && radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME < currentMillis) {
+        radioState.failedDwellsCount++;
+
+#ifdef DEBUG_SERIAL
+        Serial.print("Sync forward on ch ");
+        Serial.print(radioState.channel);
+        Serial.print(" number ");
+        Serial.println(radioState.failedDwellsCount);
+#endif
+
+        hopFrequency(&radioState, true, radioState.channel, radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME);
+        LoRa.receive();
+        
+    }
+
+    // If we are loosing more frames, start jumping in the opposite direction since probably we are completely out of sync now
+    if (radioState.failedDwellsCount >= 6 && radioState.channelEntryMillis + (RX_CHANNEL_DWELL_TIME * 5) < currentMillis) {
+        hopFrequency(&radioState, false, radioState.channel, radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME); //Start jumping in opposite direction to resync
+        LoRa.receive();
+
+#ifdef DEBUG_SERIAL
+        Serial.println("Sync backward");
+#endif
+
+    }
+
+#endif
+
+    /*
      * Detect the moment when radio module stopped transmittig and put it
      * back in to receive state
      */
@@ -297,11 +369,22 @@ void loop(void)
         radioState.deviceState == RADIO_STATE_TX &&
         !LoRa.isTransmitting()
     ) {
+
+        /*
+         * In case of TX module, hop right now
+         */
+#ifdef DEVICE_MODE_TX
+        hopFrequency(&radioState, true, radioState.channel, millis());
+#endif
+
         LoRa.receive();
         radioState.deviceState = RADIO_STATE_RX;
         radioState.nextTxCheckMillis = currentMillis + 1; //We check of TX done every 1ms
     }
 
+    /*
+     * There is data to be read from radio!
+     */
     if (radioState.bytesToRead != NO_DATA_TO_READ) {
         LoRa.read(tmpBuffer, radioState.bytesToRead);
 
@@ -379,6 +462,8 @@ void loop(void)
 
 #ifdef DEVICE_MODE_RX
 
+    //FIXME here we are missing the whole procedure for jumping to next channel when frame was not recived
+
     /*
      * This routine updates RX device state and updates one of radio channels with RSSI value
      */
@@ -445,7 +530,7 @@ void loop(void)
         uint8_t size;
         LoRa.beginPacket();
         //Prepare packet
-        qspEncodeFrame(&qsp, tmpBuffer, &size);
+        qspEncodeFrame(&qsp, &radioState, tmpBuffer, &size);
         //Sent it to radio in one SPI transaction
         LoRa.write(tmpBuffer, size);
         LoRa.endPacketAsync();
