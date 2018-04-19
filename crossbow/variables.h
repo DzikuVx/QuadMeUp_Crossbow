@@ -14,6 +14,7 @@
 #define RSSI_CHANNEL 11
 
 #define TX_TRANSMIT_SLOT_RATE 67 //ms
+#define RX_CHANNEL_DWELL_TIME (TX_TRANSMIT_SLOT_RATE + 10) //Dwell on a channel slightly longer 
 #define RX_FAILSAFE_DELAY (TX_TRANSMIT_SLOT_RATE * 8)
 #define TX_FAILSAFE_DELAY (RX_FAILSAFE_DELAY * 4)
 
@@ -108,6 +109,7 @@ struct RadioState_t {
     uint8_t channel = 0;
     uint8_t lastReceivedChannel = 0;
     uint32_t channelEntryMillis = 0;
+    uint8_t failedDwellsCount = 0;
 };
 
 struct TxDeviceState_t {

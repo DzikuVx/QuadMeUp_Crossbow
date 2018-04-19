@@ -124,6 +124,15 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
     //If recide received a valid frame, that means it can start to talk
     qsp->canTransmit = true;
 
+    /*
+     * RX module hops to next channel after frame has been received
+     */
+#ifdef DEVICE_MODE_RX
+    hopFrequency(radioState, true, radioState->lastReceivedChannel);
+    radioState->failedDwellsCount = 0; // We received a frame, so we can just reset this counter
+    LoRa.receive(); //Put radio back into receive mode
+#endif
+
     //Store the last timestamp when frame was received
     if (qsp->frameId < QSP_FRAME_COUNT) {
         qsp->lastFrameReceivedAt[qsp->frameId] = millis();
@@ -156,14 +165,6 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
             //TODO do something in this case
             break;
     }
-
-    /*
-     * RX module hops to next channel after frame has been received
-     */
-#ifdef DEVICE_MODE_RX
-    hopFrequency(radioState, true, radioState->lastReceivedChannel);
-    LoRa.receive(); //Put radio back into receive mode
-#endif
 
     qsp->transmitWindowOpen = true;
 }
@@ -324,6 +325,26 @@ void loop(void)
 {
 
     uint32_t currentMillis = millis();
+
+    /*
+     * This routine handles resync of TX/RX while hoppping frequencies
+     */
+#ifdef DEVICE_MODE_RX
+
+    //In the beginning just keep jumping forward and try to resync over lost single frames
+    if (radioState.failedDwellsCount < 6 && radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME < currentMillis) {
+        hopFrequency(&radioState, true, radioState.channel);
+        LoRa.receive();
+        radioState.failedDwellsCount++;
+    }
+
+    // If we are loosing more frames, start jumping in the opposite direction since probably we are completely out of sync now
+    if (radioState.failedDwellsCount >= 6 && radioState.channelEntryMillis + (RX_CHANNEL_DWELL_TIME * 5) < currentMillis) {
+        hopFrequency(&radioState, false, radioState.channel); //Start jumping in opposite direction to resync
+        LoRa.receive();
+    }
+
+#endif
 
     /*
      * Detect the moment when radio module stopped transmittig and put it
