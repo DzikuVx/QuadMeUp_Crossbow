@@ -1,6 +1,6 @@
 {
     "board": "bsfrance:avr:lora32u4",
     "sketch": "crossbow/crossbow.ino",
-    "port": "COM3",
+    "port": "COM7",
     "output": "../build"
 }
