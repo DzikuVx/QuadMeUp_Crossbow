@@ -11,12 +11,6 @@
                     "${workspaceRoot}"
                 ]
             },
-            "defines": [
-                "SPI_HAS_NOTUSINGINTERRUPT",
-                "FEATURE_TX_INPUT_SBUS",
-                "DEVICE_MODE_TX",
-                "DEVICE_MODE_RX"
-            ],
             "intelliSenseMode": "msvc-x64",
             "cStandard": "c11",
             "cppStandard": "c++17",

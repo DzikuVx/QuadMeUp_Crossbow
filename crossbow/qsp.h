@@ -16,6 +16,6 @@ void qspDecodeIncomingFrame(
     volatile RadioState_t *radioState
 );
 void qspClearPayload(QspConfiguration_t *qsp);
-void qspEncodeFrame(QspConfiguration_t *qsp, uint8_t buffer[], uint8_t *size);
+void qspEncodeFrame(QspConfiguration_t *qsp, volatile RadioState_t *radioState,  uint8_t buffer[], uint8_t *size);
 
 void encodePingPayload(QspConfiguration_t *qsp, uint32_t currentMicros);

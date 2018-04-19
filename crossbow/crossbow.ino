@@ -103,7 +103,7 @@ uint8_t getPrevChannel(uint8_t channel) {
     return (RADIO_CHANNEL_COUNT + channel - RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
 }
 
-void hopFrequency(RadioState_t *radioState, bool forward, uint8_t fromChannel) {
+void hopFrequency(volatile RadioState_t *radioState, bool forward, uint8_t fromChannel) {
     radioState->channelEntryMillis = millis();
 
     if (forward) {
@@ -495,7 +495,7 @@ void loop(void)
         uint8_t size;
         LoRa.beginPacket();
         //Prepare packet
-        qspEncodeFrame(&qsp, tmpBuffer, &size);
+        qspEncodeFrame(&qsp, &radioState, tmpBuffer, &size);
         //Sent it to radio in one SPI transaction
         LoRa.write(tmpBuffer, size);
         LoRa.endPacketAsync();
