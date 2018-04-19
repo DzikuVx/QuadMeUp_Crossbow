@@ -327,6 +327,19 @@ void loop(void)
     uint32_t currentMillis = millis();
 
     /*
+     * If we are not receiving SBUS frames from radio, try to restart serial
+     */
+#ifdef DEVICE_MODE_TX
+
+    static uint32_t serialRestartMillis = 0;
+
+    if (!txInput.isReceiving() && serialRestartMillis + 100 < currentMillis) {
+        txInput.restart();
+        serialRestartMillis = currentMillis;
+    }
+#endif
+
+    /*
      * This routine handles resync of TX/RX while hoppping frequencies
      */
 #ifdef DEVICE_MODE_RX

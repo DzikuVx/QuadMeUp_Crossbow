@@ -13,7 +13,7 @@
 #define SBUS_STATE_FAILSAFE 0x08
 #define SBUS_STATE_SIGNALLOSS 0x04
 
-#define SBUS_IS_RECEIVING_THRESHOLD 250 //If there is no SBUS input for 250ms, assume connection is broken
+#define SBUS_IS_RECEIVING_THRESHOLD 125 //If there is no SBUS input for 125ms, assume connection is broken
 
 /*
 Precomputed mapping from 990-2010 to 173:1811
@@ -93,7 +93,13 @@ void SbusInput::loop(void)
 
 void SbusInput::start(void)
 {
-        _serial.begin(100000, SERIAL_8N2);
+    _serial.begin(100000, SERIAL_8N2);
+}
+
+void SbusInput::restart(void)
+{   
+    _serial.end();
+    start();
 }
 
 void SbusInput::sbusRead() {

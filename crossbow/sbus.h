@@ -11,6 +11,7 @@ class SbusInput : public TxInput
   public:
   	SbusInput(HardwareSerial &serial);
     void start(void);
+    void restart(void);
     void loop(void);
     bool isReceiving(void);
   private:
