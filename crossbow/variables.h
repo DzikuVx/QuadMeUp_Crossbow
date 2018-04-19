@@ -126,6 +126,7 @@ struct RxDeviceState_t {
     uint8_t a2Voltage = 0;
     uint8_t flags = 0;
     int16_t channels[16] = {};
+    int16_t indicatedRssi = 0;
 };
 
 struct QspConfiguration_t {

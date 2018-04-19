@@ -124,6 +124,9 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
     //If recide received a valid frame, that means it can start to talk
     qsp->canTransmit = true;
 
+    radioState->rssi = getRadioRssi();
+    radioState->snr = getRadioSnr();
+
     /*
      * RX module hops to next channel after frame has been received
      */
@@ -405,9 +408,6 @@ void loop(void)
             qspDecodeIncomingFrame(&qsp, tmpBuffer[i], &rxDeviceState, &txDeviceState, &radioState);
         }
 
-        radioState.rssi = getRadioRssi();
-        radioState.snr = getRadioSnr();
-
         //After reading, flush radio buffer, we have no need for whatever might be over there
         LoRa.sleep();
         LoRa.receive();
@@ -474,9 +474,6 @@ void loop(void)
 #endif
 
 #ifdef DEVICE_MODE_RX
-
-    //FIXME here we are missing the whole procedure for jumping to next channel when frame was not recived
-
     /*
      * This routine updates RX device state and updates one of radio channels with RSSI value
      */
@@ -486,7 +483,7 @@ void loop(void)
 
         uint8_t output = constrain(radioState.rssi - 40, 0, 100);
 
-        rxDeviceState.channels[RSSI_CHANNEL - 1] = (output * 10) + 1000;
+        rxDeviceState.indicatedRssi = (output * 10) + 1000;
         if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
             digitalWrite(LED_BUILTIN, HIGH);
         } else {
@@ -525,6 +522,8 @@ void loop(void)
     }
 
     if (currentMillis > sbusTime) {
+        rxDeviceState.channels[RSSI_CHANNEL - 1] = rxDeviceState.indicatedRssi;
+
         sbusPreparePacket(sbusPacket, rxDeviceState.channels, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
         Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
         sbusTime = currentMillis + SBUS_UPDATE_RATE;
@@ -532,6 +531,8 @@ void loop(void)
 
     if (qsp.lastFrameReceivedAt[QSP_FRAME_RC_DATA] + RX_FAILSAFE_DELAY < currentMillis) {
         qsp.deviceState = DEVICE_STATE_FAILSAFE;
+        rxDeviceState.indicatedRssi = 0;
+        radioState.rssi = 0;
     } else {
         qsp.deviceState = DEVICE_STATE_OK;
     }
