@@ -103,8 +103,8 @@ uint8_t getPrevChannel(uint8_t channel) {
     return (RADIO_CHANNEL_COUNT + channel - RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
 }
 
-void hopFrequency(volatile RadioState_t *radioState, bool forward, uint8_t fromChannel) {
-    radioState->channelEntryMillis = millis();
+void hopFrequency(volatile RadioState_t *radioState, bool forward, uint8_t fromChannel, uint32_t timestamp) {
+    radioState->channelEntryMillis = timestamp;
 
     if (forward) {
         radioState->channel = getNextChannel(fromChannel);
@@ -128,7 +128,7 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
      * RX module hops to next channel after frame has been received
      */
 #ifdef DEVICE_MODE_RX
-    hopFrequency(radioState, true, radioState->lastReceivedChannel);
+    hopFrequency(radioState, true, radioState->lastReceivedChannel, millis());
     radioState->failedDwellsCount = 0; // We received a frame, so we can just reset this counter
     LoRa.receive(); //Put radio back into receive mode
 #endif
@@ -333,15 +333,29 @@ void loop(void)
 
     //In the beginning just keep jumping forward and try to resync over lost single frames
     if (radioState.failedDwellsCount < 6 && radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME < currentMillis) {
-        hopFrequency(&radioState, true, radioState.channel);
-        LoRa.receive();
         radioState.failedDwellsCount++;
+
+#ifdef DEBUG_SERIAL
+        Serial.print("Sync forward on ch ");
+        Serial.print(radioState.channel);
+        Serial.print(" number ");
+        Serial.println(radioState.failedDwellsCount);
+#endif
+
+        hopFrequency(&radioState, true, radioState.channel, radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME);
+        LoRa.receive();
+        
     }
 
     // If we are loosing more frames, start jumping in the opposite direction since probably we are completely out of sync now
     if (radioState.failedDwellsCount >= 6 && radioState.channelEntryMillis + (RX_CHANNEL_DWELL_TIME * 5) < currentMillis) {
-        hopFrequency(&radioState, false, radioState.channel); //Start jumping in opposite direction to resync
+        hopFrequency(&radioState, false, radioState.channel, radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME); //Start jumping in opposite direction to resync
         LoRa.receive();
+
+#ifdef DEBUG_SERIAL
+        Serial.println("Sync backward");
+#endif
+
     }
 
 #endif
@@ -360,7 +374,7 @@ void loop(void)
          * In case of TX module, hop right now
          */
 #ifdef DEVICE_MODE_TX
-        hopFrequency(&radioState, true, radioState.channel);
+        hopFrequency(&radioState, true, radioState.channel, millis());
 #endif
 
         LoRa.receive();
