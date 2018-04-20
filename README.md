@@ -11,21 +11,21 @@ Development, ready for testing
 | Byte                  | Description | Notes |
 | ----                  | ----        | ---- |
 | 1                     | Channel ID | channel used for comunication between TX and RX |
-| 2                     | Frame type & Length | bits 7-5 defines frame, bits 4-0 payload length |
-| 3 - 34                | Payload | 32 bytes max |
+| 2                     | Frame type & Length | bits 7-5 defines frame, bits 4-0 current radio channel |
+| 3 - 34                | Payload | lenghth defined by frame type |
 | payload length + 3    | CRC | using crc8_dvb_s2 method |
 
 ## Frame types
 
-| Value  | Value hex    | Description                      | Direction  |
-| ----   | ----         |----                              | ---- |
-| 0000   | 0x0          | RC channels data `RC_DATA` | TX -> RX |
-| 0001   | 0x1          | Receiver health and basic telemetry `RX_HEALTH` | RX -> TX |
-| 0010   | 0x2          | Request receiver configuration | TX -> RX |
-| 0011   | 0x3          | Receiver configuration | RX -> TX |
-| 0100   | 0x4          | Set receiver configuration | TX -> RX |
-| 0101   | 0x5          | PING frame, uses 9 byte payload | TX -> RX |
-| 0110   | 0x6          | PONG frame, the same payload as PING | RX -> TX |
+| Value  | Value hex    | Description                      | Direction  | Payload length |
+| ----   | ----         |----                              | ---- | ----            |
+| 0000   | 0x0          | RC channels data `RC_DATA` | TX -> RX | 9 |
+| 0001   | 0x1          | Receiver health and basic telemetry `RX_HEALTH` | RX -> TX | 6 |
+| 0010   | 0x2          | Request receiver configuration | TX -> RX | no used |
+| 0011   | 0x3          | Receiver configuration | RX -> TX | no used |
+| 0100   | 0x4          | Set receiver configuration | TX -> RX | no used |
+| 0101   | 0x5          | PING frame, uses 9 byte payload | TX -> RX | 4    |
+| 0110   | 0x6          | PONG frame, the same payload as PING | RX -> TX | 4 |
 
 ### `RC_DATA` frame format
 
