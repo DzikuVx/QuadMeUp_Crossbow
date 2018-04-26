@@ -130,6 +130,7 @@ struct RxDeviceState_t {
 };
 
 struct QspConfiguration_t {
+    uint8_t bindKey[4] = {0, 0, 0, 0};
     uint8_t protocolState = QSP_STATE_IDLE;
     uint8_t crc = 0;
     uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};
