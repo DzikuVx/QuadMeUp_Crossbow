@@ -4,16 +4,31 @@ _QuadMeUp Crossbow_ is a DIY project that gives 5km (at least) of RC link for UA
 
 # Current state
 
-Development, ready for testing
+Works:
+* Getting data from OpenTX radio using SBUS protocol
+* Transmitting 10 channels to RX modules
+* Frequency hopping
+* Getting basic telemetry from RX module
+* Sending 10 channels using SBUS to flight controller
+
+Needs implementation:
+* Binding
+* TX module configuration
+* Allowing to use OLED on TX to get basic data
+* RX configuration from TX module
+* Sending telemetry from TX to OpenTX radio
 
 # Protocol
 
 | Byte                  | Description | Notes |
 | ----                  | ----        | ---- |
-| 1                     | Channel ID | channel used for comunication between TX and RX |
-| 2                     | Frame type & Length | bits 7-5 defines frame, bits 4-0 current radio channel |
-| 3 - 34                | Payload | lenghth defined by frame type |
-| payload length + 3    | CRC | using crc8_dvb_s2 method |
+| 1                     | Frame type & used radio channel | bits 7-5 defines frame, bits 4-0 current radio channel |
+| 2 - 33                | Payload | lenghth defined by frame type |
+| payload length + 2    | CRC | using crc8_dvb_s2 method |
+
+## CRC
+
+CRC is computed using `crc8_dvb_s2` method. Initial CRC value for each frame CRC is equal to CRC of 4 bind bytes (unique for transmitter module). 
 
 ## Frame types
 
