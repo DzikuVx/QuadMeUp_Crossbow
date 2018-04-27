@@ -157,7 +157,7 @@ void qspClearPayload(QspConfiguration_t *qsp)
 void qspInitCrc(QspConfiguration_t *qsp) {
     qsp->crc = 0;
     for (uint8_t i = 0; i < 4; i++) {
-        qspComputeCrc(qsp, qsp->bindKey);
+        qspComputeCrc(qsp, qsp->bindKey[i]);
     }
 }
 
