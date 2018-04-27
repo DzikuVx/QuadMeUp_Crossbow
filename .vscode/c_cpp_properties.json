@@ -16,7 +16,8 @@
             "cppStandard": "c++17",
             "compilerPath": "/usr/bin/clang",
             "defines": [
-                "FEATURE_TX_INPUT_SBUS"
+                "FEATURE_TX_INPUT_SBUS",
+                "ARDUINO_AVR_FEATHER32U4"
             ]
         },
         {

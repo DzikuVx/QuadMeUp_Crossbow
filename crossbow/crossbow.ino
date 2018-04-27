@@ -648,8 +648,24 @@ void loop(void)
     }
 #endif
 
-#endif
+    /*
+     * Handle LED updates
+     */
+    if (txDeviceState.nextLedUpdate < currentMillis) {
 
+        if (txDeviceState.isReceiving) {
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            txDeviceState.nextLedUpdate = currentMillis + 300;
+        } else if (txInput.isReceiving()) {
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            txDeviceState.nextLedUpdate = currentMillis + 100;
+        } else {
+            digitalWrite(LED_BUILTIN, HIGH);
+            txDeviceState.nextLedUpdate = currentMillis + 200;
+        }
+    }
+
+#endif
 
 }
 
