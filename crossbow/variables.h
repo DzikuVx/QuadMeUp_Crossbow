@@ -48,7 +48,6 @@ static const uint8_t qspFrameLengths[QSP_FRAME_COUNT] = {
 
 enum dataStates {
     QSP_STATE_IDLE,
-    QSP_STATE_CHANNEL_RECEIVED,
     QSP_STATE_FRAME_TYPE_RECEIVED,
     QSP_STATE_PAYLOAD_RECEIVED,
     QSP_STATE_CRC_RECEIVED
@@ -130,6 +129,7 @@ struct RxDeviceState_t {
 };
 
 struct QspConfiguration_t {
+    uint8_t bindKey[4] = {0, 0, 0, 0};
     uint8_t protocolState = QSP_STATE_IDLE;
     uint8_t crc = 0;
     uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};

@@ -151,6 +151,16 @@ void qspClearPayload(QspConfiguration_t *qsp)
     qsp->payloadLength = 0;
 }
 
+/**
+ * Init CRC with salt based on 4 byte bind key
+ */
+void qspInitCrc(QspConfiguration_t *qsp) {
+    qsp->crc = 0;
+    for (uint8_t i = 0; i < 4; i++) {
+        qspComputeCrc(qsp, qsp->bindKey[i]);
+    }
+}
+
 void qspDecodeIncomingFrame(
     QspConfiguration_t *qsp, 
     uint8_t incomingByte, 
@@ -165,24 +175,11 @@ void qspDecodeIncomingFrame(
 
     if (qsp->protocolState == QSP_STATE_IDLE)
     {
-        // Check if incomming channel ID is the same as receiver
-        if (incomingByte == CHANNEL_ID)
-        {
-            qsp->frameDecodingStartedAt = millis();
-            qsp->protocolState = QSP_STATE_CHANNEL_RECEIVED;
-            qsp->crc = 0;
-            qspComputeCrc(qsp, incomingByte);
-            qspClearPayload(qsp);
+        qspInitCrc(qsp);
+        qspClearPayload(qsp);
+        receivedPayload = 0;
+        qsp->frameDecodingStartedAt = millis();
 
-            receivedPayload = 0;
-        }
-        else
-        {
-            qsp->protocolState = QSP_STATE_IDLE;
-        }
-    }
-    else if (qsp->protocolState == QSP_STATE_CHANNEL_RECEIVED)
-    {
         //Frame ID and payload length
         qspComputeCrc(qsp, incomingByte);
 
@@ -228,11 +225,8 @@ void qspDecodeIncomingFrame(
  * Encode frame is corrent format and write to hardware
  */
 void qspEncodeFrame(QspConfiguration_t *qsp, volatile RadioState_t *radioState, uint8_t buffer[], uint8_t *size) {
-    //Zero CRC
-    qsp->crc = 0;
-
-    qspComputeCrc(qsp, CHANNEL_ID);
-    buffer[0] = CHANNEL_ID;
+    //Salt CRC with bind key
+    qspInitCrc(qsp);
 
     //Write frame type and length
     // We are no longer sending payload length, so 4 bits are now free for other usages
@@ -240,16 +234,16 @@ void qspEncodeFrame(QspConfiguration_t *qsp, volatile RadioState_t *radioState, 
     uint8_t data = radioState->channel;
     data |= (qsp->frameToSend << 4) & 0xf0;
     qspComputeCrc(qsp, data);
-    buffer[1] = data;
+    buffer[0] = data;
 
     for (uint8_t i = 0; i < qsp->payloadLength; i++)
     {
         qspComputeCrc(qsp, qsp->payload[i]);
-        buffer[i + 2] = qsp->payload[i];
+        buffer[i + 1] = qsp->payload[i];
     }
 
-    buffer[qsp->payloadLength + 2] = qsp->crc;
-    *size = qsp->payloadLength + 3; //Total length of QSP frame
+    buffer[qsp->payloadLength + 1] = qsp->crc;
+    *size = qsp->payloadLength + 2; //Total length of QSP frame
 }
 
 void encodePingPayload(QspConfiguration_t *qsp, uint32_t currentMicros) {

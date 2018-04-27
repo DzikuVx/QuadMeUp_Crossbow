@@ -274,6 +274,14 @@ void setup(void)
     qsp.debugConfig |= DEBUG_FLAG_LED;
 #endif
 
+    /*
+     * Setup salt bind key
+     */
+    qsp.bindKey[0] = 0x12;
+    qsp.bindKey[1] = 0x0a;
+    qsp.bindKey[2] = 0x36;
+    qsp.bindKey[3] = 0xa7;
+
 }
 
 uint8_t currentSequenceIndex = 0;
