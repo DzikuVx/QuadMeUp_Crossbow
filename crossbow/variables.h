@@ -115,6 +115,7 @@ struct TxDeviceState_t {
     uint8_t flags = 0;
     uint32_t roundtrip = 0;
     bool isReceiving = false; //Indicates that TX module is receiving frames from RX module
+    uint32_t nextLedUpdate = 0;
 };
 
 struct RxDeviceState_t {
