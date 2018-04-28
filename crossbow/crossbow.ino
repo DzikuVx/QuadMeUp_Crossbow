@@ -602,10 +602,10 @@ void loop(void)
     } else if (txDeviceState.isReceiving && (rxDeviceState.flags & 0x1) == 1) {
         //Failsafe reported by RX module
         buzzerContinousMode(BUZZER_MODE_SLOW_BEEP, &buzzer);
-    } else if (txDeviceState.isReceiving && radioState.rssi < 60) {
-        buzzerContinousMode(BUZZER_MODE_DOUBLE_CHIRP, &buzzer); // RSSI below 60dB
-    } else if (txDeviceState.isReceiving && radioState.rssi < 80) {
-        buzzerContinousMode(BUZZER_MODE_CHIRP, &buzzer); // RSSI below 80dB
+    } else if (txDeviceState.isReceiving && radioState.rssi < 45) {
+        buzzerContinousMode(BUZZER_MODE_DOUBLE_CHIRP, &buzzer); // RSSI below 45dB // Critical state
+    } else if (txDeviceState.isReceiving && radioState.rssi < 55) {
+        buzzerContinousMode(BUZZER_MODE_CHIRP, &buzzer); // RSSI below 55dB // Warning state
     } else {
         buzzerContinousMode(BUZZER_MODE_OFF, &buzzer);
     }
