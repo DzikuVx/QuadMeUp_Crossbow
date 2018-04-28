@@ -342,8 +342,13 @@ void loop(void)
      */
 #ifdef DEVICE_MODE_TX
 
+    txInput.recoverStuckFrames();
+
     static uint32_t serialRestartMillis = 0;
 
+    /*
+     * Final guard for SBUS input. If there is no input, try to restart serial port
+     */
     if (!txInput.isReceiving() && serialRestartMillis + 100 < currentMillis) {
         txInput.restart();
         serialRestartMillis = currentMillis;
