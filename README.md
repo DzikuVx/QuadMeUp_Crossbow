@@ -76,6 +76,20 @@ Total length of `RC_DATA` payload is 9 bytes
 **TX** sends `PING` frame with curent `micros`. If **RX** receives `PING` frame, it respons
 its payload as `PONG` frame. 
 
+# OpenTX setup
+
+OpenTX 2.2.1 or newer is required with enabled **External RF** SBUS.
+
+* Mode: `SBUS`
+* Channel Range: `1-16`
+* Refresh rate: `12.0ms` or `14.0ms` `normal`
+
+![OpenTX setup](docs/opentx_setup.jpg)
+
+Tested with:
+
+* FrSky X9D Plus
+
 # TX module connection diagram
 
 ![Diagram](docs/TX_module_schem.png)
