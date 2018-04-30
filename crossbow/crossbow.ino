@@ -45,6 +45,13 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 
 volatile int16_t TxInput::channels[TX_INPUT_CHANNEL_COUNT];
 
+#ifdef FEATURE_TX_SMARTPORT
+#include <SoftwareSerial.h>
+#include "smartport.h"
+SoftwareSerial smartportSerial = SoftwareSerial(10, 11, true);
+SmartPort smartport = SmartPort(smartportSerial);
+bool smartPortWindowOpen = false;
+#endif
 
 #include "txbuzzer.h"
 
@@ -566,9 +573,20 @@ void loop(void)
         radioState.deviceState = RADIO_STATE_TX;
 
         transmitPayload = false;
+
+#ifdef FEATURE_TX_SMARTPORT
+        smartPortWindowOpen = true;
+#endif
     }
 
 #ifdef DEVICE_MODE_TX
+
+#ifdef FEATURE_TX_SMARTPORT
+    if (smartPortWindowOpen) {
+        smartport.set(INTERNAL_SENSOR_RSSI, rxDeviceState.rssi);
+        smartport.loop(smartPortWindowOpen);
+    }
+#endif
 
     buzzerProcess(TX_BUZZER_PIN, currentMillis, &buzzer);
 
