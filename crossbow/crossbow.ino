@@ -15,13 +15,18 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "sbus.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
- #define LORA_SS_PIN     8
- #define LORA_RST_PIN    4
- #define LORA_DI0_PIN    7
+    #define LORA_SS_PIN     8
+    #define LORA_RST_PIN    4
+    #define LORA_DI0_PIN    7
 #elif defined(ARDUINO_SAMD_FEATHER_M0)
- #define LORA_SS_PIN     8
- #define LORA_RST_PIN    4
- #define LORA_DI0_PIN    3
+    #define LORA_SS_PIN     8
+    #define LORA_RST_PIN    4
+    #define LORA_DI0_PIN    3
+
+    //apparently SoftwareSerial is not working on SAMD boards
+    //TODO investigate and fix
+    #undef FEATURE_TX_SMARTPORT
+
 #else
  #error please select hardware
 #endif
