@@ -90,6 +90,16 @@ Tested with:
 
 * FrSky X9D Plus
 
+# Flight controller setup
+
+RX module outputs RC data using SBUS protocol. The trick is that DIY RX module does not have inverters, so SBUS signal is also not inverted (TTL standard), while standard SBUS protocol used inverted serial signal.
+
+That mean the following:
+
+* RX module TX line can be connected to any free UART RX pin
+* On F3 or F7 boards flight controller has to be configured not to use inverted SBUS (refer to flight controller docs)
+* On F4 flight controllers inverios has to be configured only when using dedicated SBUS serial port 
+
 # TX module connection diagram
 
 ![Diagram](docs/TX_module_schem.png)
