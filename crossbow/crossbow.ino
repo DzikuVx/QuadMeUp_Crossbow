@@ -53,6 +53,7 @@ volatile int16_t TxInput::channels[TX_INPUT_CHANNEL_COUNT];
 #ifdef FEATURE_TX_SMARTPORT
 #include <SoftwareSerial.h>
 #include "smartport.h"
+// SoftwareSerial smartportSerial = SoftwareSerial(10, 11);
 SoftwareSerial smartportSerial = SoftwareSerial(10, 11, true);
 SmartPort smartport = SmartPort(smartportSerial);
 bool smartPortWindowOpen = false;
@@ -250,6 +251,10 @@ void setup(void)
 #endif
 
 #ifdef DEVICE_MODE_TX
+
+#ifdef FEATURE_TX_SMARTPORT
+    smartport.start();
+#endif
 
 #ifdef FEATURE_TX_OLED
     Wire.setClock(400000);
