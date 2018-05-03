@@ -53,8 +53,7 @@ volatile int16_t TxInput::channels[TX_INPUT_CHANNEL_COUNT];
 #ifdef FEATURE_TX_SMARTPORT
 #include <SoftwareSerial.h>
 #include "smartport.h"
-// SoftwareSerial smartportSerial = SoftwareSerial(10, 11);
-SoftwareSerial smartportSerial = SoftwareSerial(10, 11, true);
+SoftwareSerial smartportSerial = SoftwareSerial(12, 11, true); //We are not really using RX pin so it is fine. Ugly but fine
 SmartPort smartport = SmartPort(smartportSerial);
 bool smartPortWindowOpen = false;
 #endif
