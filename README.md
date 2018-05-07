@@ -76,6 +76,17 @@ Total length of `RC_DATA` payload is 9 bytes
 **TX** sends `PING` frame with curent `micros`. If **RX** receives `PING` frame, it respons
 its payload as `PONG` frame. 
 
+# RSSI
+
+1. Receiver RSSI for the last received packet is injected as channel 11
+1. RSSI is scaled in **dB**, NOT **percent**
+1. RSSI 0 in flight controller means 40dB RSSI in RF chip on last packet received  
+1. RSSI 100 in flight controller means 140dB RSSI in RF chip on last packet received
+1. Rule of thumb: to increase distance twice you need 6dB assuming nothing else will interfere
+1. If at 100m RSSI is 40, at 200m should be around 34
+1. I had successful flight with RSSI below `15`
+1. With correct antennas, at 1km RSSI should be around `20` 
+
 # OpenTX setup
 
 OpenTX 2.2.1 or newer is required with enabled **External RF** SBUS.
