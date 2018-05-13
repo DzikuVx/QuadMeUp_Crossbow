@@ -15,13 +15,18 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "sbus.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
- #define LORA_SS_PIN     8
- #define LORA_RST_PIN    4
- #define LORA_DI0_PIN    7
+    #define LORA_SS_PIN     8
+    #define LORA_RST_PIN    4
+    #define LORA_DI0_PIN    7
 #elif defined(ARDUINO_SAMD_FEATHER_M0)
- #define LORA_SS_PIN     8
- #define LORA_RST_PIN    4
- #define LORA_DI0_PIN    3
+    #define LORA_SS_PIN     8
+    #define LORA_RST_PIN    4
+    #define LORA_DI0_PIN    3
+
+    //apparently SoftwareSerial is not working on SAMD boards
+    //TODO investigate and fix
+    #undef FEATURE_TX_SMARTPORT
+
 #else
  #error please select hardware
 #endif
@@ -45,6 +50,13 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 
 volatile int16_t TxInput::channels[TX_INPUT_CHANNEL_COUNT];
 
+#ifdef FEATURE_TX_SMARTPORT
+#include <SoftwareSerial.h>
+#include "smartport.h"
+SoftwareSerial smartportSerial = SoftwareSerial(12, 11, true); //We are not really using RX pin so it is fine. Ugly but fine
+SmartPort smartport = SmartPort(smartportSerial);
+bool smartPortWindowOpen = false;
+#endif
 
 #include "txbuzzer.h"
 
@@ -238,6 +250,10 @@ void setup(void)
 #endif
 
 #ifdef DEVICE_MODE_TX
+
+#ifdef FEATURE_TX_SMARTPORT
+    smartport.start();
+#endif
 
 #ifdef FEATURE_TX_OLED
     Wire.setClock(400000);
@@ -566,9 +582,20 @@ void loop(void)
         radioState.deviceState = RADIO_STATE_TX;
 
         transmitPayload = false;
+
+#ifdef FEATURE_TX_SMARTPORT
+        smartPortWindowOpen = true;
+#endif
     }
 
 #ifdef DEVICE_MODE_TX
+
+#ifdef FEATURE_TX_SMARTPORT
+    if (smartPortWindowOpen) {
+        smartport.set(INTERNAL_SENSOR_RSSI, rxDeviceState.rssi);
+        smartport.loop(smartPortWindowOpen);
+    }
+#endif
 
     buzzerProcess(TX_BUZZER_PIN, currentMillis, &buzzer);
 
