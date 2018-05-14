@@ -19,15 +19,15 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
     #define LORA_RST_PIN    4
     #define LORA_DI0_PIN    7
 
-    #define BUTTON_0_PIN    11
-    #define BUTTON_1_PIN    12
+    #define BUTTON_0_PIN    9
+    #define BUTTON_1_PIN    10
 #elif defined(ARDUINO_SAMD_FEATHER_M0)
     #define LORA_SS_PIN     8
     #define LORA_RST_PIN    4
     #define LORA_DI0_PIN    3
 
-    #define BUTTON_0_PIN    11 //Please verify
-    #define BUTTON_1_PIN    12 //Please verify
+    #define BUTTON_0_PIN    9 //Please verify
+    #define BUTTON_1_PIN    10 //Please verify
 #else
     #error please select hardware
 #endif
@@ -216,11 +216,7 @@ void setup(void)
         LORA_DI0_PIN
     );
 
-    if (!LoRa.begin(getFrequencyForChannel(radioState.channel)))
-    {
-    #ifdef DEBUG_SERIAL
-        Serial.println("LoRa init failed. Check your connections.");
-    #endif
+    if (!LoRa.begin(getFrequencyForChannel(radioState.channel))) {
         while (true);
     }
 
@@ -390,28 +386,14 @@ void loop(void)
     //In the beginning just keep jumping forward and try to resync over lost single frames
     if (radioState.failedDwellsCount < 6 && radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME < currentMillis) {
         radioState.failedDwellsCount++;
-
-#ifdef DEBUG_SERIAL
-        Serial.print("Sync forward on ch ");
-        Serial.print(radioState.channel);
-        Serial.print(" number ");
-        Serial.println(radioState.failedDwellsCount);
-#endif
-
         hopFrequency(&radioState, true, radioState.channel, radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME);
         LoRa.receive();
-        
     }
 
     // If we are loosing more frames, start jumping in the opposite direction since probably we are completely out of sync now
     if (radioState.failedDwellsCount >= 6 && radioState.channelEntryMillis + (RX_CHANNEL_DWELL_TIME * 5) < currentMillis) {
         hopFrequency(&radioState, false, radioState.channel, radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME); //Start jumping in opposite direction to resync
         LoRa.receive();
-
-#ifdef DEBUG_SERIAL
-        Serial.println("Sync backward");
-#endif
-
     }
 
 #endif
