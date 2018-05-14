@@ -15,15 +15,21 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "sbus.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
- #define LORA_SS_PIN     8
- #define LORA_RST_PIN    4
- #define LORA_DI0_PIN    7
+    #define LORA_SS_PIN     8
+    #define LORA_RST_PIN    4
+    #define LORA_DI0_PIN    7
+
+    #define BUTTON_0_PIN    11
+    #define BUTTON_1_PIN    12
 #elif defined(ARDUINO_SAMD_FEATHER_M0)
- #define LORA_SS_PIN     8
- #define LORA_RST_PIN    4
- #define LORA_DI0_PIN    3
+    #define LORA_SS_PIN     8
+    #define LORA_RST_PIN    4
+    #define LORA_DI0_PIN    3
+
+    #define BUTTON_0_PIN    11 //Please verify
+    #define BUTTON_1_PIN    12 //Please verify
 #else
- #error please select hardware
+    #error please select hardware
 #endif
 
 /*
@@ -59,6 +65,11 @@ Adafruit_SSD1306 display(OLED_RESET);
 uint32_t lastOledTaskTime = 0;
 
 #endif
+
+    uint8_t buttonStates[2] = {HIGH, HIGH};
+    uint8_t previousButtonStates[2] = {HIGH, HIGH};
+    uint32_t buttonPressMillis[2] = {0, 0};
+    uint8_t buttonAction[2] = {BUTTON_ACTION_NONE, BUTTON_ACTION_NONE};
 
 #endif
 
@@ -263,6 +274,13 @@ void setup(void)
      * Prepare Serial1 for S.Bus processing
      */
     txInput.start();
+
+    /*
+     * Buttons on TX module
+     */
+    pinMode(BUTTON_0_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_1_PIN, INPUT_PULLUP);
+
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -341,6 +359,38 @@ void loop(void)
      * If we are not receiving SBUS frames from radio, try to restart serial
      */
 #ifdef DEVICE_MODE_TX
+    /*
+     * Button state processing
+     */
+    buttonStates[0] = digitalRead(BUTTON_0_PIN);
+    buttonStates[1] = digitalRead(BUTTON_1_PIN);
+
+    //Press
+    if (buttonStates[0] == LOW and previousButtonStates[0] == HIGH) {
+        buttonPressMillis[0] = currentMillis;
+    }
+
+    if (buttonStates[1] == LOW and previousButtonStates[1] == HIGH) {
+        buttonPressMillis[1] = currentMillis;
+    }
+
+    //Release
+    if (buttonStates[0] == HIGH && previousButtonStates[0] == LOW) {
+        const uint32_t buttonTime = abs(currentMillis - buttonPressMillis[0]);
+        if (buttonTime > BUTTON_LONG_PRESS_TIME) {
+            buttonAction[0] = BUTTON_ACTION_LONG_PRESS;
+        } else if (buttonTime > BUTTON_MIN_PRESS_TIME) {
+            buttonAction[0] = BUTTON_ACTION_SHORT_PRESS;
+        } else {
+            buttonAction[0] = BUTTON_ACTION_NONE;
+        }
+
+    } else {
+        buttonAction[0] = BUTTON_ACTION_NONE;
+    }
+
+    previousButtonStates[0] = buttonStates[0];
+    previousButtonStates[1] = buttonStates[1];
 
     txInput.recoverStuckFrames();
 

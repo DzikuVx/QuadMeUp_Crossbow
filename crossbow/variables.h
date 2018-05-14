@@ -93,6 +93,15 @@ enum debugConfigFlags {
 #define RADIO_CHANNEL_COUNT 9 // 9 channels in 2MHz range (RADIO_FREQUENCY_RANGE/RADIO_CHANNEL_WIDTH) + 1
 #define RADIO_HOP_OFFSET 5
 
+#define BUTTON_MIN_PRESS_TIME 50
+#define BUTTON_LONG_PRESS_TIME 1000
+
+enum buttonActionFlags {
+    BUTTON_ACTION_NONE,
+    BUTTON_ACTION_SHORT_PRESS,
+    BUTTON_ACTION_LONG_PRESS
+};
+
 struct RadioState_t {
     uint32_t loraBandwidth = 250000;
     uint8_t loraSpreadingFactor = 7;
