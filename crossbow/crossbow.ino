@@ -66,10 +66,15 @@ uint32_t lastOledTaskTime = 0;
 
 #endif
 
-    uint8_t buttonStates[2] = {HIGH, HIGH};
-    uint8_t previousButtonStates[2] = {HIGH, HIGH};
-    uint32_t buttonPressMillis[2] = {0, 0};
-    uint8_t buttonAction[2] = {BUTTON_ACTION_NONE, BUTTON_ACTION_NONE};
+#include "tactile.h"
+
+Tactile button0(BUTTON_0_PIN);
+Tactile button1(BUTTON_1_PIN);
+
+    // uint8_t buttonStates[2] = {HIGH, HIGH};
+    // uint8_t previousButtonStates[2] = {HIGH, HIGH};
+    // uint32_t buttonPressMillis[2] = {0, 0};
+    // uint8_t buttonAction[2] = {BUTTON_ACTION_NONE, BUTTON_ACTION_NONE};
 
 #endif
 
@@ -278,8 +283,8 @@ void setup(void)
     /*
      * Buttons on TX module
      */
-    pinMode(BUTTON_0_PIN, INPUT_PULLUP);
-    pinMode(BUTTON_1_PIN, INPUT_PULLUP);
+    button0.start();
+    button1.start();
 
 #endif
 
@@ -359,38 +364,10 @@ void loop(void)
      * If we are not receiving SBUS frames from radio, try to restart serial
      */
 #ifdef DEVICE_MODE_TX
-    /*
-     * Button state processing
-     */
-    buttonStates[0] = digitalRead(BUTTON_0_PIN);
-    buttonStates[1] = digitalRead(BUTTON_1_PIN);
 
-    //Press
-    if (buttonStates[0] == LOW and previousButtonStates[0] == HIGH) {
-        buttonPressMillis[0] = currentMillis;
-    }
-
-    if (buttonStates[1] == LOW and previousButtonStates[1] == HIGH) {
-        buttonPressMillis[1] = currentMillis;
-    }
-
-    //Release
-    if (buttonStates[0] == HIGH && previousButtonStates[0] == LOW) {
-        const uint32_t buttonTime = abs(currentMillis - buttonPressMillis[0]);
-        if (buttonTime > BUTTON_LONG_PRESS_TIME) {
-            buttonAction[0] = BUTTON_ACTION_LONG_PRESS;
-        } else if (buttonTime > BUTTON_MIN_PRESS_TIME) {
-            buttonAction[0] = BUTTON_ACTION_SHORT_PRESS;
-        } else {
-            buttonAction[0] = BUTTON_ACTION_NONE;
-        }
-
-    } else {
-        buttonAction[0] = BUTTON_ACTION_NONE;
-    }
-
-    previousButtonStates[0] = buttonStates[0];
-    previousButtonStates[1] = buttonStates[1];
+    //Process buttons
+    button0.loop();
+    button1.loop();
 
     txInput.recoverStuckFrames();
 
