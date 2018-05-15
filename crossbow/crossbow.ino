@@ -242,7 +242,13 @@ void setup(void)
 #ifdef DEVICE_MODE_TX
 
 #ifdef FEATURE_TX_OLED
-    oled.init(&radioState);
+    oled.init(
+        &radioState,
+        &rxDeviceState,
+        &txDeviceState,
+        &button0,
+        &button1
+    );
     oled.page(TX_PAGE_INIT);
 #endif
 
@@ -341,17 +347,21 @@ void loop(void)
 
     uint32_t currentMillis = millis();
 
-    /*
-     * If we are not receiving SBUS frames from radio, try to restart serial
-     */
 #ifdef DEVICE_MODE_TX
 
     //Process buttons
     button0.loop();
     button1.loop();
 
+#ifdef FEATURE_TX_OLED
+    oled.loop();
+#endif
+
     txInput.recoverStuckFrames();
 
+    /*
+     * If we are not receiving SBUS frames from radio, try to restart serial
+     */
     static uint32_t serialRestartMillis = 0;
 
     /*
@@ -608,41 +618,6 @@ void loop(void)
     } else {
         buzzerContinousMode(BUZZER_MODE_OFF, &buzzer);
     }
-
-#ifdef FEATURE_TX_OLED
-    // if (
-        // currentMillis - lastOledTaskTime > OLED_UPDATE_RATE
-    // ) {
-        // lastOledTaskTime = millis();
-
-        
-
-        // display.setTextColor(WHITE, BLACK);
-        // display.setCursor(0, 0);
-        // display.setTextSize(3);
-        // display.print(radioState.rssi);
-
-        // display.setCursor(18, 28);
-        // display.setTextSize(2);
-        // display.print(radioState.snr);
-
-        // display.setCursor(74, 0);
-        // display.setTextSize(3);
-        // display.print(rxDeviceState.rssi);
-
-        // display.setCursor(92, 28);
-        // display.setTextSize(2);
-        // display.print(rxDeviceState.snr);
-
-        // display.setCursor(54, 48);
-        // display.setTextSize(2);
-        // display.print(txDeviceState.roundtrip);
-        
-        // display.display();
-
-        // Serial.println(millis() - lastOledTaskTime);
-    // }
-#endif
 
     /*
      * Handle LED updates

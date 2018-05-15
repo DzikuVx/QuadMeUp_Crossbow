@@ -29,7 +29,7 @@
  */
 #define FEATURE_TX_INPUT_SBUS
 
-#define DEBUG_SERIAL
+// #define DEBUG_SERIAL
 // #define DEBUG_PING_PONG
 // #define DEBUG_LED
 
