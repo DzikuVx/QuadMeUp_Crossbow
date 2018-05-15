@@ -5,7 +5,7 @@
 
 #include <Adafruit_SSD1306.h>
 #include "Wire.h"
-#include "variables.h",
+#include "variables.h"
 #include "tactile.h"
 
 enum txOledPages {

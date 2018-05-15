@@ -82,7 +82,11 @@ void TxOled::renderPagePwr(void) {
     _display.clearDisplay();
     _display.setTextColor(WHITE, BLACK);
 
-    //TODO add content
+    _display.setCursor(0, 0);
+    _display.setTextSize(2);
+    _display.print("PWR");
+
+    //TODO content
 
     _display.display();
 }
@@ -91,7 +95,11 @@ void TxOled::renderPageBind(void) {
     _display.clearDisplay();
     _display.setTextColor(WHITE, BLACK);
 
-    //TODO add content
+    _display.setCursor(0, 0);
+    _display.setTextSize(2);
+    _display.print("Bind");
+
+    //TODO content
 
     _display.display();
 }
@@ -100,7 +108,11 @@ void TxOled::renderPageMode(void) {
     _display.clearDisplay();
     _display.setTextColor(WHITE, BLACK);
 
-    //TODO add content
+    _display.setCursor(0, 0);
+    _display.setTextSize(2);
+    _display.print("Mode");
+
+    //TODO content
 
     _display.display();
 }
@@ -109,6 +121,7 @@ void TxOled::renderPageStats(void) {
     _display.clearDisplay();
     _display.setTextColor(WHITE, BLACK);
     
+    _display.setCursor(0, 0);
     _display.setTextSize(3);
     _display.print(_radioState->rssi);
 
@@ -126,7 +139,13 @@ void TxOled::renderPageStats(void) {
 
     _display.setCursor(54, 48);
     _display.setTextSize(2);
-    _display.print(_txDeviceState->roundtrip);
+    
+    if (_txDeviceState->roundtrip < 100) {
+        _display.print(_txDeviceState->roundtrip);
+    } else {
+        _display.print(0);
+    }
+    
     _display.display();
 }
 
@@ -140,21 +159,21 @@ void TxOled::renderPageInit(void) {
     _display.print(_radioState->loraTxPower);
     _display.print("dBm");
 
-    _display.setTextSize(2);
-    _display.setCursor(0, 18);
+    _display.setTextSize(1);
+    _display.setCursor(0, 32);
     _display.print("Bandwitdh: ");
     _display.print(_radioState->loraBandwidth / 1000);
     _display.print("kHz");
 
-    _display.setCursor(0, 28);
+    _display.setCursor(0, 42);
     _display.print("SF: ");
     _display.print(_radioState->loraSpreadingFactor);
 
-    _display.setCursor(64, 28);
+    _display.setCursor(64, 42);
     _display.print("CR: ");
     _display.print(_radioState->loraCodingRate);
 
-    _display.setCursor(0, 38);
+    _display.setCursor(0, 52);
     _display.print("Rate: ");
     _display.print(1000 / TX_TRANSMIT_SLOT_RATE);
     _display.print("Hz");
