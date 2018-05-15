@@ -242,14 +242,13 @@ void setup(void)
 #ifdef DEVICE_MODE_TX
 
 #ifdef FEATURE_TX_OLED
-    oled.init(
+    oled.init();
+    oled.page(
         &radioState,
         &rxDeviceState,
         &txDeviceState,
-        &button0,
-        &button1
+        TX_PAGE_INIT
     );
-    oled.page(TX_PAGE_INIT);
 #endif
 
     /*
@@ -354,7 +353,13 @@ void loop(void)
     button1.loop();
 
 #ifdef FEATURE_TX_OLED
-    oled.loop();
+    oled.loop(
+        &radioState,
+        &rxDeviceState,
+        &txDeviceState,
+        &button0,
+        &button1
+    );
 #endif
 
     txInput.recoverStuckFrames();
