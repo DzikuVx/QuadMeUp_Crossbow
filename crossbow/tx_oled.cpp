@@ -97,6 +97,10 @@ void TxOled::renderPagePwr(
     _display.print("PWR");
 
     //TODO content
+    _display.setCursor(0, 25);
+    _display.setTextSize(3);
+    _display.print(radioState->loraTxPower);
+    _display.print("dBm");
 
     _display.display();
 }
@@ -130,7 +134,9 @@ void TxOled::renderPageMode(
     _display.setTextSize(2);
     _display.print("Mode");
 
-    //TODO content
+    _display.setCursor(0, 25);
+    _display.setTextSize(3);
+    _display.print("Full");
 
     _display.display();
 }
