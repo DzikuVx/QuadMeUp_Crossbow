@@ -15,15 +15,21 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "sbus.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
- #define LORA_SS_PIN     8
- #define LORA_RST_PIN    4
- #define LORA_DI0_PIN    7
+    #define LORA_SS_PIN     8
+    #define LORA_RST_PIN    4
+    #define LORA_DI0_PIN    7
+
+    #define BUTTON_0_PIN    9
+    #define BUTTON_1_PIN    10
 #elif defined(ARDUINO_SAMD_FEATHER_M0)
- #define LORA_SS_PIN     8
- #define LORA_RST_PIN    4
- #define LORA_DI0_PIN    3
+    #define LORA_SS_PIN     8
+    #define LORA_RST_PIN    4
+    #define LORA_DI0_PIN    3
+
+    #define BUTTON_0_PIN    9 //Please verify
+    #define BUTTON_1_PIN    10 //Please verify
 #else
- #error please select hardware
+    #error please select hardware
 #endif
 
 /*
@@ -59,6 +65,16 @@ Adafruit_SSD1306 display(OLED_RESET);
 uint32_t lastOledTaskTime = 0;
 
 #endif
+
+#include "tactile.h"
+
+Tactile button0(BUTTON_0_PIN);
+Tactile button1(BUTTON_1_PIN);
+
+    // uint8_t buttonStates[2] = {HIGH, HIGH};
+    // uint8_t previousButtonStates[2] = {HIGH, HIGH};
+    // uint32_t buttonPressMillis[2] = {0, 0};
+    // uint8_t buttonAction[2] = {BUTTON_ACTION_NONE, BUTTON_ACTION_NONE};
 
 #endif
 
@@ -200,11 +216,7 @@ void setup(void)
         LORA_DI0_PIN
     );
 
-    if (!LoRa.begin(getFrequencyForChannel(radioState.channel)))
-    {
-    #ifdef DEBUG_SERIAL
-        Serial.println("LoRa init failed. Check your connections.");
-    #endif
+    if (!LoRa.begin(getFrequencyForChannel(radioState.channel))) {
         while (true);
     }
 
@@ -263,6 +275,13 @@ void setup(void)
      * Prepare Serial1 for S.Bus processing
      */
     txInput.start();
+
+    /*
+     * Buttons on TX module
+     */
+    button0.start();
+    button1.start();
+
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -342,6 +361,10 @@ void loop(void)
      */
 #ifdef DEVICE_MODE_TX
 
+    //Process buttons
+    button0.loop();
+    button1.loop();
+
     txInput.recoverStuckFrames();
 
     static uint32_t serialRestartMillis = 0;
@@ -363,28 +386,14 @@ void loop(void)
     //In the beginning just keep jumping forward and try to resync over lost single frames
     if (radioState.failedDwellsCount < 6 && radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME < currentMillis) {
         radioState.failedDwellsCount++;
-
-#ifdef DEBUG_SERIAL
-        Serial.print("Sync forward on ch ");
-        Serial.print(radioState.channel);
-        Serial.print(" number ");
-        Serial.println(radioState.failedDwellsCount);
-#endif
-
         hopFrequency(&radioState, true, radioState.channel, radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME);
         LoRa.receive();
-        
     }
 
     // If we are loosing more frames, start jumping in the opposite direction since probably we are completely out of sync now
     if (radioState.failedDwellsCount >= 6 && radioState.channelEntryMillis + (RX_CHANNEL_DWELL_TIME * 5) < currentMillis) {
         hopFrequency(&radioState, false, radioState.channel, radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME); //Start jumping in opposite direction to resync
         LoRa.receive();
-
-#ifdef DEBUG_SERIAL
-        Serial.println("Sync backward");
-#endif
-
     }
 
 #endif
