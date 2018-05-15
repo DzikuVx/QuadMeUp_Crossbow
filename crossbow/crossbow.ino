@@ -57,24 +57,14 @@ volatile int16_t TxInput::channels[TX_INPUT_CHANNEL_COUNT];
 BuzzerState_t buzzer;
 
 #ifdef FEATURE_TX_OLED
-#include "Wire.h"
-
-#define OLED_RESET -1
-#include <Adafruit_SSD1306.h>
-Adafruit_SSD1306 display(OLED_RESET);
-uint32_t lastOledTaskTime = 0;
-
+#include "tx_oled.h"
+TxOled oled;
 #endif
 
 #include "tactile.h"
 
 Tactile button0(BUTTON_0_PIN);
 Tactile button1(BUTTON_1_PIN);
-
-    // uint8_t buttonStates[2] = {HIGH, HIGH};
-    // uint8_t previousButtonStates[2] = {HIGH, HIGH};
-    // uint32_t buttonPressMillis[2] = {0, 0};
-    // uint8_t buttonAction[2] = {BUTTON_ACTION_NONE, BUTTON_ACTION_NONE};
 
 #endif
 
@@ -252,13 +242,13 @@ void setup(void)
 #ifdef DEVICE_MODE_TX
 
 #ifdef FEATURE_TX_OLED
-    Wire.setClock(400000);
-
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-    display.clearDisplay();
-    display.display();
+    oled.init();
+    oled.page(
+        &radioState,
+        &rxDeviceState,
+        &txDeviceState,
+        TX_PAGE_INIT
+    );
 #endif
 
     /*
@@ -356,17 +346,27 @@ void loop(void)
 
     uint32_t currentMillis = millis();
 
-    /*
-     * If we are not receiving SBUS frames from radio, try to restart serial
-     */
 #ifdef DEVICE_MODE_TX
 
     //Process buttons
     button0.loop();
     button1.loop();
 
+#ifdef FEATURE_TX_OLED
+    oled.loop(
+        &radioState,
+        &rxDeviceState,
+        &txDeviceState,
+        &button0,
+        &button1
+    );
+#endif
+
     txInput.recoverStuckFrames();
 
+    /*
+     * If we are not receiving SBUS frames from radio, try to restart serial
+     */
     static uint32_t serialRestartMillis = 0;
 
     /*
@@ -623,44 +623,6 @@ void loop(void)
     } else {
         buzzerContinousMode(BUZZER_MODE_OFF, &buzzer);
     }
-
-#ifdef FEATURE_TX_OLED
-    if (
-        currentMillis - lastOledTaskTime > OLED_UPDATE_RATE
-    ) {
-        lastOledTaskTime = currentMillis;
-        display.clearDisplay();
-
-        display.setTextColor(WHITE, BLACK);
-        display.setCursor(0, 0);
-        display.setTextSize(3);
-        display.print(radioState.rssi);
-
-        display.setCursor(18, 28);
-        display.setTextSize(2);
-        display.print(radioState.snr);
-
-        display.setCursor(74, 0);
-        display.setTextSize(3);
-        display.print(rxDeviceState.rssi);
-
-        display.setCursor(92, 28);
-        display.setTextSize(2);
-        display.print(rxDeviceState.snr);
-
-        #ifdef DEBUG_TX_INPUT_ON_OLED
-        display.setCursor(0, 48);
-        display.setTextSize(2);
-        display.print(txInput.channels[0]);
-        #endif
-
-        display.setCursor(54, 48);
-        display.setTextSize(2);
-        display.print(txDeviceState.roundtrip);
-
-        display.display();
-    }
-#endif
 
     /*
      * Handle LED updates

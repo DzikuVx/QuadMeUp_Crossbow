@@ -3,12 +3,14 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceRoot}"
+                "${workspaceRoot}",
+                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": false,
                 "path": [
-                    "${workspaceRoot}"
+                    "${workspaceRoot}",
+                    "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino"
                 ]
             },
             "intelliSenseMode": "msvc-x64",
@@ -38,7 +40,7 @@
                 "SPI_HAS_NOTUSINGINTERRUPT",
                 "FEATURE_TX_INPUT_SBUS",
                 "DEVICE_MODE_TX",
-                "DEVICE_MODE_RX"
+                "FEATURE_TX_OLED"
             ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c11",
