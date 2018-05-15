@@ -39,8 +39,11 @@
                 "FEATURE_TX_INPUT_SBUS",
                 "DEVICE_MODE_TX",
                 "DEVICE_MODE_RX"
-            ]
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
         }
     ],
-    "version": 3
+    "version": 4
 }
