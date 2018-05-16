@@ -3,6 +3,17 @@
 
 #pragma once
 
+#ifndef VARIABLES_H
+#define VARIABLES_H
+
+#define RADIO_STATE_TX 1
+#define RADIO_STATE_RX 2
+
+#define TX_TRANSMIT_SLOT_RATE 67 //ms
+#define RX_CHANNEL_DWELL_TIME (TX_TRANSMIT_SLOT_RATE + 10) //Dwell on a channel slightly longer 
+#define RX_FAILSAFE_DELAY (TX_TRANSMIT_SLOT_RATE * 8)
+#define TX_FAILSAFE_DELAY (RX_FAILSAFE_DELAY * 4)
+
 #define OLED_UPDATE_RATE 750
 
 #define SBUS_UPDATE_RATE 15 //ms
@@ -79,6 +90,20 @@ enum debugConfigFlags {
 
 #define NO_DATA_TO_READ -1
 
+struct RadioState_t {
+    uint32_t loraBandwidth = 250000;
+    uint8_t loraSpreadingFactor = 7;
+    uint8_t loraCodingRate = 6;
+    uint8_t loraTxPower = 17; // Defines output power of TX, defined in dBm range from 2-17
+    uint8_t rssi = 0;
+    uint8_t snr = 0;
+    uint32_t nextTxCheckMillis = 0;
+
+    const uint32_t dwellTime = TX_TRANSMIT_SLOT_RATE * 2; 
+    uint8_t lastReceivedChannel = 0;
+    uint8_t failedDwellsCount = 0;
+};
+
 struct TxDeviceState_t {
     uint8_t flags = 0;
     uint32_t roundtrip = 0;
@@ -117,3 +142,5 @@ struct QspConfiguration_t {
     uint32_t lastTxSlotTimestamp = 0;
     bool transmitWindowOpen = false;
 };
+
+#endif

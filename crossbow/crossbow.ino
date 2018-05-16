@@ -9,11 +9,11 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "config.h"
 
 #include "lora.h"
+#include "radio_node.h"
 #include "variables.h"
 #include "main_variables.h"
 #include "qsp.h"
 #include "sbus.h"
-#include "radio_node.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
     #define LORA_SS_PIN     8
@@ -184,7 +184,7 @@ void setup(void)
     //Setup ISR callback and start receiving
     LoRa.onReceive(onReceive);
     LoRa.receive();
-    radioState.deviceState = RADIO_STATE_RX;
+    radioNode.deviceState = RADIO_STATE_RX;
 
 #ifdef DEVICE_MODE_RX
     //initiallize default ppm values
@@ -368,7 +368,7 @@ void loop(void)
      */
     if (
         currentMillis > radioState.nextTxCheckMillis &&
-        radioState.deviceState == RADIO_STATE_TX &&
+        radioNode.deviceState == RADIO_STATE_TX &&
         !LoRa.isTransmitting()
     ) {
 
@@ -380,27 +380,16 @@ void loop(void)
 #endif
 
         LoRa.receive();
-        radioState.deviceState = RADIO_STATE_RX;
+        radioNode.deviceState = RADIO_STATE_RX;
         radioState.nextTxCheckMillis = currentMillis + 1; //We check of TX done every 1ms
     }
 
-    /*
-     * There is data to be read from radio!
-     */
-    if (radioState.bytesToRead != NO_DATA_TO_READ) {
-        LoRa.read(tmpBuffer, radioState.bytesToRead);
-
-        for (int i = 0; i < radioState.bytesToRead; i++) {
-            qspDecodeIncomingFrame(&qsp, tmpBuffer[i], &rxDeviceState, &txDeviceState, &radioState);
-        }
-
-        //After reading, flush radio buffer, we have no need for whatever might be over there
-        LoRa.sleep();
-        LoRa.receive();
-        radioState.deviceState = RADIO_STATE_RX;
-
-        radioState.bytesToRead = NO_DATA_TO_READ;
-    }
+    radioNode.readAndDecode(
+        &radioState,
+        &qsp,
+        &rxDeviceState,
+        &txDeviceState
+    );
 
     bool transmitPayload = false;
 
@@ -419,7 +408,7 @@ void loop(void)
     txInput.loop();
 
     if (
-        radioState.deviceState == RADIO_STATE_RX &&
+        radioNode.deviceState == RADIO_STATE_RX &&
         qsp.protocolState == QSP_STATE_IDLE &&
         qsp.lastTxSlotTimestamp + TX_TRANSMIT_SLOT_RATE < currentMillis
     ) {
@@ -536,7 +525,7 @@ void loop(void)
         LoRa.endPacketAsync();
 
         //Set state to be able to detect the moment when TX is done
-        radioState.deviceState = RADIO_STATE_TX;
+        radioNode.deviceState = RADIO_STATE_TX;
 
         transmitPayload = false;
     }
@@ -615,18 +604,18 @@ void onReceive(int packetSize)
      * We can start reading only when radio is not reading.
      * If not reading, then we might start
      */
-    if (radioState.bytesToRead == NO_DATA_TO_READ) {
+    if (radioNode.bytesToRead == NO_DATA_TO_READ) {
 
         if (packetSize >= MIN_PACKET_SIZE && packetSize <= MAX_PACKET_SIZE) {
             //We have a packet candidate that might contain a valid QSP packet
-            radioState.bytesToRead = packetSize;
+            radioNode.bytesToRead = packetSize;
         } else {
             /*
             That packet was not very interesting, just flush it, we have no use
             */
             LoRa.sleep();
             LoRa.receive();
-            radioState.deviceState = RADIO_STATE_RX;
+            radioNode.deviceState = RADIO_STATE_RX;
         }
     }
 }

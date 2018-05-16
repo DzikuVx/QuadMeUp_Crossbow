@@ -35,6 +35,32 @@ static uint8_t RadioNode::getPrevChannel(uint8_t channel) {
     return (RADIO_CHANNEL_COUNT + channel - RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
 }
 
+void RadioNode::readAndDecode(
+    volatile RadioState_t *radioState,
+    QspConfiguration_t *qsp,
+    RxDeviceState_t *rxDeviceState,
+    TxDeviceState_t *txDeviceState
+) {
+    uint8_t tmpBuffer[MAX_PACKET_SIZE];
+    /*
+     * There is data to be read from radio!
+     */
+    if (bytesToRead != NO_DATA_TO_READ) {
+        LoRa.read(tmpBuffer, bytesToRead);
+
+        for (int i = 0; i < bytesToRead; i++) {
+            qspDecodeIncomingFrame(qsp, tmpBuffer[i], rxDeviceState, txDeviceState, radioState);
+        }
+
+        //After reading, flush radio buffer, we have no need for whatever might be over there
+        LoRa.sleep();
+        LoRa.receive();
+        
+        deviceState = RADIO_STATE_RX;
+        bytesToRead = NO_DATA_TO_READ;
+    }
+}
+
 void RadioNode::hopFrequency(bool forward, uint8_t fromChannel, uint32_t timestamp) {
     _channelEntryMillis = timestamp;
 

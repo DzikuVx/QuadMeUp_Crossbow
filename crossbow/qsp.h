@@ -1,4 +1,5 @@
 #include "Arduino.h"
+#include "variables.h"
 
 void qspDecodeRcDataFrame(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSate);
 void decodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState);

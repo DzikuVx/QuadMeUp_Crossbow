@@ -1,7 +1,9 @@
 {
     "files.associations": {
         "variables.h": "c",
-        "arduino.h": "c"
+        "arduino.h": "c",
+        "algorithm": "cpp",
+        "random": "cpp"
     },
     "files.exclude": {
         "**/build": true
