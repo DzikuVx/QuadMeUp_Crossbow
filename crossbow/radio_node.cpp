@@ -5,6 +5,33 @@ RadioNode::RadioNode(void) {
 
 }
 
+void RadioNode::init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int)) {
+    /*
+     * Setup hardware
+     */
+    LoRa.setPins(
+        ss,
+        rst,
+        di0
+    );
+
+    if (!LoRa.begin(getFrequencyForChannel(getChannel()))) {
+        while (true);
+    }
+
+    //Configure LoRa module
+    LoRa.setSignalBandwidth(loraBandwidth);
+    LoRa.setSpreadingFactor(loraSpreadingFactor);
+    LoRa.setCodingRate4(loraCodingRate);
+    LoRa.setTxPower(loraTxPower);
+    LoRa.enableCrc();
+
+    //Setup ISR callback and start receiving
+    LoRa.onReceive(callback);
+    LoRa.receive();
+    deviceState = RADIO_STATE_RX;
+}
+
 void RadioNode::readRssi(void)
 {
     rssi = 164 - constrain(LoRa.packetRssi() * -1, 0, 164);
@@ -111,4 +138,19 @@ void RadioNode::handleTxDoneState(void) {
         deviceState = RADIO_STATE_RX;
         nextTxCheckMillis = currentMillis + 1; //We check of TX done every 1ms
     }
+}
+
+void RadioNode::handleTx(QspConfiguration_t *qsp) {
+    uint8_t size;
+    uint8_t tmpBuffer[MAX_PACKET_SIZE];
+
+    LoRa.beginPacket();
+    //Prepare packet
+    qspEncodeFrame(qsp, tmpBuffer, &size, getChannel());
+    //Sent it to radio in one SPI transaction
+    LoRa.write(tmpBuffer, size);
+    LoRa.endPacketAsync();
+
+    //Set state to be able to detect the moment when TX is done
+    deviceState = RADIO_STATE_TX;
 }

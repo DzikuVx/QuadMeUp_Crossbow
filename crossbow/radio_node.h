@@ -18,6 +18,7 @@
 class RadioNode {
     public:
         RadioNode(void);
+        void init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int));
         void readRssi(void);
         void readSnr(void);
         static uint32_t getFrequencyForChannel(uint8_t channel);
@@ -33,6 +34,7 @@ class RadioNode {
         uint32_t getChannelEntryMillis(void);
         void handleChannelDwell(void);
         void handleTxDoneState();
+        void handleTx(QspConfiguration_t *qsp);
         int8_t bytesToRead = -1;
         uint8_t deviceState = RADIO_STATE_RX;
         uint8_t rssi = 0;

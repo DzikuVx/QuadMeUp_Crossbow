@@ -87,8 +87,6 @@ QspConfiguration_t qsp = {};
 RxDeviceState_t rxDeviceState = {};
 TxDeviceState_t txDeviceState = {};
 
-uint8_t tmpBuffer[MAX_PACKET_SIZE];
-
 void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, uint8_t receivedChannel) {
     //If recide received a valid frame, that means it can start to talk
     radioNode.lastReceivedChannel = receivedChannel;
@@ -162,30 +160,7 @@ void setup(void)
     qsp.deviceState = DEVICE_STATE_OK;
 #endif
 
-    /*
-     * Setup hardware
-     */
-    LoRa.setPins(
-        LORA_SS_PIN,
-        LORA_RST_PIN,
-        LORA_DI0_PIN
-    );
-
-    if (!LoRa.begin(radioNode.getFrequencyForChannel(radioNode.getChannel()))) {
-        while (true);
-    }
-
-    //Configure LoRa module
-    LoRa.setSignalBandwidth(radioNode.loraBandwidth);
-    LoRa.setSpreadingFactor(radioNode.loraSpreadingFactor);
-    LoRa.setCodingRate4(radioNode.loraCodingRate);
-    LoRa.setTxPower(radioNode.loraTxPower);
-    LoRa.enableCrc();
-
-    //Setup ISR callback and start receiving
-    LoRa.onReceive(onReceive);
-    LoRa.receive();
-    radioNode.deviceState = RADIO_STATE_RX;
+    radioNode.init(LORA_SS_PIN, LORA_RST_PIN, LORA_DI0_PIN, onReceive);
 
 #ifdef DEVICE_MODE_RX
     //initiallize default ppm values
@@ -485,17 +460,7 @@ void loop(void)
 
     if (qsp.canTransmit && transmitPayload)
     {
-        uint8_t size;
-        LoRa.beginPacket();
-        //Prepare packet
-        qspEncodeFrame(&qsp, tmpBuffer, &size, radioNode.getChannel());
-        //Sent it to radio in one SPI transaction
-        LoRa.write(tmpBuffer, size);
-        LoRa.endPacketAsync();
-
-        //Set state to be able to detect the moment when TX is done
-        radioNode.deviceState = RADIO_STATE_TX;
-
+        radioNode.handleTx(&qsp);
         transmitPayload = false;
     }
 
