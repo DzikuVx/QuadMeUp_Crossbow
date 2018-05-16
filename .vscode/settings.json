@@ -1,7 +1,14 @@
 {
     "files.associations": {
         "variables.h": "c",
-        "arduino.h": "c"
+        "arduino.h": "c",
+        "algorithm": "cpp",
+        "random": "cpp",
+        "type_traits": "cpp",
+        "iterator": "cpp",
+        "rope": "c",
+        "__locale": "c",
+        "string": "c"
     },
     "files.exclude": {
         "**/build": true
