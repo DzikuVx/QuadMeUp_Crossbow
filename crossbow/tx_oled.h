@@ -7,6 +7,9 @@
 #include "Wire.h"
 #include "variables.h"
 #include "tactile.h"
+#include "radio_node.h"
+
+extern volatile RadioNode radioNode;
 
 enum txOledPages {
     TX_PAGE_NONE,

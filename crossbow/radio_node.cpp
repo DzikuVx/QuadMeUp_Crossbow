@@ -5,14 +5,14 @@ RadioNode::RadioNode(void) {
 
 }
 
-static uint8_t RadioNode::getRadioRssi(void)
+void RadioNode::readRssi(void)
 {
-    return 164 - constrain(LoRa.packetRssi() * -1, 0, 164);
+    rssi = 164 - constrain(LoRa.packetRssi() * -1, 0, 164);
 }
 
-static uint8_t RadioNode::getRadioSnr(void)
+void RadioNode::readSnr(void)
 {
-    return (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
+    snr = (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
 }
 
 uint8_t RadioNode::getChannel(void) {
@@ -49,13 +49,13 @@ void RadioNode::readAndDecode(
         LoRa.read(tmpBuffer, bytesToRead);
 
         for (int i = 0; i < bytesToRead; i++) {
-            qspDecodeIncomingFrame(qsp, tmpBuffer[i], rxDeviceState, txDeviceState, radioState);
+            qspDecodeIncomingFrame(qsp, tmpBuffer[i], rxDeviceState, txDeviceState);
         }
 
         //After reading, flush radio buffer, we have no need for whatever might be over there
         LoRa.sleep();
         LoRa.receive();
-        
+
         deviceState = RADIO_STATE_RX;
         bytesToRead = NO_DATA_TO_READ;
     }
@@ -76,4 +76,19 @@ void RadioNode::hopFrequency(bool forward, uint8_t fromChannel, uint32_t timesta
         RadioNode::getFrequencyForChannel(_channel)
     );
     LoRa.idle();
+}
+
+void RadioNode::handleChannelDwell(void) {
+    //In the beginning just keep jumping forward and try to resync over lost single frames
+    if (failedDwellsCount < 6 && getChannelEntryMillis() + RX_CHANNEL_DWELL_TIME < millis()) {
+        failedDwellsCount++;
+        hopFrequency(true, getChannel(), getChannelEntryMillis() + RX_CHANNEL_DWELL_TIME);
+        LoRa.receive();
+    }
+
+    // If we are loosing more frames, start jumping in the opposite direction since probably we are completely out of sync now
+    if (failedDwellsCount >= 6 && getChannelEntryMillis() + (RX_CHANNEL_DWELL_TIME * 5) < millis()) {
+        hopFrequency(false, getChannel(), getChannelEntryMillis() + RX_CHANNEL_DWELL_TIME); //Start jumping in opposite direction to resync
+        LoRa.receive();
+    }
 }

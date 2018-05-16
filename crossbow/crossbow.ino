@@ -90,19 +90,21 @@ volatile RadioState_t radioState = {};
 
 uint8_t tmpBuffer[MAX_PACKET_SIZE];
 
-void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
+void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, uint8_t receivedChannel) {
     //If recide received a valid frame, that means it can start to talk
+    radioNode.lastReceivedChannel = receivedChannel;
+    
     qsp->canTransmit = true;
 
-    radioState->rssi = radioNode.getRadioRssi();
-    radioState->snr = radioNode.getRadioSnr();
+    radioNode.readRssi();
+    radioNode.readSnr();
 
     /*
      * RX module hops to next channel after frame has been received
      */
 #ifdef DEVICE_MODE_RX
-    radioNode.hopFrequency(true, radioState->lastReceivedChannel, millis());
-    radioState->failedDwellsCount = 0; // We received a frame, so we can just reset this counter
+    radioNode.hopFrequency(true, radioNode.lastReceivedChannel, millis());
+    radioNode.failedDwellsCount = 0; // We received a frame, so we can just reset this counter
     LoRa.receive(); //Put radio back into receive mode
 #endif
 
@@ -142,7 +144,7 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
     qsp->transmitWindowOpen = true;
 }
 
-void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
+void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState) {
 
 }
 
@@ -346,20 +348,7 @@ void loop(void)
      * This routine handles resync of TX/RX while hoppping frequencies
      */
 #ifdef DEVICE_MODE_RX
-
-    //In the beginning just keep jumping forward and try to resync over lost single frames
-    if (radioState.failedDwellsCount < 6 && radioNode.getChannelEntryMillis() + RX_CHANNEL_DWELL_TIME < currentMillis) {
-        radioState.failedDwellsCount++;
-        radioNode.hopFrequency(true, radioNode.getChannel(), radioNode.getChannelEntryMillis() + RX_CHANNEL_DWELL_TIME);
-        LoRa.receive();
-    }
-
-    // If we are loosing more frames, start jumping in the opposite direction since probably we are completely out of sync now
-    if (radioState.failedDwellsCount >= 6 && radioNode.getChannelEntryMillis() + (RX_CHANNEL_DWELL_TIME * 5) < currentMillis) {
-        radioNode.hopFrequency(false, radioNode.getChannel(), radioNode.getChannelEntryMillis() + RX_CHANNEL_DWELL_TIME); //Start jumping in opposite direction to resync
-        LoRa.receive();
-    }
-
+    radioNode.handleChannelDwell();
 #endif
 
     /*
@@ -456,7 +445,7 @@ void loop(void)
         lastRxStateTaskTime = currentMillis;
         updateRxDeviceState(&rxDeviceState);
 
-        uint8_t output = constrain(radioState.rssi - 40, 0, 100);
+        uint8_t output = constrain(radioNode.rssi - 40, 0, 100);
 
         rxDeviceState.indicatedRssi = (output * 10) + 1000;
         if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
@@ -487,7 +476,7 @@ void loop(void)
                     break;
 
                 case QSP_FRAME_RX_HEALTH:
-                    encodeRxHealthPayload(&qsp, &rxDeviceState, &radioState);
+                    encodeRxHealthPayload(&qsp, &rxDeviceState, radioNode.rssi, radioNode.snr);
                     break;
             }
 
@@ -507,7 +496,7 @@ void loop(void)
     if (qsp.lastFrameReceivedAt[QSP_FRAME_RC_DATA] + RX_FAILSAFE_DELAY < currentMillis) {
         qsp.deviceState = DEVICE_STATE_FAILSAFE;
         rxDeviceState.indicatedRssi = 0;
-        radioState.rssi = 0;
+        radioNode.rssi = 0;
     } else {
         qsp.deviceState = DEVICE_STATE_OK;
     }
@@ -569,9 +558,9 @@ void loop(void)
     } else if (txDeviceState.isReceiving && (rxDeviceState.flags & 0x1) == 1) {
         //Failsafe reported by RX module
         buzzerContinousMode(BUZZER_MODE_SLOW_BEEP, &buzzer);
-    } else if (txDeviceState.isReceiving && radioState.rssi < 45) {
+    } else if (txDeviceState.isReceiving && radioNode.rssi < 45) {
         buzzerContinousMode(BUZZER_MODE_DOUBLE_CHIRP, &buzzer); // RSSI below 45dB // Critical state
-    } else if (txDeviceState.isReceiving && radioState.rssi < 55) {
+    } else if (txDeviceState.isReceiving && radioNode.rssi < 55) {
         buzzerContinousMode(BUZZER_MODE_CHIRP, &buzzer); // RSSI below 55dB // Warning state
     } else {
         buzzerContinousMode(BUZZER_MODE_OFF, &buzzer);

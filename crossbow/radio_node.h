@@ -18,8 +18,8 @@
 class RadioNode {
     public:
         RadioNode(void);
-        static uint8_t getRadioRssi(void);
-        static uint8_t getRadioSnr(void);
+        void readRssi(void);
+        void readSnr(void);
         static uint32_t getFrequencyForChannel(uint8_t channel);
         static uint8_t getNextChannel(uint8_t channel);
         static uint8_t getPrevChannel(uint8_t channel);
@@ -32,8 +32,13 @@ class RadioNode {
         );
         uint8_t getChannel(void);
         uint32_t getChannelEntryMillis(void);
+        void handleChannelDwell(void);
         int8_t bytesToRead = -1;
         uint8_t deviceState = RADIO_STATE_RX;
+        uint8_t rssi = 0;
+        uint8_t snr = 0;
+        uint8_t lastReceivedChannel = 0;
+        uint8_t failedDwellsCount = 0;
     private:
         uint8_t _channel = 0;
         uint32_t _channelEntryMillis = 0;

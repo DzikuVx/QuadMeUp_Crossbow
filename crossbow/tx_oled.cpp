@@ -151,11 +151,11 @@ void TxOled::renderPageStats(
     
     _display.setCursor(0, 0);
     _display.setTextSize(3);
-    _display.print(radioState->rssi);
+    _display.print(radioNode.rssi);
 
     _display.setCursor(18, 28);
     _display.setTextSize(2);
-    _display.print(radioState->snr);
+    _display.print(radioNode.snr);
 
     _display.setCursor(74, 0);
     _display.setTextSize(3);

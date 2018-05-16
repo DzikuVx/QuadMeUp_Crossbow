@@ -3,7 +3,9 @@
         "variables.h": "c",
         "arduino.h": "c",
         "algorithm": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "type_traits": "cpp",
+        "iterator": "cpp"
     },
     "files.exclude": {
         "**/build": true
