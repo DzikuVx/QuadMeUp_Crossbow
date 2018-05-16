@@ -13,6 +13,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "main_variables.h"
 #include "qsp.h"
 #include "sbus.h"
+#include "radio_node.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
     #define LORA_SS_PIN     8
@@ -31,6 +32,8 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #else
     #error please select hardware
 #endif
+
+volatile RadioNode radioNode;
 
 /*
  * Main defines for device working in TX mode
@@ -87,57 +90,18 @@ volatile RadioState_t radioState = {};
 
 uint8_t tmpBuffer[MAX_PACKET_SIZE];
 
-uint8_t getRadioRssi(void)
-{
-    return 164 - constrain(LoRa.packetRssi() * -1, 0, 164);
-}
-
-uint8_t getRadioSnr(void)
-{
-    return (uint8_t) constrain(LoRa.packetSnr(), 0, 255);
-}
-
-uint32_t getFrequencyForChannel(uint8_t channel) {
-    return RADIO_FREQUENCY_MIN + (RADIO_CHANNEL_WIDTH * channel);
-}
-
-uint8_t getNextChannel(uint8_t channel) {
-    return (channel + RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
-}
-
-uint8_t getPrevChannel(uint8_t channel) {
-    return (RADIO_CHANNEL_COUNT + channel - RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
-}
-
-void hopFrequency(volatile RadioState_t *radioState, bool forward, uint8_t fromChannel, uint32_t timestamp) {
-    radioState->channelEntryMillis = timestamp;
-
-    if (forward) {
-        radioState->channel = getNextChannel(fromChannel);
-    } else {
-        radioState->channel = getPrevChannel(fromChannel);
-    }
-
-    // And set hardware
-    LoRa.sleep();
-    LoRa.setFrequency(
-        getFrequencyForChannel(radioState->channel)
-    );
-    LoRa.idle();
-}
-
 void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
     //If recide received a valid frame, that means it can start to talk
     qsp->canTransmit = true;
 
-    radioState->rssi = getRadioRssi();
-    radioState->snr = getRadioSnr();
+    radioState->rssi = radioNode.getRadioRssi();
+    radioState->snr = radioNode.getRadioSnr();
 
     /*
      * RX module hops to next channel after frame has been received
      */
 #ifdef DEVICE_MODE_RX
-    hopFrequency(radioState, true, radioState->lastReceivedChannel, millis());
+    radioNode.hopFrequency(true, radioState->lastReceivedChannel, millis());
     radioState->failedDwellsCount = 0; // We received a frame, so we can just reset this counter
     LoRa.receive(); //Put radio back into receive mode
 #endif
@@ -206,7 +170,7 @@ void setup(void)
         LORA_DI0_PIN
     );
 
-    if (!LoRa.begin(getFrequencyForChannel(radioState.channel))) {
+    if (!LoRa.begin(radioNode.getFrequencyForChannel(radioNode.getChannel()))) {
         while (true);
     }
 
@@ -384,15 +348,15 @@ void loop(void)
 #ifdef DEVICE_MODE_RX
 
     //In the beginning just keep jumping forward and try to resync over lost single frames
-    if (radioState.failedDwellsCount < 6 && radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME < currentMillis) {
+    if (radioState.failedDwellsCount < 6 && radioNode.getChannelEntryMillis() + RX_CHANNEL_DWELL_TIME < currentMillis) {
         radioState.failedDwellsCount++;
-        hopFrequency(&radioState, true, radioState.channel, radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME);
+        radioNode.hopFrequency(true, radioNode.getChannel(), radioNode.getChannelEntryMillis() + RX_CHANNEL_DWELL_TIME);
         LoRa.receive();
     }
 
     // If we are loosing more frames, start jumping in the opposite direction since probably we are completely out of sync now
-    if (radioState.failedDwellsCount >= 6 && radioState.channelEntryMillis + (RX_CHANNEL_DWELL_TIME * 5) < currentMillis) {
-        hopFrequency(&radioState, false, radioState.channel, radioState.channelEntryMillis + RX_CHANNEL_DWELL_TIME); //Start jumping in opposite direction to resync
+    if (radioState.failedDwellsCount >= 6 && radioNode.getChannelEntryMillis() + (RX_CHANNEL_DWELL_TIME * 5) < currentMillis) {
+        radioNode.hopFrequency(false, radioNode.getChannel(), radioNode.getChannelEntryMillis() + RX_CHANNEL_DWELL_TIME); //Start jumping in opposite direction to resync
         LoRa.receive();
     }
 
@@ -412,7 +376,7 @@ void loop(void)
          * In case of TX module, hop right now
          */
 #ifdef DEVICE_MODE_TX
-        hopFrequency(&radioState, true, radioState.channel, millis());
+        radioNode.hopFrequency(true, radioNode.getChannel(), millis());
 #endif
 
         LoRa.receive();
@@ -566,7 +530,7 @@ void loop(void)
         uint8_t size;
         LoRa.beginPacket();
         //Prepare packet
-        qspEncodeFrame(&qsp, &radioState, tmpBuffer, &size);
+        qspEncodeFrame(&qsp, &radioState, tmpBuffer, &size, radioNode.getChannel());
         //Sent it to radio in one SPI transaction
         LoRa.write(tmpBuffer, size);
         LoRa.endPacketAsync();

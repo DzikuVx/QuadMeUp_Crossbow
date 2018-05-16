@@ -224,14 +224,14 @@ void qspDecodeIncomingFrame(
 /**
  * Encode frame is corrent format and write to hardware
  */
-void qspEncodeFrame(QspConfiguration_t *qsp, volatile RadioState_t *radioState, uint8_t buffer[], uint8_t *size) {
+void qspEncodeFrame(QspConfiguration_t *qsp, volatile RadioState_t *radioState, uint8_t buffer[], uint8_t *size, uint8_t radioChannel) {
     //Salt CRC with bind key
     qspInitCrc(qsp);
 
     //Write frame type and length
     // We are no longer sending payload length, so 4 bits are now free for other usages
     // uint8_t data = qsp->payloadLength & 0x0f;
-    uint8_t data = radioState->channel;
+    uint8_t data = radioChannel;
     data |= (qsp->frameToSend << 4) & 0xf0;
     qspComputeCrc(qsp, data);
     buffer[0] = data;
