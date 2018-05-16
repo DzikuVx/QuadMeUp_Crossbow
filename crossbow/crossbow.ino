@@ -28,6 +28,18 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 
     #define BUTTON_0_PIN    9 //Please verify
     #define BUTTON_1_PIN    10 //Please verify
+
+#elif defined (ARDUINO_ESP32_DEV) 
+
+    #define LORA_SS_PIN     18
+    #define LORA_RST_PIN    14
+    #define LORA_DI0_PIN    26
+
+    #define LED_BUILTIN     2
+
+    #define BUTTON_0_PIN    9 //TODO Decide, it is unknown
+    #define BUTTON_1_PIN    10 //TODO Decide, it is unknown
+
 #else
     #error please select hardware
 #endif
@@ -43,7 +55,15 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 
 #elif defined(FEATURE_TX_INPUT_SBUS)
   #include "sbus.h"
-  SbusInput txInput(Serial1);
+
+#ifdef ARDUINO_ESP32_DEV
+
+    HardwareSerial Serial1(1);
+
+    SbusInput txInput(Serial1);
+#else 
+    SbusInput txInput(Serial1);
+#endif 
 
 #else
   #error please select tx input source
@@ -183,7 +203,7 @@ void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
 }
 
 void setup(void)
-{
+{   
 #ifdef DEBUG_SERIAL
     Serial.begin(115200);
 #endif
@@ -197,6 +217,10 @@ void setup(void)
     qsp.deviceState = DEVICE_STATE_OK;
 #endif
 
+#ifdef ARDUINO_ESP32_DEV
+    SPI.begin(5, 19, 27, 18);
+#endif
+
     /*
      * Setup hardware
      */
@@ -205,7 +229,6 @@ void setup(void)
         LORA_RST_PIN,
         LORA_DI0_PIN
     );
-
     if (!LoRa.begin(getFrequencyForChannel(radioState.channel))) {
         while (true);
     }
@@ -218,7 +241,10 @@ void setup(void)
     LoRa.enableCrc();
 
     //Setup ISR callback and start receiving
+#ifndef ARDUINO_ESP32_DEV
+    //On ESP32 there are no interrupts here, we will have to check it manually
     LoRa.onReceive(onReceive);
+#endif
     LoRa.receive();
     radioState.deviceState = RADIO_STATE_RX;
 
@@ -264,7 +290,7 @@ void setup(void)
     /*
      * Prepare Serial1 for S.Bus processing
      */
-    txInput.start();
+    // txInput.start();
 
     /*
      * Buttons on TX module
@@ -275,6 +301,7 @@ void setup(void)
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, HIGH);
 
 #ifdef DEBUG_SERIAL
     qsp.debugConfig |= DEBUG_FLAG_SERIAL;
@@ -343,7 +370,6 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
  */
 void loop(void)
 {
-
     uint32_t currentMillis = millis();
 
 #ifdef DEVICE_MODE_TX
@@ -362,20 +388,20 @@ void loop(void)
     );
 #endif
 
-    txInput.recoverStuckFrames();
+    // txInput.recoverStuckFrames();
 
-    /*
-     * If we are not receiving SBUS frames from radio, try to restart serial
-     */
-    static uint32_t serialRestartMillis = 0;
+    // /*
+    //  * If we are not receiving SBUS frames from radio, try to restart serial
+    //  */
+    // static uint32_t serialRestartMillis = 0;
 
-    /*
-     * Final guard for SBUS input. If there is no input, try to restart serial port
-     */
-    if (!txInput.isReceiving() && serialRestartMillis + 100 < currentMillis) {
-        txInput.restart();
-        serialRestartMillis = currentMillis;
-    }
+    // /*
+    //  * Final guard for SBUS input. If there is no input, try to restart serial port
+    //  */
+    // if (!txInput.isReceiving() && serialRestartMillis + 100 < currentMillis) {
+    //     txInput.restart();
+    //     serialRestartMillis = currentMillis;
+    // }
 #endif
 
     /*

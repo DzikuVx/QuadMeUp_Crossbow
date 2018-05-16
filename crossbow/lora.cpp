@@ -283,6 +283,7 @@ int LoRaClass::read()
 
 void LoRaClass::onReceive(void(*callback)(int))
 {
+#ifndef ARDUINO_ESP32_DEV
   _onReceive = callback;
 
   if (callback) {
@@ -297,6 +298,7 @@ void LoRaClass::onReceive(void(*callback)(int))
     SPI.notUsingInterrupt(digitalPinToInterrupt(_dio0));
 #endif
   }
+#endif
 }
 
 void LoRaClass::receive(int size)
@@ -545,10 +547,15 @@ void LoRaClass::bufferTransfer(uint8_t address, uint8_t buffer[], uint8_t size) 
   uint8_t response;
   
   digitalWrite(_ss, LOW);
-
+  
   SPI.beginTransaction(_spiSettings);
   SPI.transfer(address);
+#ifndef ARDUINO_ESP32_DEV
   SPI.transfer(buffer, size);
+#else 
+  uint8_t out[256];
+  SPI.transferBytes(buffer, out, size);
+#endif
   SPI.endTransaction();
 
   digitalWrite(_ss, HIGH); 

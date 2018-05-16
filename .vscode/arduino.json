@@ -1,6 +1,7 @@
 {
-    "board": "bsfrance:avr:lora32u4",
+    "board": "espressif:esp32:esp32",
     "sketch": "crossbow/crossbow.ino",
-    "port": "COM11",
-    "output": "../build"
+    "port": "COM13",
+    "output": "../build",
+    "configuration": "PartitionScheme=default,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=none"
 }
