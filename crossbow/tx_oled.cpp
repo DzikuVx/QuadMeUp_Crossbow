@@ -13,7 +13,6 @@ void TxOled::init() {
 }
 
 void TxOled::loop(
-    volatile RadioState_t *radioState,
     RxDeviceState_t *rxDeviceState,
     TxDeviceState_t *txDeviceState,
     Tactile *button0,
@@ -48,7 +47,6 @@ void TxOled::loop(
 
     if (update) {
         page(
-            radioState,
             rxDeviceState,
             txDeviceState,
             pageSequence[_mainPageSequenceIndex]
@@ -58,26 +56,25 @@ void TxOled::loop(
 }
 
 void TxOled::page(
-    volatile RadioState_t *radioState,
     RxDeviceState_t *rxDeviceState,
     TxDeviceState_t *txDeviceState,
     int page
 ) {
     switch (page) {
         case TX_PAGE_INIT:
-            renderPageInit(radioState, rxDeviceState, txDeviceState);
+            renderPageInit(rxDeviceState, txDeviceState);
             break;
         case TX_PAGE_STATS:
-            renderPageStats(radioState, rxDeviceState, txDeviceState);
+            renderPageStats(rxDeviceState, txDeviceState);
             break;
         case TX_PAGE_PWR:
-            renderPagePwr(radioState, rxDeviceState, txDeviceState);
+            renderPagePwr(rxDeviceState, txDeviceState);
             break;
         case TX_PAGE_BIND:
-            renderPageBind(radioState, rxDeviceState, txDeviceState);
+            renderPageBind(rxDeviceState, txDeviceState);
             break;
         case TX_PAGE_MODE:
-            renderPageMode(radioState, rxDeviceState, txDeviceState);
+            renderPageMode(rxDeviceState, txDeviceState);
             break;
 
     }
@@ -85,7 +82,6 @@ void TxOled::page(
 }
 
 void TxOled::renderPagePwr(
-    volatile RadioState_t *radioState,
     RxDeviceState_t *rxDeviceState,
     TxDeviceState_t *txDeviceState
 ) {
@@ -99,14 +95,13 @@ void TxOled::renderPagePwr(
     //TODO content
     _display.setCursor(0, 25);
     _display.setTextSize(3);
-    _display.print(radioState->loraTxPower);
+    _display.print(radioNode.loraTxPower);
     _display.print("dBm");
 
     _display.display();
 }
 
 void TxOled::renderPageBind(
-    volatile RadioState_t *radioState,
     RxDeviceState_t *rxDeviceState,
     TxDeviceState_t *txDeviceState
 ) {
@@ -123,7 +118,6 @@ void TxOled::renderPageBind(
 }
 
 void TxOled::renderPageMode(
-    volatile RadioState_t *radioState,
     RxDeviceState_t *rxDeviceState,
     TxDeviceState_t *txDeviceState
 ) {
@@ -142,7 +136,6 @@ void TxOled::renderPageMode(
 }
 
 void TxOled::renderPageStats(
-    volatile RadioState_t *radioState,
     RxDeviceState_t *rxDeviceState,
     TxDeviceState_t *txDeviceState
 ) {
@@ -173,7 +166,6 @@ void TxOled::renderPageStats(
 }
 
 void TxOled::renderPageInit(
-    volatile RadioState_t *radioState,
     RxDeviceState_t *rxDeviceState,
     TxDeviceState_t *txDeviceState
 ) {
@@ -183,22 +175,22 @@ void TxOled::renderPageInit(
 
     _display.setCursor(0, 0);
     _display.print("Rdy ");
-    _display.print(radioState->loraTxPower);
+    _display.print(radioNode.loraTxPower);
     _display.print("dBm");
 
     _display.setTextSize(1);
     _display.setCursor(0, 32);
     _display.print("Bandwitdh: ");
-    _display.print(radioState->loraBandwidth / 1000);
+    _display.print(radioNode.loraBandwidth / 1000);
     _display.print("kHz");
 
     _display.setCursor(0, 42);
     _display.print("SF: ");
-    _display.print(radioState->loraSpreadingFactor);
+    _display.print(radioNode.loraSpreadingFactor);
 
     _display.setCursor(64, 42);
     _display.print("CR: ");
-    _display.print(radioState->loraCodingRate);
+    _display.print(radioNode.loraCodingRate);
 
     _display.setCursor(0, 52);
     _display.print("Rate: ");

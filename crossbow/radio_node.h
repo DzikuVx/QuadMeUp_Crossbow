@@ -25,7 +25,6 @@ class RadioNode {
         static uint8_t getPrevChannel(uint8_t channel);
         void hopFrequency(bool forward, uint8_t fromChannel, uint32_t timestamp);
         void readAndDecode(
-            volatile RadioState_t *radioState,
             QspConfiguration_t *qsp,
             RxDeviceState_t *rxDeviceState,
             TxDeviceState_t *txDeviceState
@@ -33,15 +32,21 @@ class RadioNode {
         uint8_t getChannel(void);
         uint32_t getChannelEntryMillis(void);
         void handleChannelDwell(void);
+        void handleTxDoneState();
         int8_t bytesToRead = -1;
         uint8_t deviceState = RADIO_STATE_RX;
         uint8_t rssi = 0;
         uint8_t snr = 0;
         uint8_t lastReceivedChannel = 0;
         uint8_t failedDwellsCount = 0;
+        uint32_t loraBandwidth = 250000;
+        uint8_t loraSpreadingFactor = 7;
+        uint8_t loraCodingRate = 6;
+        uint8_t loraTxPower = 17; // Defines output power of TX, defined in dBm range from 2-17
     private:
         uint8_t _channel = 0;
         uint32_t _channelEntryMillis = 0;
+        uint32_t nextTxCheckMillis = 0;
 };
 
 #endif

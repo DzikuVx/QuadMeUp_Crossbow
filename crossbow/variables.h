@@ -90,14 +90,6 @@ enum debugConfigFlags {
 
 #define NO_DATA_TO_READ -1
 
-struct RadioState_t {
-    uint32_t loraBandwidth = 250000;
-    uint8_t loraSpreadingFactor = 7;
-    uint8_t loraCodingRate = 6;
-    uint8_t loraTxPower = 17; // Defines output power of TX, defined in dBm range from 2-17
-    uint32_t nextTxCheckMillis = 0;
-};
-
 struct TxDeviceState_t {
     uint8_t flags = 0;
     uint32_t roundtrip = 0;

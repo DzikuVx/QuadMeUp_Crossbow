@@ -35,14 +35,12 @@ class TxOled {
         TxOled(void);
         void init();
         void loop(
-            volatile RadioState_t *radioState,
             RxDeviceState_t *rxDeviceState,
             TxDeviceState_t *txDeviceState,
             Tactile *button0,
             Tactile *button1
         );
         void page(
-            volatile RadioState_t *radioState,
             RxDeviceState_t *rxDeviceState,
             TxDeviceState_t *txDeviceState,
             int page
@@ -50,27 +48,22 @@ class TxOled {
     private:
         Adafruit_SSD1306 _display;
         void renderPageInit(
-            volatile RadioState_t *radioState,
             RxDeviceState_t *rxDeviceState,
             TxDeviceState_t *txDeviceState
         );
         void renderPageStats(
-            volatile RadioState_t *radioState,
             RxDeviceState_t *rxDeviceState,
             TxDeviceState_t *txDeviceState
         );
         void renderPagePwr(
-            volatile RadioState_t *radioState,
             RxDeviceState_t *rxDeviceState,
             TxDeviceState_t *txDeviceState
         );
         void renderPageBind(
-            volatile RadioState_t *radioState,
             RxDeviceState_t *rxDeviceState,
             TxDeviceState_t *txDeviceState
         );
         void renderPageMode(
-            volatile RadioState_t *radioState,
             RxDeviceState_t *rxDeviceState,
             TxDeviceState_t *txDeviceState
         );

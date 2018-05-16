@@ -222,7 +222,7 @@ void qspDecodeIncomingFrame(
 /**
  * Encode frame is corrent format and write to hardware
  */
-void qspEncodeFrame(QspConfiguration_t *qsp, volatile RadioState_t *radioState, uint8_t buffer[], uint8_t *size, uint8_t radioChannel) {
+void qspEncodeFrame(QspConfiguration_t *qsp, uint8_t buffer[], uint8_t *size, uint8_t radioChannel) {
     //Salt CRC with bind key
     qspInitCrc(qsp);
 

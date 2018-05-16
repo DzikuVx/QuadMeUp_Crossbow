@@ -86,7 +86,6 @@ Tactile button1(BUTTON_1_PIN);
 QspConfiguration_t qsp = {};
 RxDeviceState_t rxDeviceState = {};
 TxDeviceState_t txDeviceState = {};
-volatile RadioState_t radioState = {};
 
 uint8_t tmpBuffer[MAX_PACKET_SIZE];
 
@@ -177,10 +176,10 @@ void setup(void)
     }
 
     //Configure LoRa module
-    LoRa.setSignalBandwidth(radioState.loraBandwidth);
-    LoRa.setSpreadingFactor(radioState.loraSpreadingFactor);
-    LoRa.setCodingRate4(radioState.loraCodingRate);
-    LoRa.setTxPower(radioState.loraTxPower);
+    LoRa.setSignalBandwidth(radioNode.loraBandwidth);
+    LoRa.setSpreadingFactor(radioNode.loraSpreadingFactor);
+    LoRa.setCodingRate4(radioNode.loraCodingRate);
+    LoRa.setTxPower(radioNode.loraTxPower);
     LoRa.enableCrc();
 
     //Setup ISR callback and start receiving
@@ -210,7 +209,6 @@ void setup(void)
 #ifdef FEATURE_TX_OLED
     oled.init();
     oled.page(
-        &radioState,
         &rxDeviceState,
         &txDeviceState,
         TX_PAGE_INIT
@@ -320,7 +318,6 @@ void loop(void)
 
 #ifdef FEATURE_TX_OLED
     oled.loop(
-        &radioState,
         &rxDeviceState,
         &txDeviceState,
         &button0,
@@ -355,26 +352,9 @@ void loop(void)
      * Detect the moment when radio module stopped transmittig and put it
      * back in to receive state
      */
-    if (
-        currentMillis > radioState.nextTxCheckMillis &&
-        radioNode.deviceState == RADIO_STATE_TX &&
-        !LoRa.isTransmitting()
-    ) {
-
-        /*
-         * In case of TX module, hop right now
-         */
-#ifdef DEVICE_MODE_TX
-        radioNode.hopFrequency(true, radioNode.getChannel(), millis());
-#endif
-
-        LoRa.receive();
-        radioNode.deviceState = RADIO_STATE_RX;
-        radioState.nextTxCheckMillis = currentMillis + 1; //We check of TX done every 1ms
-    }
+    radioNode.handleTxDoneState();
 
     radioNode.readAndDecode(
-        &radioState,
         &qsp,
         &rxDeviceState,
         &txDeviceState
@@ -508,7 +488,7 @@ void loop(void)
         uint8_t size;
         LoRa.beginPacket();
         //Prepare packet
-        qspEncodeFrame(&qsp, &radioState, tmpBuffer, &size, radioNode.getChannel());
+        qspEncodeFrame(&qsp, tmpBuffer, &size, radioNode.getChannel());
         //Sent it to radio in one SPI transaction
         LoRa.write(tmpBuffer, size);
         LoRa.endPacketAsync();

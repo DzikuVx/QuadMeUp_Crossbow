@@ -36,7 +36,6 @@ static uint8_t RadioNode::getPrevChannel(uint8_t channel) {
 }
 
 void RadioNode::readAndDecode(
-    volatile RadioState_t *radioState,
     QspConfiguration_t *qsp,
     RxDeviceState_t *rxDeviceState,
     TxDeviceState_t *txDeviceState
@@ -90,5 +89,26 @@ void RadioNode::handleChannelDwell(void) {
     if (failedDwellsCount >= 6 && getChannelEntryMillis() + (RX_CHANNEL_DWELL_TIME * 5) < millis()) {
         hopFrequency(false, getChannel(), getChannelEntryMillis() + RX_CHANNEL_DWELL_TIME); //Start jumping in opposite direction to resync
         LoRa.receive();
+    }
+}
+
+void RadioNode::handleTxDoneState(void) {
+    uint32_t currentMillis = millis();
+    if (
+        currentMillis > nextTxCheckMillis &&
+        deviceState == RADIO_STATE_TX &&
+        !LoRa.isTransmitting()
+    ) {
+
+        /*
+         * In case of TX module, hop right now
+         */
+#ifdef DEVICE_MODE_TX
+        hopFrequency(true, getChannel(), currentMillis);
+#endif
+
+        LoRa.receive();
+        deviceState = RADIO_STATE_RX;
+        nextTxCheckMillis = currentMillis + 1; //We check of TX done every 1ms
     }
 }
