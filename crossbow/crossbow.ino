@@ -33,7 +33,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
     #error please select hardware
 #endif
 
-volatile RadioNode radioNode;
+RadioNode radioNode;
 
 /*
  * Main defines for device working in TX mode
