@@ -33,7 +33,7 @@ class RadioNode {
         uint8_t getChannel(void);
         uint32_t getChannelEntryMillis(void);
         void handleChannelDwell(void);
-        void handleTxDoneState();
+        void handleTxDoneState(bool hop);
         void handleTx(QspConfiguration_t *qsp);
         volatile int8_t bytesToRead = -1;
         volatile uint8_t deviceState = RADIO_STATE_RX;

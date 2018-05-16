@@ -119,8 +119,9 @@ void RadioNode::handleChannelDwell(void) {
     }
 }
 
-void RadioNode::handleTxDoneState(void) {
+void RadioNode::handleTxDoneState(bool hop) {
     uint32_t currentMillis = millis();
+    
     if (
         currentMillis > nextTxCheckMillis &&
         deviceState == RADIO_STATE_TX &&
@@ -130,9 +131,9 @@ void RadioNode::handleTxDoneState(void) {
         /*
          * In case of TX module, hop right now
          */
-#ifdef DEVICE_MODE_TX
-        hopFrequency(true, getChannel(), currentMillis);
-#endif
+        if (hop) {
+            hopFrequency(true, getChannel(), currentMillis);
+        }
 
         LoRa.receive();
         deviceState = RADIO_STATE_RX;

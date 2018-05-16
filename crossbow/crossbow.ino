@@ -285,7 +285,18 @@ void loop(void)
 
     uint32_t currentMillis = millis();
 
-#ifdef DEVICE_MODE_TX
+#ifdef DEVICE_MODE_RX
+    /*
+     * This routine handles resync of TX/RX while hoppping frequencies
+     */
+    radioNode.handleChannelDwell();
+
+    /*
+     * Detect the moment when radio module stopped transmittig and put it
+     * back in to receive state
+     */
+    radioNode.handleTxDoneState(false);
+#else 
 
     //Process buttons
     button0.loop();
@@ -314,20 +325,9 @@ void loop(void)
         txInput.restart();
         serialRestartMillis = currentMillis;
     }
-#endif
 
-    /*
-     * This routine handles resync of TX/RX while hoppping frequencies
-     */
-#ifdef DEVICE_MODE_RX
-    radioNode.handleChannelDwell();
+    radioNode.handleTxDoneState(true);
 #endif
-
-    /*
-     * Detect the moment when radio module stopped transmittig and put it
-     * back in to receive state
-     */
-    radioNode.handleTxDoneState();
 
     radioNode.readAndDecode(
         &qsp,
@@ -356,7 +356,7 @@ void loop(void)
         qsp.protocolState == QSP_STATE_IDLE &&
         qsp.lastTxSlotTimestamp + TX_TRANSMIT_SLOT_RATE < currentMillis
     ) {
-
+        
         int8_t frameToSend = getFrameToTransmit(&qsp);
 
     #ifndef FORCE_TX_WITHOUT_INPUT
