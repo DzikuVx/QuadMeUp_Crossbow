@@ -21,9 +21,9 @@ class RadioNode {
         void init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int));
         void readRssi(void);
         void readSnr(void);
-        static uint32_t getFrequencyForChannel(uint8_t channel);
-        static uint8_t getNextChannel(uint8_t channel);
-        static uint8_t getPrevChannel(uint8_t channel);
+        uint32_t getFrequencyForChannel(uint8_t channel);
+        uint8_t getNextChannel(uint8_t channel);
+        uint8_t getPrevChannel(uint8_t channel);
         void hopFrequency(bool forward, uint8_t fromChannel, uint32_t timestamp);
         void readAndDecode(
             QspConfiguration_t *qsp,

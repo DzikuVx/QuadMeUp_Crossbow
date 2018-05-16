@@ -50,15 +50,15 @@ uint32_t RadioNode::getChannelEntryMillis(void) {
     return _channelEntryMillis;
 }
 
-static uint32_t RadioNode::getFrequencyForChannel(uint8_t channel) {
+uint32_t RadioNode::getFrequencyForChannel(uint8_t channel) {
     return RADIO_FREQUENCY_MIN + (RADIO_CHANNEL_WIDTH * channel);
 }
 
-static uint8_t RadioNode::getNextChannel(uint8_t channel) {
+uint8_t RadioNode::getNextChannel(uint8_t channel) {
     return (channel + RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
 }
 
-static uint8_t RadioNode::getPrevChannel(uint8_t channel) {
+uint8_t RadioNode::getPrevChannel(uint8_t channel) {
     return (RADIO_CHANNEL_COUNT + channel - RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
 }
 
