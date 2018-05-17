@@ -553,8 +553,12 @@ void LoRaClass::bufferTransfer(uint8_t address, uint8_t buffer[], uint8_t size) 
 #ifndef ARDUINO_ESP32_DEV
   SPI.transfer(buffer, size);
 #else 
-  uint8_t out[256];
+  uint8_t out[size];
   SPI.transferBytes(buffer, out, size);
+  //To keep API consistent, copy out buffer in case other methods would require it
+  for (uint8_t i = 0; i < size) {
+    buffer[i] = out[i];s
+  }
 #endif
   SPI.endTransaction();
 
