@@ -9,7 +9,8 @@
         "rope": "c",
         "__locale": "c",
         "string": "c",
-        "ios": "cpp"
+        "ios": "cpp",
+        "locale": "cpp"
     },
     "files.exclude": {
         "**/build": true

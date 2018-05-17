@@ -155,9 +155,9 @@ void setup(void)
     qsp.onFailureCallback = onQspFailure;
 
 #ifdef DEVICE_MODE_RX
-    qsp.deviceState = DEVICE_STATE_FAILSAFE;
+    platformNode.platformState = DEVICE_STATE_FAILSAFE;
 #else
-    qsp.deviceState = DEVICE_STATE_OK;
+    platformNode.platformState = DEVICE_STATE_OK;
 #endif
 
     radioNode.init(LORA_SS_PIN, LORA_RST_PIN, LORA_DI0_PIN, onReceive);
@@ -213,10 +213,10 @@ void setup(void)
     /*
      * Setup salt bind key
      */
-    qsp.bindKey[0] = 0x12;
-    qsp.bindKey[1] = 0x0a;
-    qsp.bindKey[2] = 0x36;
-    qsp.bindKey[3] = 0xa7;
+    platformNode.bindKey[0] = 0x12;
+    platformNode.bindKey[1] = 0x0a;
+    platformNode.bindKey[2] = 0x36;
+    platformNode.bindKey[3] = 0xa7;
 
 }
 
@@ -340,7 +340,7 @@ void loop(void)
     txInput.loop();
 
     if (
-        radioNode.deviceState == RADIO_STATE_RX &&
+        radioNode.radioState == RADIO_STATE_RX &&
         qsp.protocolState == QSP_STATE_IDLE &&
         qsp.lastTxSlotTimestamp + TX_TRANSMIT_SLOT_RATE < currentMillis
     ) {
@@ -391,11 +391,6 @@ void loop(void)
         uint8_t output = constrain(radioNode.rssi - 40, 0, 100);
 
         rxDeviceState.indicatedRssi = (output * 10) + 1000;
-        if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
-            digitalWrite(LED_BUILTIN, HIGH);
-        } else {
-            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        }
     }
 
     /*
@@ -431,17 +426,17 @@ void loop(void)
     if (currentMillis > sbusTime) {
         platformNode.setRcChannel(RSSI_CHANNEL - 1, rxDeviceState.indicatedRssi, 0);
 
-        sbusPreparePacket(sbusPacket, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
+        sbusPreparePacket(sbusPacket, false, (platformNode.platformState == DEVICE_STATE_FAILSAFE));
         Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
         sbusTime = currentMillis + SBUS_UPDATE_RATE;
     }
 
     if (qsp.lastFrameReceivedAt[QSP_FRAME_RC_DATA] + RX_FAILSAFE_DELAY < currentMillis) {
-        qsp.deviceState = DEVICE_STATE_FAILSAFE;
+        platformNode.platformState = DEVICE_STATE_FAILSAFE;
         rxDeviceState.indicatedRssi = 0;
         radioNode.rssi = 0;
     } else {
-        qsp.deviceState = DEVICE_STATE_OK;
+        platformNode.platformState = DEVICE_STATE_OK;
     }
 
 #endif
@@ -461,7 +456,7 @@ void loop(void)
         //TX module started to receive data
         buzzerSingleMode(BUZZER_MODE_DOUBLE_CHIRP, &buzzer);
         txDeviceState.isReceiving = true;
-        qsp.deviceState = DEVICE_STATE_OK;
+        platformNode.platformState = DEVICE_STATE_OK;
     }
 
     //Here we detect failsafe state on TX module
@@ -477,14 +472,14 @@ void loop(void)
         rxDeviceState.snr = 0;
         rxDeviceState.flags = 0;
         txDeviceState.roundtrip = 0;
-        qsp.deviceState = DEVICE_STATE_FAILSAFE;
+        platformNode.platformState = DEVICE_STATE_FAILSAFE;
         qsp.anyFrameRecivedAt = 0;
     }
 
     //FIXME rxDeviceState should be resetted also in RC_HEALT frame is not received in a long period
 
     //Handle audible alarms
-    if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
+    if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
         //Failsafe detected by TX
         buzzerContinousMode(BUZZER_MODE_SLOW_BEEP, &buzzer);
     } else if (txDeviceState.isReceiving && (rxDeviceState.flags & 0x1) == 1) {
@@ -498,24 +493,32 @@ void loop(void)
         buzzerContinousMode(BUZZER_MODE_OFF, &buzzer);
     }
 
+#endif
+
     /*
      * Handle LED updates
      */
-    if (txDeviceState.nextLedUpdate < currentMillis) {
-
+    if (platformNode.nextLedUpdate < currentMillis) {
+#ifdef DEVICE_MODE_TX
         if (txDeviceState.isReceiving) {
             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-            txDeviceState.nextLedUpdate = currentMillis + 300;
+            platformNode.nextLedUpdate = currentMillis + 300;
         } else if (txInput.isReceiving()) {
             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-            txDeviceState.nextLedUpdate = currentMillis + 100;
+            platformNode.nextLedUpdate = currentMillis + 100;
         } else {
             digitalWrite(LED_BUILTIN, HIGH);
-            txDeviceState.nextLedUpdate = currentMillis + 200;
+            platformNode.nextLedUpdate = currentMillis + 200;
         }
-    }
-
+#else
+        platformNode.nextLedUpdate = currentMillis + 200;
+        if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
+            digitalWrite(LED_BUILTIN, HIGH);
+        } else {
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        }
 #endif
+    }
 
 }
 
@@ -536,7 +539,7 @@ void onReceive(int packetSize)
             */
             LoRa.sleep();
             LoRa.receive();
-            radioNode.deviceState = RADIO_STATE_RX;
+            radioNode.radioState = RADIO_STATE_RX;
         }
     }
 }

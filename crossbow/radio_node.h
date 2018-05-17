@@ -33,7 +33,7 @@ class RadioNode {
         void handleTxDoneState(bool hop);
         void handleTx(QspConfiguration_t *qsp);
         volatile int8_t bytesToRead = -1;
-        volatile uint8_t deviceState = RADIO_STATE_RX;
+        volatile uint8_t radioState = RADIO_STATE_RX;
         uint8_t rssi = 0;
         uint8_t snr = 0;
         uint8_t lastReceivedChannel = 0;

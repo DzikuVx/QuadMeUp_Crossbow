@@ -60,12 +60,6 @@ enum dataStates {
     QSP_STATE_CRC_RECEIVED
 };
 
-enum deviceStates {
-    DEVICE_STATE_OK,
-    DEVICE_STATE_FAILSAFE,
-    DEVICE_STATE_UNDETERMINED
-};
-
 #define PPM_INPUT_PIN       0 // Has to be one of Interrupt pins
 
 #define PPM_INPUT_CHANNEL_COUNT 10
@@ -88,7 +82,6 @@ struct TxDeviceState_t {
     uint8_t flags = 0;
     uint32_t roundtrip = 0;
     bool isReceiving = false; //Indicates that TX module is receiving frames from RX module
-    uint32_t nextLedUpdate = 0;
 };
 
 struct RxDeviceState_t {
@@ -102,7 +95,6 @@ struct RxDeviceState_t {
 };
 
 struct QspConfiguration_t {
-    uint8_t bindKey[4] = {0, 0, 0, 0};
     uint8_t protocolState = QSP_STATE_IDLE;
     uint8_t crc = 0;
     uint8_t payload[QSP_PAYLOAD_LENGTH] = {0};
@@ -111,7 +103,6 @@ struct QspConfiguration_t {
     uint8_t frameId = 0;
     uint32_t lastFrameReceivedAt[QSP_FRAME_COUNT] = {0};
     uint32_t anyFrameRecivedAt = 0;
-    uint8_t deviceState = DEVICE_STATE_UNDETERMINED;
     void (* onSuccessCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, uint8_t receivedChannel);
     void (* onFailureCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*);    
     bool forcePongFrame = false;

@@ -50,7 +50,7 @@ void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
 
     uint8_t flags = 0;
 
-    if (qsp->deviceState == DEVICE_STATE_FAILSAFE) {
+    if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
         flags |= 0x01 << 0;
     }
 
@@ -136,7 +136,7 @@ void qspClearPayload(QspConfiguration_t *qsp)
 void qspInitCrc(QspConfiguration_t *qsp) {
     qsp->crc = 0;
     for (uint8_t i = 0; i < 4; i++) {
-        qspComputeCrc(qsp, qsp->bindKey[i]);
+        qspComputeCrc(qsp, platformNode.bindKey[i]);
     }
 }
 
