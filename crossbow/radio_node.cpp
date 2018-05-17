@@ -1,6 +1,18 @@
 #include "radio_node.h"
 #include "lora.h"
 
+uint32_t getFrequencyForChannel(uint8_t channel) {
+    return RADIO_FREQUENCY_MIN + (RADIO_CHANNEL_WIDTH * channel);
+}
+
+uint8_t getNextChannel(uint8_t channel) {
+    return (channel + RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
+}
+
+uint8_t getPrevChannel(uint8_t channel) {
+    return (RADIO_CHANNEL_COUNT + channel - RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
+}
+
 RadioNode::RadioNode(void) {
 
 }
@@ -29,7 +41,7 @@ void RadioNode::init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int))
     //Setup ISR callback and start receiving
     LoRa.onReceive(callback);
     LoRa.receive();
-    deviceState = RADIO_STATE_RX;
+    radioState = RADIO_STATE_RX;
 }
 
 void RadioNode::readRssi(void)
@@ -48,18 +60,6 @@ uint8_t RadioNode::getChannel(void) {
 
 uint32_t RadioNode::getChannelEntryMillis(void) {
     return _channelEntryMillis;
-}
-
-uint32_t RadioNode::getFrequencyForChannel(uint8_t channel) {
-    return RADIO_FREQUENCY_MIN + (RADIO_CHANNEL_WIDTH * channel);
-}
-
-uint8_t RadioNode::getNextChannel(uint8_t channel) {
-    return (channel + RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
-}
-
-uint8_t RadioNode::getPrevChannel(uint8_t channel) {
-    return (RADIO_CHANNEL_COUNT + channel - RADIO_HOP_OFFSET) % RADIO_CHANNEL_COUNT;
 }
 
 void RadioNode::readAndDecode(
@@ -82,7 +82,7 @@ void RadioNode::readAndDecode(
         LoRa.sleep();
         LoRa.receive();
 
-        deviceState = RADIO_STATE_RX;
+        radioState = RADIO_STATE_RX;
         bytesToRead = NO_DATA_TO_READ;
     }
 }
@@ -91,15 +91,15 @@ void RadioNode::hopFrequency(bool forward, uint8_t fromChannel, uint32_t timesta
     _channelEntryMillis = timestamp;
 
     if (forward) {
-        _channel = RadioNode::getNextChannel(fromChannel);
+        _channel = getNextChannel(fromChannel);
     } else {
-        _channel = RadioNode::getPrevChannel(fromChannel);
+        _channel = getPrevChannel(fromChannel);
     }
 
     // And set hardware
     LoRa.sleep();
     LoRa.setFrequency(
-        RadioNode::getFrequencyForChannel(_channel)
+        getFrequencyForChannel(_channel)
     );
     LoRa.idle();
 }
@@ -124,7 +124,7 @@ void RadioNode::handleTxDoneState(bool hop) {
     
     if (
         currentMillis > nextTxCheckMillis &&
-        deviceState == RADIO_STATE_TX &&
+        radioState == RADIO_STATE_TX &&
         !LoRa.isTransmitting()
     ) {
 
@@ -136,12 +136,17 @@ void RadioNode::handleTxDoneState(bool hop) {
         }
 
         LoRa.receive();
-        deviceState = RADIO_STATE_RX;
+        radioState = RADIO_STATE_RX;
         nextTxCheckMillis = currentMillis + 1; //We check of TX done every 1ms
     }
 }
 
 void RadioNode::handleTx(QspConfiguration_t *qsp) {
+
+    if (!canTransmit) {
+        return;
+    }
+
     uint8_t size;
     uint8_t tmpBuffer[MAX_PACKET_SIZE];
 
@@ -153,5 +158,5 @@ void RadioNode::handleTx(QspConfiguration_t *qsp) {
     LoRa.endPacketAsync();
 
     //Set state to be able to detect the moment when TX is done
-    deviceState = RADIO_STATE_TX;
+    radioState = RADIO_STATE_TX;
 }

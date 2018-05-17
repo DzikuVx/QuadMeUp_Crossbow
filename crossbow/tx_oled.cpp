@@ -12,12 +12,7 @@ void TxOled::init() {
     _display.display();
 }
 
-void TxOled::loop(
-    RxDeviceState_t *rxDeviceState,
-    TxDeviceState_t *txDeviceState,
-    Tactile *button0,
-    Tactile *button1
-) {
+void TxOled::loop() {
     bool update = false;
 
     //Depending on page, things might be different
@@ -29,7 +24,7 @@ void TxOled::loop(
 
         case TX_PAGE_STATS:
             //Second button refreshes this page
-            if (button1->getState() == TACTILE_STATE_SHORT_PRESS) {
+            if (button1.getState() == TACTILE_STATE_SHORT_PRESS) {
                 update = true;
             }
             break;
@@ -37,54 +32,52 @@ void TxOled::loop(
     }
 
     //Short press of button0 always toggles no next page
-    if (button0->getState() == TACTILE_STATE_SHORT_PRESS) {
+    if (button0.getState() == TACTILE_STATE_SHORT_PRESS) {
         _mainPageSequenceIndex++;
         if (_mainPageSequenceIndex == TX_OLED_PAGE_COUNT) {
             _mainPageSequenceIndex = 0;
         }
         update = true;
     }
-
+    
     if (update) {
-        page(
-            rxDeviceState,
-            txDeviceState,
-            pageSequence[_mainPageSequenceIndex]
-        );
+        page(pageSequence[_mainPageSequenceIndex]);
     }
-
 }
 
-void TxOled::page(
-    RxDeviceState_t *rxDeviceState,
-    TxDeviceState_t *txDeviceState,
-    int page
-) {
+void TxOled::page(uint8_t page) {
+
+    static uint32_t lastUpdate = 0;
+
+    //Do not allow for OLED to be updated too often
+    if (lastUpdate > 0 && millis() - lastUpdate < 200) {
+        return;
+    }
+
     switch (page) {
         case TX_PAGE_INIT:
-            renderPageInit(rxDeviceState, txDeviceState);
+            renderPageInit();
             break;
         case TX_PAGE_STATS:
-            renderPageStats(rxDeviceState, txDeviceState);
+            renderPageStats();
             break;
         case TX_PAGE_PWR:
-            renderPagePwr(rxDeviceState, txDeviceState);
+            renderPagePwr();
             break;
         case TX_PAGE_BIND:
-            renderPageBind(rxDeviceState, txDeviceState);
+            renderPageBind();
             break;
         case TX_PAGE_MODE:
-            renderPageMode(rxDeviceState, txDeviceState);
+            renderPageMode();
             break;
 
     }
     _page = page;
+
+    lastUpdate = millis();
 }
 
-void TxOled::renderPagePwr(
-    RxDeviceState_t *rxDeviceState,
-    TxDeviceState_t *txDeviceState
-) {
+void TxOled::renderPagePwr() {
     _display.clearDisplay();
     _display.setTextColor(WHITE, BLACK);
 
@@ -101,10 +94,7 @@ void TxOled::renderPagePwr(
     _display.display();
 }
 
-void TxOled::renderPageBind(
-    RxDeviceState_t *rxDeviceState,
-    TxDeviceState_t *txDeviceState
-) {
+void TxOled::renderPageBind() {
     _display.clearDisplay();
     _display.setTextColor(WHITE, BLACK);
 
@@ -117,10 +107,7 @@ void TxOled::renderPageBind(
     _display.display();
 }
 
-void TxOled::renderPageMode(
-    RxDeviceState_t *rxDeviceState,
-    TxDeviceState_t *txDeviceState
-) {
+void TxOled::renderPageMode() {
     _display.clearDisplay();
     _display.setTextColor(WHITE, BLACK);
 
@@ -135,10 +122,7 @@ void TxOled::renderPageMode(
     _display.display();
 }
 
-void TxOled::renderPageStats(
-    RxDeviceState_t *rxDeviceState,
-    TxDeviceState_t *txDeviceState
-) {
+void TxOled::renderPageStats() {
     _display.clearDisplay();
     _display.setTextColor(WHITE, BLACK);
     
@@ -152,23 +136,20 @@ void TxOled::renderPageStats(
 
     _display.setCursor(74, 0);
     _display.setTextSize(3);
-    _display.print(rxDeviceState->rssi);
+    _display.print(rxDeviceState.rssi);
 
     _display.setCursor(92, 28);
     _display.setTextSize(2);
-    _display.print(rxDeviceState->snr);
+    _display.print(rxDeviceState.snr);
 
     _display.setCursor(54, 48);
     _display.setTextSize(2);    
-    _display.print(txDeviceState->roundtrip);
+    _display.print(txDeviceState.roundtrip);
 
     _display.display();
 }
 
-void TxOled::renderPageInit(
-    RxDeviceState_t *rxDeviceState,
-    TxDeviceState_t *txDeviceState
-) {
+void TxOled::renderPageInit() {
     _display.clearDisplay();
     _display.setTextColor(WHITE, BLACK);
     _display.setTextSize(2);

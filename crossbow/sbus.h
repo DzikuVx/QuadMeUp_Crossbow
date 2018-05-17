@@ -27,7 +27,7 @@ class SbusInput : public TxInput
 	void sbusRead(void);
 };
 
-void sbusPreparePacket(uint8_t packet[], int16_t channels[], bool isSignalLoss, bool isFailsafe);
+void sbusPreparePacket(uint8_t packet[], bool isSignalLoss, bool isFailsafe);
 
 #endif
 

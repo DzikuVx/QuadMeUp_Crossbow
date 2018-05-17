@@ -8,7 +8,9 @@
         "iterator": "cpp",
         "rope": "c",
         "__locale": "c",
-        "string": "c"
+        "string": "c",
+        "ios": "cpp",
+        "locale": "cpp"
     },
     "files.exclude": {
         "**/build": true
