@@ -65,9 +65,9 @@ RadioNode radioNode;
 
 #ifdef ARDUINO_ESP32_DEV
 
-    HardwareSerial Serial1(1);
+    HardwareSerial sbusInputSerial(1);
 
-    SbusInput txInput(Serial1);
+    SbusInput txInput(sbusInputSerial);
 #else 
     SbusInput txInput(Serial1);
 #endif 
@@ -234,7 +234,7 @@ void setup(void)
     /*
      * Prepare Serial1 for S.Bus processing
      */
-    // txInput.start();
+    txInput.start();
 
     /*
      * Buttons on TX module
@@ -314,6 +314,9 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
  */
 void loop(void)
 {
+
+    Serial.println(millis());
+
     uint32_t currentMillis = millis();
 
 #ifdef DEVICE_MODE_RX

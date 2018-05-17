@@ -556,8 +556,8 @@ void LoRaClass::bufferTransfer(uint8_t address, uint8_t buffer[], uint8_t size) 
   uint8_t out[size];
   SPI.transferBytes(buffer, out, size);
   //To keep API consistent, copy out buffer in case other methods would require it
-  for (uint8_t i = 0; i < size) {
-    buffer[i] = out[i];s
+  for (uint8_t i = 0; i < size; i++) {
+    buffer[i] = out[i];
   }
 #endif
   SPI.endTransaction();

@@ -93,8 +93,11 @@ void SbusInput::loop(void)
 
 void SbusInput::start(void)
 {
-        //FIXME This is not compatible with ESP32 !!
+#ifdef ARDUINO_ESP32_DEV
+    _serial.begin(100000, SERIAL_8N2, SERIAL1_RX, SERIAL1_TX, false);
+#else 
     _serial.begin(100000, SERIAL_8N2);
+#endif
 }
 
 void SbusInput::restart(void)
