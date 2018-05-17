@@ -14,8 +14,6 @@
 #define RX_FAILSAFE_DELAY (TX_TRANSMIT_SLOT_RATE * 8)
 #define TX_FAILSAFE_DELAY (RX_FAILSAFE_DELAY * 4)
 
-#define OLED_UPDATE_RATE 750
-
 #define SBUS_UPDATE_RATE 15 //ms
 #define SBUS_PACKET_LENGTH 25
 
@@ -25,7 +23,6 @@
 #define RX_TASK_HEALTH 200 //5Hz should be enough
 #define RSSI_CHANNEL 11
 
-#define CHANNEL_ID 0x01
 #define QSP_PAYLOAD_LENGTH 32
 
 #define QSP_MAX_FRAME_DECODE_TIME 10 //max time that frame can be decoded in ms
@@ -62,11 +59,8 @@ enum dataStates {
 
 #define PPM_INPUT_PIN       0 // Has to be one of Interrupt pins
 
-#define PPM_INPUT_CHANNEL_COUNT 10
-
 #define TX_BUZZER_PIN A5
 
-#define PPM_CHANNEL_DEFAULT_VALUE 1500  //set the default servo value
 #define PPM_FRAME_LENGTH 30500  //set the PPM frame length in microseconds (1ms = 1000µs)
 #define PPM_PULSE_LENGTH 300  //set the pulse length
 #define PPM_OUTPUT_MULTIPLIER 1 //1 for 8MHz RX, 2 for 16MHz RX
