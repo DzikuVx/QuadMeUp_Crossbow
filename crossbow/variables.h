@@ -66,11 +66,6 @@ enum deviceStates {
     DEVICE_STATE_UNDETERMINED
 };
 
-enum debugConfigFlags {
-    DEBUG_FLAG_SERIAL   = 0b00000001,
-    DEBUG_FLAG_LED      = 0b00000010
-};
-
 #define PPM_INPUT_PIN       0 // Has to be one of Interrupt pins
 
 #define PPM_INPUT_CHANNEL_COUNT 10
@@ -121,9 +116,7 @@ struct QspConfiguration_t {
     uint8_t deviceState = DEVICE_STATE_UNDETERMINED;
     void (* onSuccessCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, uint8_t receivedChannel);
     void (* onFailureCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*);    
-    bool canTransmit = false;
     bool forcePongFrame = false;
-    uint8_t debugConfig = 0;
     uint32_t frameDecodingStartedAt = 0;
     uint32_t lastTxSlotTimestamp = 0;
     bool transmitWindowOpen = false;

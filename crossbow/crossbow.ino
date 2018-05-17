@@ -54,7 +54,6 @@ RadioNode radioNode;
 
 volatile int16_t TxInput::channels[TX_INPUT_CHANNEL_COUNT];
 
-
 #include "txbuzzer.h"
 
 BuzzerState_t buzzer;
@@ -91,7 +90,8 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
     //If recide received a valid frame, that means it can start to talk
     radioNode.lastReceivedChannel = receivedChannel;
     
-    qsp->canTransmit = true;
+    //RX can start transmitting only when an least one frame has been receiveds
+    radioNode.canTransmit = true;
 
     radioNode.readRssi();
     radioNode.readSnr();
@@ -193,7 +193,7 @@ void setup(void)
     /*
      * TX should start talking imediately after power up
      */
-    qsp.canTransmit = true;
+    radioNode.canTransmit = true;
 
     pinMode(TX_BUZZER_PIN, OUTPUT);
 
@@ -214,13 +214,6 @@ void setup(void)
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
-
-#ifdef DEBUG_SERIAL
-    qsp.debugConfig |= DEBUG_FLAG_SERIAL;
-#endif
-#ifdef DEBUG_LED
-    qsp.debugConfig |= DEBUG_FLAG_LED;
-#endif
 
     /*
      * Setup salt bind key
@@ -458,10 +451,9 @@ void loop(void)
 
 #endif
 
-    if (qsp.canTransmit && transmitPayload)
+    if (transmitPayload)
     {
         radioNode.handleTx(&qsp);
-        transmitPayload = false;
     }
 
 #ifdef DEVICE_MODE_TX

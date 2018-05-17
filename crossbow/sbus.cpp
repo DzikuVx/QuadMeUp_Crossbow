@@ -143,9 +143,6 @@ void SbusInput::sbusRead() {
     static byte buffer[25];
 	static byte buffer_index = 0;
 
-    static uint32_t _decoderErrorFrames;
-    static uint32_t _goodFrames;
-
 	while (_serial.available()) {
 		byte rx = _serial.read();
 
