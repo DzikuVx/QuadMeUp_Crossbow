@@ -10,6 +10,10 @@
 #include "radio_node.h"
 
 extern RadioNode radioNode;
+extern RxDeviceState_t rxDeviceState;
+extern TxDeviceState_t txDeviceState;
+extern Tactile button0;
+extern Tactile button1;
 
 enum txOledPages {
     TX_PAGE_NONE,
@@ -34,39 +38,15 @@ class TxOled {
     public:
         TxOled(void);
         void init();
-        void loop(
-            RxDeviceState_t *rxDeviceState,
-            TxDeviceState_t *txDeviceState,
-            Tactile *button0,
-            Tactile *button1
-        );
-        void page(
-            RxDeviceState_t *rxDeviceState,
-            TxDeviceState_t *txDeviceState,
-            int page
-        );
+        void loop();
+        void page(uint8_t page);
     private:
         Adafruit_SSD1306 _display;
-        void renderPageInit(
-            RxDeviceState_t *rxDeviceState,
-            TxDeviceState_t *txDeviceState
-        );
-        void renderPageStats(
-            RxDeviceState_t *rxDeviceState,
-            TxDeviceState_t *txDeviceState
-        );
-        void renderPagePwr(
-            RxDeviceState_t *rxDeviceState,
-            TxDeviceState_t *txDeviceState
-        );
-        void renderPageBind(
-            RxDeviceState_t *rxDeviceState,
-            TxDeviceState_t *txDeviceState
-        );
-        void renderPageMode(
-            RxDeviceState_t *rxDeviceState,
-            TxDeviceState_t *txDeviceState
-        );
+        void renderPageInit();
+        void renderPageStats();
+        void renderPagePwr();
+        void renderPageBind();
+        void renderPageMode();
         uint8_t _page = TX_PAGE_NONE;
         uint8_t _mainPageSequenceIndex = 0;
 };
