@@ -347,7 +347,7 @@ void loop(void)
 
     //FIXME ESP32 has a problem with serial manipulation over here that causes board to restart
 
-    // txInput.recoverStuckFrames();
+    txInput.recoverStuckFrames();
 
     // /*
     //  * If we are not receiving SBUS frames from radio, try to restart serial
