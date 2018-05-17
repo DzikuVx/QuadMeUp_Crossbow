@@ -41,6 +41,10 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
     #define BUTTON_0_PIN    9 //TODO Decide, it is unknown
     #define BUTTON_1_PIN    10 //TODO Decide, it is unknown
 
+    #define SPI_SCK_PIN     5
+    #define SPI_MISO_PIN    19
+    #define SPI_MOSI_PIN    27
+
 #else
     #error please select hardware
 #endif
@@ -181,7 +185,7 @@ void setup(void)
 #endif
 
 #ifdef ARDUINO_ESP32_DEV
-    SPI.begin(5, 19, 27, 18);
+    SPI.begin(SPI_SCK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN, LORA_SS_PIN);
     
     //On ESP32 there are no interrupts here, we will have to check it manually
     radioNode.init(LORA_SS_PIN, LORA_RST_PIN, LORA_DI0_PIN, NULL);
