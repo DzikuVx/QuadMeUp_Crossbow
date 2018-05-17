@@ -69,7 +69,6 @@ enum deviceStates {
 #define PPM_INPUT_PIN       0 // Has to be one of Interrupt pins
 
 #define PPM_INPUT_CHANNEL_COUNT 10
-#define PPM_OUTPUT_CHANNEL_COUNT 10
 
 #define TX_BUZZER_PIN A5
 
@@ -99,7 +98,6 @@ struct RxDeviceState_t {
     uint8_t a1Voltage = 0;
     uint8_t a2Voltage = 0;
     uint8_t flags = 0;
-    int16_t channels[16] = {};
     int16_t indicatedRssi = 0;
 };
 

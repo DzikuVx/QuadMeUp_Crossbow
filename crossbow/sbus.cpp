@@ -31,16 +31,16 @@ int mapSbusToChannel(int in) {
     return (((long) in - 173l) * 1020l / 1638l) + 990;
 }
 
-void sbusPreparePacket(uint8_t packet[], int16_t channels[], bool isSignalLoss, bool isFailsafe){
+void sbusPreparePacket(uint8_t packet[], bool isSignalLoss, bool isFailsafe){
     
-    static int output[SBUS_CHANNEL_NUMBER] = {0};
+    int output[SBUS_CHANNEL_NUMBER];
     
     /*
      * Map 1000-2000 with middle at 1500 chanel values to
      * 173-1811 with middle at 992 S.BUS protocol requires
      */
     for (uint8_t i = 0; i < SBUS_CHANNEL_NUMBER; i++) {
-        output[i] = mapChannelToSbus(channels[i]);
+        output[i] = mapChannelToSbus(platformNode.getRcChannel(i));
     }
 
     uint8_t stateByte = 0x00;
@@ -83,7 +83,6 @@ SbusInput::SbusInput(HardwareSerial &serial) : _serial(serial)
 {
 }
 
-
 void SbusInput::loop(void)
 {
     if (_serial.available()) {
@@ -116,27 +115,20 @@ void SbusInput::recoverStuckFrames(void)
     }
 }
 
-void sbusToChannels(volatile int16_t channels[], byte buffer[]) {
-    channels[0]  = ((buffer[1]    |buffer[2]<<8)                 & 0x07FF);
-    channels[1]  = ((buffer[2]>>3 |buffer[3]<<5)                 & 0x07FF);
-    channels[2]  = ((buffer[3]>>6 |buffer[4]<<2 |buffer[5]<<10)  & 0x07FF);
-    channels[3]  = ((buffer[5]>>1 |buffer[6]<<7)                 & 0x07FF);
-    channels[4]  = ((buffer[6]>>4 |buffer[7]<<4)                 & 0x07FF);
-    channels[5]  = ((buffer[7]>>7 |buffer[8]<<1 |buffer[9]<<9)   & 0x07FF);
-    channels[6]  = ((buffer[9]>>2 |buffer[10]<<6)                & 0x07FF);
-    channels[7]  = ((buffer[10]>>5|buffer[11]<<3)                & 0x07FF);
-    channels[8]  = ((buffer[12]   |buffer[13]<<8)                & 0x07FF);
-    channels[9]  = ((buffer[13]>>3|buffer[14]<<5)                & 0x07FF);
-    channels[10] = ((buffer[14]>>6|buffer[15]<<2|buffer[16]<<10) & 0x07FF);
-    channels[11] = ((buffer[16]>>1|buffer[17]<<7)                & 0x07FF);
-    channels[12] = ((buffer[17]>>4|buffer[18]<<4)                & 0x07FF);
-    channels[13] = ((buffer[18]>>7|buffer[19]<<1|buffer[20]<<9)  & 0x07FF);
-    channels[14] = ((buffer[20]>>2|buffer[21]<<6)                & 0x07FF);
-    channels[15] = ((buffer[21]>>5|buffer[22]<<3)                & 0x07FF);
+void sbusToChannels(byte buffer[]) {
 
-    for (uint8_t channelIndex = 0; channelIndex < SBUS_CHANNEL_NUMBER; channelIndex++) {
-        channels[channelIndex] = mapSbusToChannel(channels[channelIndex]);
-    }
+    platformNode.setRcChannel(0, mapSbusToChannel((buffer[1] | buffer[2]<<8) & 0x07FF), 0);
+    platformNode.setRcChannel(1, mapSbusToChannel((buffer[2]>>3 | buffer[3]<<5) & 0x07FF), 0);
+    platformNode.setRcChannel(2, mapSbusToChannel((buffer[3]>>6 | buffer[4]<<2 | buffer[5]<<10) & 0x07FF), 0);
+    platformNode.setRcChannel(3, mapSbusToChannel((buffer[5]>>1 | buffer[6]<<7) & 0x07FF), 0);
+    platformNode.setRcChannel(4, mapSbusToChannel((buffer[6]>>4 | buffer[7]<<4) & 0x07FF), 0);
+    platformNode.setRcChannel(5, mapSbusToChannel((buffer[7]>>7 | buffer[8]<<1 |buffer[9]<<9) & 0x07FF), 0);
+    platformNode.setRcChannel(6, mapSbusToChannel((buffer[9]>>2 | buffer[10]<<6) & 0x07FF), 0);
+    platformNode.setRcChannel(7, mapSbusToChannel((buffer[10]>>5 | buffer[11]<<3) & 0x07FF), 0);
+    platformNode.setRcChannel(8, mapSbusToChannel((buffer[12]   | buffer[13]<<8) & 0x07FF), 0);
+    platformNode.setRcChannel(9, mapSbusToChannel((buffer[13]>>3 | buffer[14]<<5) & 0x07FF), 0);
+
+    //We use only 10 channels, so the reset can be just ignored
 }
 
 void SbusInput::sbusRead() {
@@ -169,7 +161,7 @@ void SbusInput::sbusRead() {
         ) {
             //We have full frame now
             _frameDecodingEndedAt = millis();
-            sbusToChannels(channels, buffer);
+            sbusToChannels(buffer);
             _protocolState = SBUS_DECODING_STATE_IDLE;
         }
 	}

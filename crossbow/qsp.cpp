@@ -2,38 +2,17 @@
 #include "variables.h"
 
 void qspDecodeRcDataFrame(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSate) {
-    int temporaryPpmOutput[PPM_OUTPUT_CHANNEL_COUNT] = {0};
-    //TODO fix it, baby :)
 
-    temporaryPpmOutput[0] = (uint16_t) (((uint16_t) qsp->payload[0] << 2) & 0x3fc) | ((qsp->payload[1] >> 6) & 0x03);
-    temporaryPpmOutput[1] = (uint16_t) (((uint16_t) qsp->payload[1] << 4) & 0x3f0) | ((qsp->payload[2] >> 4) & 0x0F);
-    temporaryPpmOutput[2] = (uint16_t) (((uint16_t) qsp->payload[2] << 6) & 0x3c0) | ((qsp->payload[3] >> 2) & 0x3F);
-    temporaryPpmOutput[3] = (uint16_t) (((uint16_t) qsp->payload[3] << 8) & 0x300) | ((qsp->payload[4]) & 0xFF);
-    temporaryPpmOutput[4] = qsp->payload[5];
-    temporaryPpmOutput[5] = qsp->payload[6];
-    temporaryPpmOutput[6] = (qsp->payload[7] >> 4) & 0b00001111;
-    temporaryPpmOutput[7] = qsp->payload[7] & 0b00001111;
-    temporaryPpmOutput[8] = (qsp->payload[8] >> 4) & 0b00001111;
-    temporaryPpmOutput[9] = qsp->payload[8] & 0b00001111;
-
-    //10bit channels are passed as is
-
-    //8bit channels needs to be shifted left 2 places
-    temporaryPpmOutput[4] = temporaryPpmOutput[4] << 2;
-    temporaryPpmOutput[5] = temporaryPpmOutput[5] << 2;
-
-    //4bit channels needs to be shifted left 6 places
-    temporaryPpmOutput[6] = temporaryPpmOutput[6] << 6;
-    temporaryPpmOutput[7] = temporaryPpmOutput[7] << 6;
-    temporaryPpmOutput[8] = temporaryPpmOutput[8] << 6;
-    temporaryPpmOutput[9] = temporaryPpmOutput[9] << 6;
-
-    /*
-     * Copy tremporary to real output and add missing 1000
-     */
-    for (uint8_t i = 0; i < PPM_OUTPUT_CHANNEL_COUNT; i++) {
-        rxDeviceSate->channels[i] = temporaryPpmOutput[i] + 1000;
-    }
+    platformNode.setRcChannel(0, (uint16_t) (((uint16_t) qsp->payload[0] << 2) & 0x3fc) | ((qsp->payload[1] >> 6) & 0x03), 1000);
+    platformNode.setRcChannel(1, (uint16_t) (((uint16_t) qsp->payload[1] << 4) & 0x3f0) | ((qsp->payload[2] >> 4) & 0x0F), 1000);
+    platformNode.setRcChannel(2, (uint16_t) (((uint16_t) qsp->payload[2] << 6) & 0x3c0) | ((qsp->payload[3] >> 2) & 0x3F), 1000);
+    platformNode.setRcChannel(3, (uint16_t) (((uint16_t) qsp->payload[3] << 8) & 0x300) | ((qsp->payload[4]) & 0xFF), 1000);
+    platformNode.setRcChannel(4, ((int) qsp->payload[5]) << 2, 1000);
+    platformNode.setRcChannel(5, ((int) qsp->payload[6]) << 2, 1000);
+    platformNode.setRcChannel(6, ((int) ((qsp->payload[7] >> 4) & 0b00001111)) << 6, 1000);
+    platformNode.setRcChannel(7, ((int) (qsp->payload[7] & 0b00001111)) << 6, 1000);
+    platformNode.setRcChannel(8, ((int) ((qsp->payload[8] >> 4) & 0b00001111)) << 6, 1000);
+    platformNode.setRcChannel(9, ((int) (qsp->payload[8] & 0b00001111)) << 6, 1000);
 }
 
 uint8_t get10bitHighShift(uint8_t channel) {
@@ -92,11 +71,11 @@ void decodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
 /**
  * Encode 10 RC channels 
  */
-void encodeRcDataPayload(QspConfiguration_t *qsp, volatile int16_t channels[], uint8_t noOfChannels)
+void encodeRcDataPayload(QspConfiguration_t *qsp, uint8_t noOfChannels)
 {
     for (uint8_t i = 0; i < noOfChannels; i++)
     {
-        int cV = constrain(channels[i], 1000, 2000) - 1000;
+        int cV = constrain(platformNode.getRcChannel(i), 1000, 2000) - 1000;
 
         uint16_t channelValue10 = cV & 0x03ff;
         uint8_t channelValue8   = (cV >> 2) & 0xff;

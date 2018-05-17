@@ -14,6 +14,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "main_variables.h"
 #include "qsp.h"
 #include "sbus.h"
+#include "platform_node.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
     #define LORA_SS_PIN     8
@@ -34,6 +35,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #endif
 
 RadioNode radioNode;
+PlatformNode platformNode;
 
 /*
  * Main defines for device working in TX mode
@@ -51,8 +53,6 @@ RadioNode radioNode;
 #else
   #error please select tx input source
 #endif
-
-volatile int16_t TxInput::channels[TX_INPUT_CHANNEL_COUNT];
 
 #include "txbuzzer.h"
 
@@ -163,11 +163,6 @@ void setup(void)
     radioNode.init(LORA_SS_PIN, LORA_RST_PIN, LORA_DI0_PIN, onReceive);
 
 #ifdef DEVICE_MODE_RX
-    //initiallize default ppm values
-    for (int i = 0; i < 16; i++)
-    {
-        rxDeviceState.channels[i] = PPM_CHANNEL_DEFAULT_VALUE;
-    }
 
     pinMode(RX_ADC_PIN_1, INPUT);
     pinMode(RX_ADC_PIN_2, INPUT);
@@ -373,7 +368,7 @@ void loop(void)
                     break;
 
                 case QSP_FRAME_RC_DATA:
-                    encodeRcDataPayload(&qsp, txInput.channels, PPM_INPUT_CHANNEL_COUNT);
+                    encodeRcDataPayload(&qsp, PLATFORM_CHANNEL_COUNT);
                     break;
             }
 
@@ -434,9 +429,9 @@ void loop(void)
     }
 
     if (currentMillis > sbusTime) {
-        rxDeviceState.channels[RSSI_CHANNEL - 1] = rxDeviceState.indicatedRssi;
+        platformNode.setRcChannel(RSSI_CHANNEL - 1, rxDeviceState.indicatedRssi, 0);
 
-        sbusPreparePacket(sbusPacket, rxDeviceState.channels, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
+        sbusPreparePacket(sbusPacket, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
         Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
         sbusTime = currentMillis + SBUS_UPDATE_RATE;
     }
