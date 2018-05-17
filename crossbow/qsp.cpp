@@ -62,9 +62,9 @@ void qspComputeCrc(QspConfiguration_t *qsp, uint8_t dataByte)
     qsp->crc = crc8_dvb_s2(qsp->crc, dataByte);
 }
 
-void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState, volatile RadioState_t *radioState) {
-    qsp->payload[0] = radioState->rssi;
-    qsp->payload[1] = radioState->snr;
+void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState, uint8_t rssi, uint8_t snr) {
+    qsp->payload[0] = rssi;
+    qsp->payload[1] = snr;
     qsp->payload[2] = rxDeviceState->rxVoltage;
     qsp->payload[3] = rxDeviceState->a1Voltage;
     qsp->payload[4] = rxDeviceState->a2Voltage;
@@ -165,8 +165,7 @@ void qspDecodeIncomingFrame(
     QspConfiguration_t *qsp, 
     uint8_t incomingByte, 
     RxDeviceState_t *rxDeviceState, 
-    TxDeviceState_t *txDeviceState,
-    volatile RadioState_t *radioState
+    TxDeviceState_t *txDeviceState
 ) {
     static uint8_t frameId;
     static uint8_t payloadLength;
@@ -210,10 +209,9 @@ void qspDecodeIncomingFrame(
     {
         if (qsp->crc == incomingByte) {
             //CRC is correct
-            radioState->lastReceivedChannel = receivedChannel;
-            qsp->onSuccessCallback(qsp, txDeviceState, rxDeviceState, radioState);
+            qsp->onSuccessCallback(qsp, txDeviceState, rxDeviceState, receivedChannel);
         } else {
-            qsp->onFailureCallback(qsp, txDeviceState, rxDeviceState, radioState);
+            qsp->onFailureCallback(qsp, txDeviceState, rxDeviceState);
         }
 
         // In both cases switch to listening for next preamble
@@ -224,14 +222,14 @@ void qspDecodeIncomingFrame(
 /**
  * Encode frame is corrent format and write to hardware
  */
-void qspEncodeFrame(QspConfiguration_t *qsp, volatile RadioState_t *radioState, uint8_t buffer[], uint8_t *size) {
+void qspEncodeFrame(QspConfiguration_t *qsp, uint8_t buffer[], uint8_t *size, uint8_t radioChannel) {
     //Salt CRC with bind key
     qspInitCrc(qsp);
 
     //Write frame type and length
     // We are no longer sending payload length, so 4 bits are now free for other usages
     // uint8_t data = qsp->payloadLength & 0x0f;
-    uint8_t data = radioState->channel;
+    uint8_t data = radioChannel;
     data |= (qsp->frameToSend << 4) & 0xf0;
     qspComputeCrc(qsp, data);
     buffer[0] = data;
