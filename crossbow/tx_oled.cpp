@@ -1,15 +1,14 @@
 #include "tx_oled.h"
 
 TxOled::TxOled(void) {
-    Adafruit_SSD1306 _display(-1);
+    U8X8_SSD1306_128X64_NONAME_HW_I2C _display(U8X8_PIN_NONE);
 }
 
 void TxOled::init() {
-    _display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
-    _display.setTextSize(1);
-    _display.setTextColor(WHITE);
-    _display.clearDisplay();
-    _display.display();
+    _display.begin();
+    _display.clear();
+    _display.setFont(u8x8_font_chroma48medium8_r);
+    _display.drawString(0,0,"Hello World!");
 }
 
 void TxOled::loop() {
@@ -78,107 +77,116 @@ void TxOled::page(uint8_t page) {
 }
 
 void TxOled::renderPagePwr() {
-    _display.clearDisplay();
-    _display.setTextColor(WHITE, BLACK);
+    // _display.clearDisplay();
+    // _display.setTextColor(WHITE, BLACK);
 
-    _display.setCursor(0, 0);
-    _display.setTextSize(2);
-    _display.print("PWR");
+    // _display.setCursor(0, 0);
+    // _display.setTextSize(2);
+    // _display.print("PWR");
 
-    //TODO content
-    _display.setCursor(0, 25);
-    _display.setTextSize(3);
-    _display.print(radioNode.loraTxPower);
-    _display.print("dBm");
+    // //TODO content
+    // _display.setCursor(0, 25);
+    // _display.setTextSize(3);
+    // _display.print(radioNode.loraTxPower);
+    // _display.print("dBm");
 
-    _display.display();
+    // _display.display();
 }
 
 void TxOled::renderPageBind() {
-    _display.clearDisplay();
-    _display.setTextColor(WHITE, BLACK);
+    // _display.clearDisplay();
+    // _display.setTextColor(WHITE, BLACK);
 
-    _display.setCursor(0, 0);
-    _display.setTextSize(2);
-    _display.print("Bind");
+    // _display.setCursor(0, 0);
+    // _display.setTextSize(2);
+    // _display.print("Bind");
 
-    //TODO content
+    // //TODO content
 
-    _display.display();
+    // _display.display();
 }
 
 void TxOled::renderPageMode() {
-    _display.clearDisplay();
-    _display.setTextColor(WHITE, BLACK);
+    // _display.clearDisplay();
+    // _display.setTextColor(WHITE, BLACK);
 
-    _display.setCursor(0, 0);
-    _display.setTextSize(2);
-    _display.print("Mode");
+    // _display.setCursor(0, 0);
+    // _display.setTextSize(2);
+    // _display.print("Mode");
 
-    _display.setCursor(0, 25);
-    _display.setTextSize(3);
-    _display.print("Full");
+    // _display.setCursor(0, 25);
+    // _display.setTextSize(3);
+    // _display.print("Full");
 
-    _display.display();
+    // _display.display();
 }
 
 void TxOled::renderPageStats() {
-    _display.clearDisplay();
-    _display.setTextColor(WHITE, BLACK);
+    // _display.clearDisplay();
+    // _display.setTextColor(WHITE, BLACK);
     
-    _display.setCursor(0, 0);
-    _display.setTextSize(3);
-    _display.print(radioNode.rssi);
+    // _display.setCursor(0, 0);
+    // _display.setTextSize(3);
+    // _display.print(radioNode.rssi);
 
-    _display.setCursor(18, 28);
-    _display.setTextSize(2);
-    _display.print(radioNode.snr);
+    // _display.setCursor(18, 28);
+    // _display.setTextSize(2);
+    // _display.print(radioNode.snr);
 
-    _display.setCursor(74, 0);
-    _display.setTextSize(3);
-    _display.print(rxDeviceState.rssi);
+    // _display.setCursor(74, 0);
+    // _display.setTextSize(3);
+    // _display.print(rxDeviceState.rssi);
 
-    _display.setCursor(92, 28);
-    _display.setTextSize(2);
-    _display.print(rxDeviceState.snr);
+    // _display.setCursor(92, 28);
+    // _display.setTextSize(2);
+    // _display.print(rxDeviceState.snr);
 
-    _display.setCursor(54, 48);
-    _display.setTextSize(2);    
-    _display.print(txDeviceState.roundtrip);
+    // _display.setCursor(54, 48);
+    // _display.setTextSize(2);    
+    // _display.print(txDeviceState.roundtrip);
 
-    _display.display();
+    // _display.display();
 }
 
 void TxOled::renderPageInit() {
-    _display.clearDisplay();
-    _display.setTextColor(WHITE, BLACK);
-    _display.setTextSize(2);
 
-    _display.setCursor(0, 0);
-    _display.print("Rdy ");
-    _display.print(radioNode.loraTxPower);
-    _display.print("dBm");
+    _display.clear();
 
-    _display.setTextSize(1);
-    _display.setCursor(0, 32);
-    _display.print("Bandwitdh: ");
-    _display.print(radioNode.loraBandwidth / 1000);
-    _display.print("kHz");
+    char buf[128];
+    snprintf(buf, "%s %d %s", "Rdy", radioNode.loraTxPower, "dBm");
 
-    _display.setCursor(0, 42);
-    _display.print("SF: ");
-    _display.print(radioNode.loraSpreadingFactor);
+    _display.drawString(0, 0, buf);
 
-    _display.setCursor(64, 42);
-    _display.print("CR: ");
-    _display.print(radioNode.loraCodingRate);
 
-    _display.setCursor(0, 52);
-    _display.print("Rate: ");
-    _display.print(1000 / TX_TRANSMIT_SLOT_RATE);
-    _display.print("Hz");
+    // _display.clearDisplay();
+    // _display.setTextColor(WHITE, BLACK);
+    // _display.setTextSize(2);
 
-    _display.display();
+    // _display.setCursor(0, 0);
+    // _display.print("Rdy ");
+    // _display.print(radioNode.loraTxPower);
+    // _display.print("dBm");
+
+    // _display.setTextSize(1);
+    // _display.setCursor(0, 32);
+    // _display.print("Bandwitdh: ");
+    // _display.print(radioNode.loraBandwidth / 1000);
+    // _display.print("kHz");
+
+    // _display.setCursor(0, 42);
+    // _display.print("SF: ");
+    // _display.print(radioNode.loraSpreadingFactor);
+
+    // _display.setCursor(64, 42);
+    // _display.print("CR: ");
+    // _display.print(radioNode.loraCodingRate);
+
+    // _display.setCursor(0, 52);
+    // _display.print("Rate: ");
+    // _display.print(1000 / TX_TRANSMIT_SLOT_RATE);
+    // _display.print("Hz");
+
+    // _display.display();
 }
 
 
