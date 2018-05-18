@@ -22,7 +22,9 @@
         "list": "cpp",
         "map": "cpp",
         "set": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "ios": "cpp",
+        "locale": "cpp"
     },
     "files.exclude": {
         "**/build": true

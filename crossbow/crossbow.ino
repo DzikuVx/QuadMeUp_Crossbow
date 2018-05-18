@@ -14,6 +14,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "main_variables.h"
 #include "qsp.h"
 #include "sbus.h"
+#include "platform_node.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
     #define LORA_SS_PIN     8
@@ -50,6 +51,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #endif
 
 RadioNode radioNode;
+PlatformNode platformNode;
 
 /*
  * Main defines for device working in TX mode
@@ -75,9 +77,6 @@ RadioNode radioNode;
 #else
   #error please select tx input source
 #endif
-
-volatile int16_t TxInput::channels[TX_INPUT_CHANNEL_COUNT];
-
 
 #include "txbuzzer.h"
 
@@ -115,7 +114,8 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
     //If recide received a valid frame, that means it can start to talk
     radioNode.lastReceivedChannel = receivedChannel;
     
-    qsp->canTransmit = true;
+    //RX can start transmitting only when an least one frame has been receiveds
+    radioNode.canTransmit = true;
 
     radioNode.readRssi();
     radioNode.readSnr();
@@ -179,9 +179,9 @@ void setup(void)
     qsp.onFailureCallback = onQspFailure;
 
 #ifdef DEVICE_MODE_RX
-    qsp.deviceState = DEVICE_STATE_FAILSAFE;
+    platformNode.platformState = DEVICE_STATE_FAILSAFE;
 #else
-    qsp.deviceState = DEVICE_STATE_OK;
+    platformNode.platformState = DEVICE_STATE_OK;
 #endif
 
 #ifdef ARDUINO_ESP32_DEV
@@ -194,11 +194,6 @@ void setup(void)
 #endif
 
 #ifdef DEVICE_MODE_RX
-    //initiallize default ppm values
-    for (int i = 0; i < 16; i++)
-    {
-        rxDeviceState.channels[i] = PPM_CHANNEL_DEFAULT_VALUE;
-    }
 
     pinMode(RX_ADC_PIN_1, INPUT);
     pinMode(RX_ADC_PIN_2, INPUT);
@@ -214,17 +209,13 @@ void setup(void)
 
 #ifdef FEATURE_TX_OLED
     oled.init();
-    oled.page(
-        &rxDeviceState,
-        &txDeviceState,
-        TX_PAGE_INIT
-    );
+    oled.page(TX_PAGE_INIT);
 #endif
 
     /*
      * TX should start talking imediately after power up
      */
-    qsp.canTransmit = true;
+    radioNode.canTransmit = true;
 
     pinMode(TX_BUZZER_PIN, OUTPUT);
 
@@ -247,20 +238,13 @@ void setup(void)
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
 
-#ifdef DEBUG_SERIAL
-    qsp.debugConfig |= DEBUG_FLAG_SERIAL;
-#endif
-#ifdef DEBUG_LED
-    qsp.debugConfig |= DEBUG_FLAG_LED;
-#endif
-
     /*
      * Setup salt bind key
      */
-    qsp.bindKey[0] = 0x12;
-    qsp.bindKey[1] = 0x0a;
-    qsp.bindKey[2] = 0x36;
-    qsp.bindKey[3] = 0xa7;
+    platformNode.bindKey[0] = 0x12;
+    platformNode.bindKey[1] = 0x0a;
+    platformNode.bindKey[2] = 0x36;
+    platformNode.bindKey[3] = 0xa7;
 
 }
 
@@ -337,12 +321,7 @@ void loop(void)
     button1.loop();
 
 #ifdef FEATURE_TX_OLED
-    oled.loop(
-        &rxDeviceState,
-        &txDeviceState,
-        &button0,
-        &button1
-    );
+    oled.loop();
 #endif
 
     //FIXME ESP32 has a problem with serial manipulation over here that causes board to restart
@@ -388,7 +367,7 @@ void loop(void)
     txInput.loop();
 
     if (
-        radioNode.deviceState == RADIO_STATE_RX &&
+        radioNode.radioState == RADIO_STATE_RX &&
         qsp.protocolState == QSP_STATE_IDLE &&
         qsp.lastTxSlotTimestamp + TX_TRANSMIT_SLOT_RATE < currentMillis
     ) {
@@ -416,7 +395,7 @@ void loop(void)
                     break;
 
                 case QSP_FRAME_RC_DATA:
-                    encodeRcDataPayload(&qsp, txInput.channels, PPM_INPUT_CHANNEL_COUNT);
+                    encodeRcDataPayload(&qsp, PLATFORM_CHANNEL_COUNT);
                     break;
             }
 
@@ -439,11 +418,6 @@ void loop(void)
         uint8_t output = constrain(radioNode.rssi - 40, 0, 100);
 
         rxDeviceState.indicatedRssi = (output * 10) + 1000;
-        if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
-            digitalWrite(LED_BUILTIN, HIGH);
-        } else {
-            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        }
     }
 
     /*
@@ -477,27 +451,26 @@ void loop(void)
     }
 
     if (currentMillis > sbusTime) {
-        rxDeviceState.channels[RSSI_CHANNEL - 1] = rxDeviceState.indicatedRssi;
+        platformNode.setRcChannel(RSSI_CHANNEL - 1, rxDeviceState.indicatedRssi, 0);
 
-        sbusPreparePacket(sbusPacket, rxDeviceState.channels, false, (qsp.deviceState == DEVICE_STATE_FAILSAFE));
+        sbusPreparePacket(sbusPacket, false, (platformNode.platformState == DEVICE_STATE_FAILSAFE));
         Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
         sbusTime = currentMillis + SBUS_UPDATE_RATE;
     }
 
     if (qsp.lastFrameReceivedAt[QSP_FRAME_RC_DATA] + RX_FAILSAFE_DELAY < currentMillis) {
-        qsp.deviceState = DEVICE_STATE_FAILSAFE;
+        platformNode.platformState = DEVICE_STATE_FAILSAFE;
         rxDeviceState.indicatedRssi = 0;
         radioNode.rssi = 0;
     } else {
-        qsp.deviceState = DEVICE_STATE_OK;
+        platformNode.platformState = DEVICE_STATE_OK;
     }
 
 #endif
 
-    if (qsp.canTransmit && transmitPayload)
+    if (transmitPayload)
     {
         radioNode.handleTx(&qsp);
-        transmitPayload = false;
     }
 
 #ifdef DEVICE_MODE_TX
@@ -510,7 +483,7 @@ void loop(void)
         //TX module started to receive data
         buzzerSingleMode(BUZZER_MODE_DOUBLE_CHIRP, &buzzer);
         txDeviceState.isReceiving = true;
-        qsp.deviceState = DEVICE_STATE_OK;
+        platformNode.platformState = DEVICE_STATE_OK;
     }
 
     //Here we detect failsafe state on TX module
@@ -526,14 +499,14 @@ void loop(void)
         rxDeviceState.snr = 0;
         rxDeviceState.flags = 0;
         txDeviceState.roundtrip = 0;
-        qsp.deviceState = DEVICE_STATE_FAILSAFE;
+        platformNode.platformState = DEVICE_STATE_FAILSAFE;
         qsp.anyFrameRecivedAt = 0;
     }
 
     //FIXME rxDeviceState should be resetted also in RC_HEALT frame is not received in a long period
 
     //Handle audible alarms
-    if (qsp.deviceState == DEVICE_STATE_FAILSAFE) {
+    if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
         //Failsafe detected by TX
         buzzerContinousMode(BUZZER_MODE_SLOW_BEEP, &buzzer);
     } else if (txDeviceState.isReceiving && (rxDeviceState.flags & 0x1) == 1) {
@@ -547,24 +520,32 @@ void loop(void)
         buzzerContinousMode(BUZZER_MODE_OFF, &buzzer);
     }
 
+#endif
+
     /*
      * Handle LED updates
      */
-    if (txDeviceState.nextLedUpdate < currentMillis) {
-
+    if (platformNode.nextLedUpdate < currentMillis) {
+#ifdef DEVICE_MODE_TX
         if (txDeviceState.isReceiving) {
             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-            txDeviceState.nextLedUpdate = currentMillis + 300;
+            platformNode.nextLedUpdate = currentMillis + 300;
         } else if (txInput.isReceiving()) {
             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-            txDeviceState.nextLedUpdate = currentMillis + 100;
+            platformNode.nextLedUpdate = currentMillis + 100;
         } else {
             digitalWrite(LED_BUILTIN, HIGH);
-            txDeviceState.nextLedUpdate = currentMillis + 200;
+            platformNode.nextLedUpdate = currentMillis + 200;
         }
-    }
-
+#else
+        platformNode.nextLedUpdate = currentMillis + 200;
+        if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
+            digitalWrite(LED_BUILTIN, HIGH);
+        } else {
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        }
 #endif
+    }
 
 }
 
@@ -585,7 +566,7 @@ void onReceive(int packetSize)
             */
             LoRa.sleep();
             LoRa.receive();
-            radioNode.deviceState = RADIO_STATE_RX;
+            radioNode.radioState = RADIO_STATE_RX;
         }
     }
 }
