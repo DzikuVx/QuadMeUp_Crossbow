@@ -3,8 +3,8 @@
 #ifndef TX_OLED_H
 #define TX_OLED_H
 
-#include <Adafruit_SSD1306.h>
-#include "Wire.h"
+#include "SSD1306Wire.h"
+// #include <Wire.h>
 #include "variables.h"
 #include "tactile.h"
 #include "radio_node.h"
@@ -41,7 +41,7 @@ class TxOled {
         void loop();
         void page(uint8_t page);
     private:
-        Adafruit_SSD1306 _display;
+        SSD1306Wire _display;
         void renderPageInit();
         void renderPageStats();
         void renderPagePwr();

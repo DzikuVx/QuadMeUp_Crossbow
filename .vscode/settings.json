@@ -10,7 +10,21 @@
         "__locale": "c",
         "string": "c",
         "ios": "cpp",
-        "locale": "cpp"
+        "locale": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "vector": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
+        "slist": "cpp",
+        "array": "cpp",
+        "__bit_reference": "cpp",
+        "__hash_table": "cpp",
+        "__split_buffer": "cpp",
+        "__tree": "cpp",
+        "initializer_list": "cpp",
+        "map": "cpp",
+        "set": "cpp"
     },
     "files.exclude": {
         "**/build": true
