@@ -1,5 +1,7 @@
 #include "tx_oled.h"
 
+#define OLED_COL_COUNT 16
+
 TxOled::TxOled(void) {
     U8X8_SSD1306_128X64_NONAME_HW_I2C _display(U8X8_PIN_NONE);
 }
@@ -7,8 +9,6 @@ TxOled::TxOled(void) {
 void TxOled::init() {
     _display.begin();
     _display.clear();
-    _display.setFont(u8x8_font_chroma48medium8_r);
-    _display.drawString(0,0,"Hello World!");
 }
 
 void TxOled::loop() {
@@ -150,43 +150,29 @@ void TxOled::renderPageStats() {
 
 void TxOled::renderPageInit() {
 
+    char buf[OLED_COL_COUNT];
+
     _display.clear();
 
-    char buf[128];
-    snprintf(buf, "%s %d %s", "Rdy", radioNode.loraTxPower, "dBm");
+    _display.setFont(u8x8_font_pxplustandynewtv_f);
 
+    snprintf(buf, OLED_COL_COUNT, "Rdy %d %s", radioNode.loraTxPower, "dBm");
     _display.drawString(0, 0, buf);
 
+    _display.setFont(u8x8_font_chroma48medium8_r);
 
-    // _display.clearDisplay();
-    // _display.setTextColor(WHITE, BLACK);
-    // _display.setTextSize(2);
+    snprintf(buf, OLED_COL_COUNT, "BW %dkHz", radioNode.loraBandwidth / 1000);
+    _display.drawString(0, 3, buf);
 
-    // _display.setCursor(0, 0);
-    // _display.print("Rdy ");
-    // _display.print(radioNode.loraTxPower);
-    // _display.print("dBm");
+    snprintf(buf, OLED_COL_COUNT, "SF %d", radioNode.loraSpreadingFactor);
+    _display.drawString(0, 4, buf);
 
-    // _display.setTextSize(1);
-    // _display.setCursor(0, 32);
-    // _display.print("Bandwitdh: ");
-    // _display.print(radioNode.loraBandwidth / 1000);
-    // _display.print("kHz");
+    snprintf(buf, OLED_COL_COUNT, "CR %d", radioNode.loraCodingRate);
+    _display.drawString(8, 4, buf);
 
-    // _display.setCursor(0, 42);
-    // _display.print("SF: ");
-    // _display.print(radioNode.loraSpreadingFactor);
 
-    // _display.setCursor(64, 42);
-    // _display.print("CR: ");
-    // _display.print(radioNode.loraCodingRate);
-
-    // _display.setCursor(0, 52);
-    // _display.print("Rate: ");
-    // _display.print(1000 / TX_TRANSMIT_SLOT_RATE);
-    // _display.print("Hz");
-
-    // _display.display();
+    snprintf(buf, OLED_COL_COUNT, "Rate: %dHz", 1000 / TX_TRANSMIT_SLOT_RATE);
+    _display.drawString(0, 6, buf);
 }
 
 
