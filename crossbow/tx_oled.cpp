@@ -122,30 +122,31 @@ void TxOled::renderPageMode() {
 }
 
 void TxOled::renderPageStats() {
-    // _display.clearDisplay();
-    // _display.setTextColor(WHITE, BLACK);
+
+    char buf[OLED_COL_COUNT];
+
+    _display.clear();
+    _display.setFont(u8x8_font_pxplustandynewtv_f);
+    _display.draw1x2String(0, 0, "Stats");
+
+    _display.setFont(u8x8_font_chroma48medium8_r);
+    _display.drawString(0, 3, "RSSI");
+    _display.drawString(0, 5, "SNR");
     
-    // _display.setCursor(0, 0);
-    // _display.setTextSize(3);
-    // _display.print(radioNode.rssi);
+    _display.setFont(u8x8_font_pxplustandynewtv_f);
 
-    // _display.setCursor(18, 28);
-    // _display.setTextSize(2);
-    // _display.print(radioNode.snr);
+    snprintf(buf, OLED_COL_COUNT, "%d", radioNode.rssi);
+    _display.drawString(6, 3, buf);
+    snprintf(buf, OLED_COL_COUNT, "%d", rxDeviceState.rssi);
+    _display.drawString(11, 3, buf);
 
-    // _display.setCursor(74, 0);
-    // _display.setTextSize(3);
-    // _display.print(rxDeviceState.rssi);
+    snprintf(buf, OLED_COL_COUNT, "%d", radioNode.snr);
+    _display.drawString(6, 5, buf);
+    snprintf(buf, OLED_COL_COUNT, "%d", rxDeviceState.snr);
+    _display.drawString(11, 5, buf);
 
-    // _display.setCursor(92, 28);
-    // _display.setTextSize(2);
-    // _display.print(rxDeviceState.snr);
-
-    // _display.setCursor(54, 48);
-    // _display.setTextSize(2);    
-    // _display.print(txDeviceState.roundtrip);
-
-    // _display.display();
+    snprintf(buf, OLED_COL_COUNT, "Trip: %d", txDeviceState.roundtrip);
+    _display.drawString(0, 7, buf);
 }
 
 void TxOled::renderPageInit() {
@@ -157,22 +158,22 @@ void TxOled::renderPageInit() {
     _display.setFont(u8x8_font_pxplustandynewtv_f);
 
     snprintf(buf, OLED_COL_COUNT, "Rdy %d %s", radioNode.loraTxPower, "dBm");
-    _display.drawString(0, 0, buf);
+    _display.draw1x2String(0, 0, buf);
 
     _display.setFont(u8x8_font_chroma48medium8_r);
 
     snprintf(buf, OLED_COL_COUNT, "BW %dkHz", radioNode.loraBandwidth / 1000);
-    _display.drawString(0, 3, buf);
-
-    snprintf(buf, OLED_COL_COUNT, "SF %d", radioNode.loraSpreadingFactor);
     _display.drawString(0, 4, buf);
 
+    snprintf(buf, OLED_COL_COUNT, "SF %d", radioNode.loraSpreadingFactor);
+    _display.drawString(0, 5, buf);
+
     snprintf(buf, OLED_COL_COUNT, "CR %d", radioNode.loraCodingRate);
-    _display.drawString(8, 4, buf);
+    _display.drawString(8, 5, buf);
 
 
     snprintf(buf, OLED_COL_COUNT, "Rate: %dHz", 1000 / TX_TRANSMIT_SLOT_RATE);
-    _display.drawString(0, 6, buf);
+    _display.drawString(0, 7, buf);
 }
 
 
