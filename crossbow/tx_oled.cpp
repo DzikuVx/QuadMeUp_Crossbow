@@ -77,48 +77,39 @@ void TxOled::page(uint8_t page) {
 }
 
 void TxOled::renderPagePwr() {
-    // _display.clearDisplay();
-    // _display.setTextColor(WHITE, BLACK);
+    char buf[OLED_COL_COUNT];
 
-    // _display.setCursor(0, 0);
-    // _display.setTextSize(2);
-    // _display.print("PWR");
+    _display.clear();
+    _display.setFont(u8x8_font_pxplustandynewtv_f);
+    _display.draw1x2String(0, 0, "Power");
 
-    // //TODO content
-    // _display.setCursor(0, 25);
-    // _display.setTextSize(3);
-    // _display.print(radioNode.loraTxPower);
-    // _display.print("dBm");
-
-    // _display.display();
+    _display.setFont(u8x8_font_chroma48medium8_r);
+    snprintf(buf, OLED_COL_COUNT, "%d%s", radioNode.loraTxPower, "dBm");
+    _display.draw1x2String(0, 4, buf);
 }
 
 void TxOled::renderPageBind() {
-    // _display.clearDisplay();
-    // _display.setTextColor(WHITE, BLACK);
+    char buf[OLED_COL_COUNT];
 
-    // _display.setCursor(0, 0);
-    // _display.setTextSize(2);
-    // _display.print("Bind");
+    _display.clear();
+    _display.setFont(u8x8_font_pxplustandynewtv_f);
+    _display.draw1x2String(0, 0, "Bind");
 
-    // //TODO content
-
-    // _display.display();
+    _display.setFont(u8x8_font_chroma48medium8_r);
+    snprintf(buf, OLED_COL_COUNT, "Bind?");
+    _display.draw1x2String(0, 4, buf);
 }
 
 void TxOled::renderPageMode() {
-    // _display.clearDisplay();
-    // _display.setTextColor(WHITE, BLACK);
+    char buf[OLED_COL_COUNT];
 
-    // _display.setCursor(0, 0);
-    // _display.setTextSize(2);
-    // _display.print("Mode");
+    _display.clear();
+    _display.setFont(u8x8_font_pxplustandynewtv_f);
+    _display.draw1x2String(0, 0, "Mode");
 
-    // _display.setCursor(0, 25);
-    // _display.setTextSize(3);
-    // _display.print("Full");
-
-    // _display.display();
+    _display.setFont(u8x8_font_chroma48medium8_r);
+    snprintf(buf, OLED_COL_COUNT, "Full");
+    _display.draw1x2String(0, 4, buf);
 }
 
 void TxOled::renderPageStats() {

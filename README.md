@@ -18,6 +18,12 @@ Needs implementation:
 * RX configuration from TX module
 * Sending telemetry from TX to OpenTX radio
 
+# Dependencies
+
+To compile, following libraries have to be installed:
+
+* [U8g2](https://github.com/olikraus/u8g2) for OLED support in TX module
+
 # Protocol
 
 | Byte                  | Description | Notes |
