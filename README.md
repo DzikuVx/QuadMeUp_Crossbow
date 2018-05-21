@@ -47,6 +47,7 @@ CRC is computed using `crc8_dvb_s2` method. Initial CRC value for each frame CRC
 | 0100   | 0x4          | Set receiver configuration | TX -> RX | no used |
 | 0101   | 0x5          | PING frame, uses 9 byte payload | TX -> RX | 4    |
 | 0110   | 0x6          | PONG frame, the same payload as PING | RX -> TX | 4 |
+| 0111   | 0x7          | `BIND` frame, transmitted by TX only during binding | TX -> RX | 4 |
 
 ### `RC_DATA` frame format
 
@@ -81,6 +82,15 @@ Total length of `RC_DATA` payload is 9 bytes
 `PING` and `PONG` frames are to determine packet roundrip between **TX** and **RX** module.
 **TX** sends `PING` frame with curent `micros`. If **RX** receives `PING` frame, it respons
 its payload as `PONG` frame. 
+
+### `BIND` frame format
+
+| Byte  | Description                           |
+| ----  | ----                                  |
+| 1     | Bind key byte 0                       |
+| 2     | Bind key byte 1                       |
+| 3     | Bind key byte 2                       |
+| 4     | Bind key byte 3                       |
 
 # RSSI
 
