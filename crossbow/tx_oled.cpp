@@ -8,6 +8,7 @@ TxOled::TxOled(void) {
 
 void TxOled::init() {
     _display.begin();
+    _display.setFont(u8x8_font_pxplustandynewtv_f);
     _display.clear();
 }
 
@@ -80,10 +81,8 @@ void TxOled::renderPagePwr() {
     char buf[OLED_COL_COUNT];
 
     _display.clear();
-    _display.setFont(u8x8_font_pxplustandynewtv_f);
     _display.draw1x2String(0, 0, "Power");
 
-    _display.setFont(u8x8_font_chroma48medium8_r);
     snprintf(buf, OLED_COL_COUNT, "%d%s", radioNode.loraTxPower, "dBm");
     _display.draw1x2String(0, 4, buf);
 }
@@ -92,10 +91,8 @@ void TxOled::renderPageBind() {
     char buf[OLED_COL_COUNT];
 
     _display.clear();
-    _display.setFont(u8x8_font_pxplustandynewtv_f);
     _display.draw1x2String(0, 0, "Bind");
 
-    _display.setFont(u8x8_font_chroma48medium8_r);
     snprintf(buf, OLED_COL_COUNT, "Bind?");
     _display.draw1x2String(0, 4, buf);
 }
@@ -104,10 +101,8 @@ void TxOled::renderPageMode() {
     char buf[OLED_COL_COUNT];
 
     _display.clear();
-    _display.setFont(u8x8_font_pxplustandynewtv_f);
     _display.draw1x2String(0, 0, "Mode");
 
-    _display.setFont(u8x8_font_chroma48medium8_r);
     snprintf(buf, OLED_COL_COUNT, "Full");
     _display.draw1x2String(0, 4, buf);
 }
@@ -117,15 +112,11 @@ void TxOled::renderPageStats() {
     char buf[OLED_COL_COUNT];
 
     _display.clear();
-    _display.setFont(u8x8_font_pxplustandynewtv_f);
     _display.draw1x2String(0, 0, "Stats");
 
-    _display.setFont(u8x8_font_chroma48medium8_r);
     _display.drawString(0, 3, "RSSI");
     _display.drawString(0, 5, "SNR");
     
-    _display.setFont(u8x8_font_pxplustandynewtv_f);
-
     snprintf(buf, OLED_COL_COUNT, "%d", radioNode.rssi);
     _display.drawString(6, 3, buf);
     snprintf(buf, OLED_COL_COUNT, "%d", rxDeviceState.rssi);
@@ -146,12 +137,8 @@ void TxOled::renderPageInit() {
 
     _display.clear();
 
-    _display.setFont(u8x8_font_pxplustandynewtv_f);
-
     snprintf(buf, OLED_COL_COUNT, "Rdy %d %s", radioNode.loraTxPower, "dBm");
     _display.draw1x2String(0, 0, buf);
-
-    _display.setFont(u8x8_font_chroma48medium8_r);
 
     snprintf(buf, OLED_COL_COUNT, "BW %dkHz", radioNode.loraBandwidth / 1000);
     _display.drawString(0, 4, buf);
@@ -161,7 +148,6 @@ void TxOled::renderPageInit() {
 
     snprintf(buf, OLED_COL_COUNT, "CR %d", radioNode.loraCodingRate);
     _display.drawString(8, 5, buf);
-
 
     snprintf(buf, OLED_COL_COUNT, "Rate: %dHz", 1000 / TX_TRANSMIT_SLOT_RATE);
     _display.drawString(0, 7, buf);
