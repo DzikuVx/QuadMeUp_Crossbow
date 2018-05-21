@@ -1,15 +1,15 @@
 #include "tx_oled.h"
 
+#define OLED_COL_COUNT 16
+
 TxOled::TxOled(void) {
-    Adafruit_SSD1306 _display(-1);
+    U8X8_SSD1306_128X64_NONAME_HW_I2C _display(U8X8_PIN_NONE);
 }
 
 void TxOled::init() {
-    _display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
-    _display.setTextSize(1);
-    _display.setTextColor(WHITE);
-    _display.clearDisplay();
-    _display.display();
+    _display.begin();
+    _display.setFont(u8x8_font_pxplustandynewtv_f);
+    _display.clear();
 }
 
 void TxOled::loop() {
@@ -78,107 +78,79 @@ void TxOled::page(uint8_t page) {
 }
 
 void TxOled::renderPagePwr() {
-    _display.clearDisplay();
-    _display.setTextColor(WHITE, BLACK);
+    char buf[OLED_COL_COUNT];
 
-    _display.setCursor(0, 0);
-    _display.setTextSize(2);
-    _display.print("PWR");
+    _display.clear();
+    _display.draw1x2String(0, 0, "Power");
 
-    //TODO content
-    _display.setCursor(0, 25);
-    _display.setTextSize(3);
-    _display.print(radioNode.loraTxPower);
-    _display.print("dBm");
-
-    _display.display();
+    snprintf(buf, OLED_COL_COUNT, "%d%s", radioNode.loraTxPower, "dBm");
+    _display.draw1x2String(0, 4, buf);
 }
 
 void TxOled::renderPageBind() {
-    _display.clearDisplay();
-    _display.setTextColor(WHITE, BLACK);
+    char buf[OLED_COL_COUNT];
 
-    _display.setCursor(0, 0);
-    _display.setTextSize(2);
-    _display.print("Bind");
+    _display.clear();
+    _display.draw1x2String(0, 0, "Bind");
 
-    //TODO content
-
-    _display.display();
+    snprintf(buf, OLED_COL_COUNT, "Bind?");
+    _display.draw1x2String(0, 4, buf);
 }
 
 void TxOled::renderPageMode() {
-    _display.clearDisplay();
-    _display.setTextColor(WHITE, BLACK);
+    char buf[OLED_COL_COUNT];
 
-    _display.setCursor(0, 0);
-    _display.setTextSize(2);
-    _display.print("Mode");
+    _display.clear();
+    _display.draw1x2String(0, 0, "Mode");
 
-    _display.setCursor(0, 25);
-    _display.setTextSize(3);
-    _display.print("Full");
-
-    _display.display();
+    snprintf(buf, OLED_COL_COUNT, "Full");
+    _display.draw1x2String(0, 4, buf);
 }
 
 void TxOled::renderPageStats() {
-    _display.clearDisplay();
-    _display.setTextColor(WHITE, BLACK);
+
+    char buf[OLED_COL_COUNT];
+
+    _display.clear();
+    _display.draw1x2String(0, 0, "Stats");
+
+    _display.drawString(0, 3, "RSSI");
+    _display.drawString(0, 5, "SNR");
     
-    _display.setCursor(0, 0);
-    _display.setTextSize(3);
-    _display.print(radioNode.rssi);
+    snprintf(buf, OLED_COL_COUNT, "%d", radioNode.rssi);
+    _display.drawString(6, 3, buf);
+    snprintf(buf, OLED_COL_COUNT, "%d", rxDeviceState.rssi);
+    _display.drawString(11, 3, buf);
 
-    _display.setCursor(18, 28);
-    _display.setTextSize(2);
-    _display.print(radioNode.snr);
+    snprintf(buf, OLED_COL_COUNT, "%d", radioNode.snr);
+    _display.drawString(6, 5, buf);
+    snprintf(buf, OLED_COL_COUNT, "%d", rxDeviceState.snr);
+    _display.drawString(11, 5, buf);
 
-    _display.setCursor(74, 0);
-    _display.setTextSize(3);
-    _display.print(rxDeviceState.rssi);
-
-    _display.setCursor(92, 28);
-    _display.setTextSize(2);
-    _display.print(rxDeviceState.snr);
-
-    _display.setCursor(54, 48);
-    _display.setTextSize(2);    
-    _display.print(txDeviceState.roundtrip);
-
-    _display.display();
+    snprintf(buf, OLED_COL_COUNT, "Trip: %d", txDeviceState.roundtrip);
+    _display.drawString(0, 7, buf);
 }
 
 void TxOled::renderPageInit() {
-    _display.clearDisplay();
-    _display.setTextColor(WHITE, BLACK);
-    _display.setTextSize(2);
 
-    _display.setCursor(0, 0);
-    _display.print("Rdy ");
-    _display.print(radioNode.loraTxPower);
-    _display.print("dBm");
+    char buf[OLED_COL_COUNT];
 
-    _display.setTextSize(1);
-    _display.setCursor(0, 32);
-    _display.print("Bandwitdh: ");
-    _display.print(radioNode.loraBandwidth / 1000);
-    _display.print("kHz");
+    _display.clear();
 
-    _display.setCursor(0, 42);
-    _display.print("SF: ");
-    _display.print(radioNode.loraSpreadingFactor);
+    snprintf(buf, OLED_COL_COUNT, "Rdy %d %s", radioNode.loraTxPower, "dBm");
+    _display.draw1x2String(0, 0, buf);
 
-    _display.setCursor(64, 42);
-    _display.print("CR: ");
-    _display.print(radioNode.loraCodingRate);
+    snprintf(buf, OLED_COL_COUNT, "BW %dkHz", radioNode.loraBandwidth / 1000);
+    _display.drawString(0, 4, buf);
 
-    _display.setCursor(0, 52);
-    _display.print("Rate: ");
-    _display.print(1000 / TX_TRANSMIT_SLOT_RATE);
-    _display.print("Hz");
+    snprintf(buf, OLED_COL_COUNT, "SF %d", radioNode.loraSpreadingFactor);
+    _display.drawString(0, 5, buf);
 
-    _display.display();
+    snprintf(buf, OLED_COL_COUNT, "CR %d", radioNode.loraCodingRate);
+    _display.drawString(8, 5, buf);
+
+    snprintf(buf, OLED_COL_COUNT, "Rate: %dHz", 1000 / TX_TRANSMIT_SLOT_RATE);
+    _display.drawString(0, 7, buf);
 }
 
 

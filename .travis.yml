@@ -23,7 +23,7 @@ before_install:
     fi
   - arduino --pref "boardsmanager.additional.urls=" --save-prefs
 install:
-  - arduino --install-library "Adafruit SSD1306","Adafruit GFX Library"
+  - arduino --install-library "U8g2"
 script:
   - cp -f $PWD/crossbow/configurations/config_${CONFIG}.h $PWD/crossbow/config.h &&
     arduino --verify --board $BOARD $PWD/crossbow/crossbow.ino
