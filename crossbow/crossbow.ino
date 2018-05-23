@@ -15,6 +15,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "qsp.h"
 #include "sbus.h"
 #include "platform_node.h"
+#include "platform_config.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
     #define LORA_SS_PIN     8
@@ -36,6 +37,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 
 RadioNode radioNode;
 PlatformNode platformNode;
+PlatformConfig platformConfig;
 
 /*
  * Main defines for device working in TX mode
@@ -176,6 +178,8 @@ void setup(void)
 
 #ifdef DEVICE_MODE_TX
 
+    platformConfig.seed();
+
 #ifdef FEATURE_TX_OLED
     oled.init();
     oled.page(TX_PAGE_INIT);
@@ -206,14 +210,7 @@ void setup(void)
 
     pinMode(LED_BUILTIN, OUTPUT);
 
-    /*
-     * Setup salt bind key
-     */
-    platformNode.bindKey[0] = 0x12;
-    platformNode.bindKey[1] = 0x0a;
-    platformNode.bindKey[2] = 0x36;
-    platformNode.bindKey[3] = 0xa7;
-
+    platformConfig.loadBindKey();
 }
 
 uint8_t currentSequenceIndex = 0;
