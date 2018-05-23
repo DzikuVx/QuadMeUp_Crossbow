@@ -263,6 +263,11 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 
 #ifdef DEVICE_MODE_TX
 int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
+
+    if (platformNode.isBindMode) {
+        return QSP_FRAME_BIND;
+    }
+
     int8_t retVal = txSendSequence[currentSequenceIndex];
 
     currentSequenceIndex++;
@@ -379,6 +384,10 @@ void loop(void)
 
                 case QSP_FRAME_RC_DATA:
                     encodeRcDataPayload(&qsp, PLATFORM_CHANNEL_COUNT);
+                    break;
+
+                case QSP_FRAME_BIND:
+                    encodeBindPayload(&qsp, platformNode.bindKey);
                     break;
             }
 

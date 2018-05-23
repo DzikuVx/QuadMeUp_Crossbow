@@ -20,3 +20,4 @@ void qspClearPayload(QspConfiguration_t *qsp);
 void qspEncodeFrame(QspConfiguration_t *qsp, uint8_t buffer[], uint8_t *size, uint8_t radioChannel, uint8_t bindKey[]);
 
 void encodePingPayload(QspConfiguration_t *qsp, uint32_t currentMicros);
+void encodeBindPayload(QspConfiguration_t *qsp, uint8_t bindKey[]);

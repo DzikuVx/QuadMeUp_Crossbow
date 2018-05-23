@@ -8,8 +8,10 @@
 #include "variables.h"
 #include "tactile.h"
 #include "radio_node.h"
+#include "platform_node.h"
 
 extern RadioNode radioNode;
+extern PlatformNode platformNode;
 extern RxDeviceState_t rxDeviceState;
 extern TxDeviceState_t txDeviceState;
 extern Tactile button0;
