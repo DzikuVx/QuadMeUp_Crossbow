@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Arduino.h"
+#include "radio_node.h"
 
 #ifndef PLATFORM_NODE_H
 #define PLATFORM_NODE_H
@@ -8,6 +9,8 @@
 #define PLATFORM_TOTAL_CHANNEL_COUNT 11 //Including RSSI channel and other
 #define PLATFORM_CHANNEL_COUNT 10
 #define PLATFORM_DEFAULT_CHANNEL_VALUE 1000
+
+extern RadioNode radioNode;
 
 enum deviceStates {
     DEVICE_STATE_OK,

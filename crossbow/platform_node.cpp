@@ -23,16 +23,16 @@ void PlatformNode::setRcChannel(uint8_t channel, int value, int offset) {
 void PlatformNode::enterBindMode(void) {
     isBindMode = true;
 
-    // radioNode.set(
-    //     0, // Minimum power
-    //     125000, // 125kHz bandwidth
-    //     6, // low spreading factor, we do not need high RX sensitivity
-    //     5, // same for coding rate
-    //     868000000 //Fixed frequency while binding
-    // );
-
+    radioNode.set(
+        0, // Minimum power
+        125000, // 125kHz bandwidth
+        6, // low spreading factor, we do not need high RX sensitivity
+        5, // same for coding rate
+        868000000 //Fixed frequency while binding
+    );
 }
 
 void PlatformNode::leaveBindMode(void) {
     isBindMode = false;
+    radioNode.reset();
 }

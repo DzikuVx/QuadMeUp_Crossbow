@@ -41,7 +41,7 @@ void qspComputeCrc(QspConfiguration_t *qsp, uint8_t dataByte)
     qsp->crc = crc8_dvb_s2(qsp->crc, dataByte);
 }
 
-void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState, uint8_t rssi, uint8_t snr, uint8_t platformState) {
+void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState, uint8_t rssi, uint8_t snr, bool isFailsafe) {
     qsp->payload[0] = rssi;
     qsp->payload[1] = snr;
     qsp->payload[2] = rxDeviceState->rxVoltage;
@@ -50,7 +50,7 @@ void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
 
     uint8_t flags = 0;
 
-    if (platformState == DEVICE_STATE_FAILSAFE) {
+    if (isFailsafe) {
         flags |= 0x01 << 0;
     }
 

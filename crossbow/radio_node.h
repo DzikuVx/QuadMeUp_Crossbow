@@ -39,6 +39,7 @@ class RadioNode {
             uint8_t codingRate,
             long frequency
         );
+        void reset(void);
         volatile int8_t bytesToRead = -1;
         volatile uint8_t radioState = RADIO_STATE_RX;
         uint8_t rssi = 0;

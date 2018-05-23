@@ -429,7 +429,7 @@ void loop(void)
                         &rxDeviceState, 
                         radioNode.rssi, 
                         radioNode.snr, 
-                        platformNode.platformState
+                        (platformNode.platformState == DEVICE_STATE_FAILSAFE)
                     );
                     break;
             }

@@ -17,6 +17,16 @@ RadioNode::RadioNode(void) {
 
 }
 
+void RadioNode::reset(void) {
+    set(
+        loraTxPower, 
+        loraBandwidth, 
+        loraSpreadingFactor, 
+        loraCodingRate, 
+        getFrequencyForChannel(getChannel())
+    );
+}
+
 void RadioNode::init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int)) {
     /*
      * Setup hardware
@@ -31,14 +41,7 @@ void RadioNode::init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int))
         while (true);
     }
 
-    set(
-        loraTxPower, 
-        loraBandwidth, 
-        loraSpreadingFactor, 
-        loraCodingRate, 
-        getFrequencyForChannel(getChannel())
-    );
-
+    reset();
     LoRa.enableCrc();
 
     //Setup ISR callback and start receiving
