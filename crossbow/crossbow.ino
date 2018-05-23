@@ -150,6 +150,16 @@ void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
 
 }
 
+//I do not get function pointers to object methods, no way...
+int getRcChannel_wrapper(uint8_t channel) {
+    return platformNode.getRcChannel(channel);
+}
+
+//Same here, wrapper just works
+void setRcChannel_wrapper(uint8_t channel, int value, int offset) {
+    platformNode.setRcChannel(channel, value, offset);
+}
+
 void setup(void)
 {
 #ifdef DEBUG_SERIAL
@@ -158,11 +168,16 @@ void setup(void)
 
     qsp.onSuccessCallback = onQspSuccess;
     qsp.onFailureCallback = onQspFailure;
+    qsp.rcChannelGetCallback = getRcChannel_wrapper;
+    qsp.setRcChannelCallback = setRcChannel_wrapper;
 
 #ifdef DEVICE_MODE_RX
     platformNode.platformState = DEVICE_STATE_FAILSAFE;
 #else
     platformNode.platformState = DEVICE_STATE_OK;
+
+    txInput.setRcChannelCallback = setRcChannel_wrapper;
+
 #endif
 
     radioNode.init(LORA_SS_PIN, LORA_RST_PIN, LORA_DI0_PIN, onReceive);
@@ -274,7 +289,7 @@ void loop(void)
      * This routine handles resync of TX/RX while hoppping frequencies
      * When not in bind mode. Bind mode is single frequency operation
      */
-    if (!plaformNode.isBindMode) {
+    if (!platformNode.isBindMode) {
         radioNode.handleChannelDwell();
     }
 
@@ -314,7 +329,8 @@ void loop(void)
     radioNode.readAndDecode(
         &qsp,
         &rxDeviceState,
-        &txDeviceState
+        &txDeviceState,
+        platformNode.bindKey
     );
 
     bool transmitPayload = false;
@@ -408,7 +424,13 @@ void loop(void)
                     break;
 
                 case QSP_FRAME_RX_HEALTH:
-                    encodeRxHealthPayload(&qsp, &rxDeviceState, radioNode.rssi, radioNode.snr);
+                    encodeRxHealthPayload(
+                        &qsp, 
+                        &rxDeviceState, 
+                        radioNode.rssi, 
+                        radioNode.snr, 
+                        platformNode.platformState
+                    );
                     break;
             }
 
@@ -420,7 +442,7 @@ void loop(void)
     if (currentMillis > sbusTime) {
         platformNode.setRcChannel(RSSI_CHANNEL - 1, rxDeviceState.indicatedRssi, 0);
 
-        sbusPreparePacket(sbusPacket, false, (platformNode.platformState == DEVICE_STATE_FAILSAFE));
+        sbusPreparePacket(sbusPacket, false, (platformNode.platformState == DEVICE_STATE_FAILSAFE), getRcChannel_wrapper);
         Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
         sbusTime = currentMillis + SBUS_UPDATE_RATE;
     }
@@ -437,7 +459,7 @@ void loop(void)
 
     if (transmitPayload)
     {
-        radioNode.handleTx(&qsp);
+        radioNode.handleTx(&qsp, platformNode.bindKey);
     }
 
 #ifdef DEVICE_MODE_TX

@@ -1,5 +1,6 @@
 #include "Arduino.h"
 #include "radio_node.h"
+#include "platform_node.h"
 
 #pragma once
 
@@ -101,6 +102,8 @@ struct QspConfiguration_t {
     uint32_t anyFrameRecivedAt = 0;
     void (* onSuccessCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, uint8_t receivedChannel);
     void (* onFailureCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*);    
+    int (* rcChannelGetCallback)(uint8_t);
+    void (* setRcChannelCallback)(uint8_t channel, int value, int offset);
     bool forcePongFrame = false;
     uint32_t frameDecodingStartedAt = 0;
     uint32_t lastTxSlotTimestamp = 0;

@@ -15,7 +15,19 @@
         "numeric": "cpp",
         "*.tcc": "cpp",
         "bitset": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "array": "cpp",
+        "utility": "cpp",
+        "__bit_reference": "cpp",
+        "__functional_base": "cpp",
+        "atomic": "cpp",
+        "chrono": "cpp",
+        "limits": "cpp",
+        "memory": "cpp",
+        "ratio": "cpp",
+        "system_error": "cpp",
+        "tuple": "cpp",
+        "vector": "cpp"
     },
     "files.exclude": {
         "**/build": true

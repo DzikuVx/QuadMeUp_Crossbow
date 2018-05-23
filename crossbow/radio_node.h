@@ -24,18 +24,19 @@ class RadioNode {
         void readAndDecode(
             QspConfiguration_t *qsp,
             RxDeviceState_t *rxDeviceState,
-            TxDeviceState_t *txDeviceState
+            TxDeviceState_t *txDeviceState,
+            uint8_t bindKey[]
         );
         uint8_t getChannel(void);
         uint32_t getChannelEntryMillis(void);
         void handleChannelDwell(void);
         void handleTxDoneState(bool hop);
-        void handleTx(QspConfiguration_t *qsp);
+        void handleTx(QspConfiguration_t *qsp, uint8_t bindKey[]);
         void set(
             uint8_t power, 
             long bandwidth, 
             uint8_t spreadingFactor, 
-            uint8_t codingRate, 
+            uint8_t codingRate,
             long frequency
         );
         volatile int8_t bytesToRead = -1;
