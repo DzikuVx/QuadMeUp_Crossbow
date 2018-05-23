@@ -31,11 +31,14 @@ void RadioNode::init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int))
         while (true);
     }
 
-    //Configure LoRa module
-    LoRa.setSignalBandwidth(loraBandwidth);
-    LoRa.setSpreadingFactor(loraSpreadingFactor);
-    LoRa.setCodingRate4(loraCodingRate);
-    LoRa.setTxPower(loraTxPower);
+    set(
+        loraTxPower, 
+        loraBandwidth, 
+        loraSpreadingFactor, 
+        loraCodingRate, 
+        getFrequencyForChannel(getChannel())
+    );
+
     LoRa.enableCrc();
 
     //Setup ISR callback and start receiving
@@ -159,4 +162,21 @@ void RadioNode::handleTx(QspConfiguration_t *qsp) {
 
     //Set state to be able to detect the moment when TX is done
     radioState = RADIO_STATE_TX;
+}
+
+void RadioNode::set(
+    uint8_t power, 
+    long bandwidth, 
+    uint8_t spreadingFactor, 
+    uint8_t codingRate,
+    long frequency
+) {
+    LoRa.sleep();
+    
+    LoRa.setTxPower(power);
+    LoRa.setSignalBandwidth(bandwidth);
+    LoRa.setCodingRate4(codingRate);
+    LoRa.setFrequency(frequency);
+
+    LoRa.idle();
 }

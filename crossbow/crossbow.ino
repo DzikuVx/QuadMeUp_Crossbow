@@ -102,9 +102,12 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
      * RX module hops to next channel after frame has been received
      */
 #ifdef DEVICE_MODE_RX
-    radioNode.hopFrequency(true, radioNode.lastReceivedChannel, millis());
-    radioNode.failedDwellsCount = 0; // We received a frame, so we can just reset this counter
-    LoRa.receive(); //Put radio back into receive mode
+    if (!platformNode.isBindMode) {
+        //We do not hop frequency in bind mode!
+        radioNode.hopFrequency(true, radioNode.lastReceivedChannel, millis());
+        radioNode.failedDwellsCount = 0; // We received a frame, so we can just reset this counter
+        LoRa.receive(); //Put radio back into receive mode
+    }
 #endif
 
     //Store the last timestamp when frame was received
@@ -269,8 +272,11 @@ void loop(void)
 #ifdef DEVICE_MODE_RX
     /*
      * This routine handles resync of TX/RX while hoppping frequencies
+     * When not in bind mode. Bind mode is single frequency operation
      */
-    radioNode.handleChannelDwell();
+    if (!plaformNode.isBindMode) {
+        radioNode.handleChannelDwell();
+    }
 
     /*
      * Detect the moment when radio module stopped transmittig and put it
@@ -302,7 +308,7 @@ void loop(void)
         serialRestartMillis = currentMillis;
     }
 
-    radioNode.handleTxDoneState(true);
+    radioNode.handleTxDoneState(!platformNode.isBindMode);
 #endif
 
     radioNode.readAndDecode(

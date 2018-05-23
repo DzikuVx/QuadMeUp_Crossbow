@@ -10,7 +10,12 @@
         "__locale": "c",
         "string": "c",
         "ios": "cpp",
-        "locale": "cpp"
+        "locale": "cpp",
+        "functional": "cpp",
+        "numeric": "cpp",
+        "*.tcc": "cpp",
+        "bitset": "cpp",
+        "set": "cpp"
     },
     "files.exclude": {
         "**/build": true

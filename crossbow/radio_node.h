@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Arduino.h"
-#include "qsp.h"
-
 #define RADIO_FREQUENCY_MIN 868000000
 #define RADIO_FREQUENCY_MAX 870000000
 #define RADIO_FREQUENCY_RANGE (RADIO_FREQUENCY_MAX-RADIO_FREQUENCY_MIN)
@@ -13,6 +10,8 @@
 #ifndef RADIO_NODE_H
 #define RADIO_NODE_H
 
+#include "Arduino.h"
+#include "qsp.h"
 #include "variables.h"
 
 class RadioNode {
@@ -32,6 +31,13 @@ class RadioNode {
         void handleChannelDwell(void);
         void handleTxDoneState(bool hop);
         void handleTx(QspConfiguration_t *qsp);
+        void set(
+            uint8_t power, 
+            long bandwidth, 
+            uint8_t spreadingFactor, 
+            uint8_t codingRate, 
+            long frequency
+        );
         volatile int8_t bytesToRead = -1;
         volatile uint8_t radioState = RADIO_STATE_RX;
         uint8_t rssi = 0;
