@@ -24,7 +24,12 @@ void TxOled::loop() {
 
         case TX_PAGE_BIND:
             if (button1.getState() == TACTILE_STATE_LONG_PRESS) {
-                platformNode.isBindMode = !platformNode.isBindMode;
+
+                if (!platformNode.isBindMode) {
+                    platformNode.enterBindMode();
+                } else {
+                    platformNode.leaveBindMode();
+                }
                 update = true;
             }
             break;

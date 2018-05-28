@@ -15,7 +15,6 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "qsp.h"
 #include "sbus.h"
 #include "platform_node.h"
-#include "platform_config.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
     #define LORA_SS_PIN     8
@@ -37,7 +36,6 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 
 RadioNode radioNode;
 PlatformNode platformNode;
-PlatformConfig platformConfig;
 
 /*
  * Main defines for device working in TX mode
@@ -192,11 +190,14 @@ void setup(void)
      * Prepare Serial1 for S.Bus processing
      */
     Serial1.begin(100000, SERIAL_8E2);
+
+    platformNode.isBindMode = true;
+    platformNode.bindModeExitMillis = millis() + 1000;
 #endif
 
 #ifdef DEVICE_MODE_TX
 
-    platformConfig.seed();
+    platformNode.seed();
 
 #ifdef FEATURE_TX_OLED
     oled.init();
@@ -228,7 +229,13 @@ void setup(void)
 
     pinMode(LED_BUILTIN, OUTPUT);
 
-    platformConfig.loadBindKey();
+    platformNode.loadBindKey();
+
+    // platformNode.bindKey[0] = 44;
+    // platformNode.bindKey[1] = 72;
+    // platformNode.bindKey[2] = 30;
+    // platformNode.bindKey[3] = 239;
+
 }
 
 uint8_t currentSequenceIndex = 0;
@@ -286,6 +293,15 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
  */
 void loop(void)
 {
+
+    // delay(1000);
+    // Serial.print(platformNode.bindKey[0]);
+    // Serial.print(" ");
+    // Serial.print(platformNode.bindKey[1]);
+    // Serial.print(" ");
+    // Serial.print(platformNode.bindKey[2]);
+    // Serial.print(" ");
+    // Serial.println(platformNode.bindKey[3]);
 
     uint32_t currentMillis = millis();
 
