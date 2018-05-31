@@ -47,6 +47,7 @@ CRC is computed using `crc8_dvb_s2` method. Initial CRC value for each frame CRC
 | 0100   | 0x4          | Set receiver configuration | TX -> RX | no used |
 | 0101   | 0x5          | PING frame, uses 9 byte payload | TX -> RX | 4    |
 | 0110   | 0x6          | PONG frame, the same payload as PING | RX -> TX | 4 |
+| 0111   | 0x7          | `BIND` frame, transmitted by TX only during binding | TX -> RX | 4 |
 
 ### `RC_DATA` frame format
 
@@ -82,6 +83,15 @@ Total length of `RC_DATA` payload is 9 bytes
 **TX** sends `PING` frame with curent `micros`. If **RX** receives `PING` frame, it respons
 its payload as `PONG` frame. 
 
+### `BIND` frame format
+
+| Byte  | Description                           |
+| ----  | ----                                  |
+| 1     | Bind key byte 0                       |
+| 2     | Bind key byte 1                       |
+| 3     | Bind key byte 2                       |
+| 4     | Bind key byte 3                       |
+
 # RSSI
 
 1. Receiver RSSI for the last received packet is injected as channel 11
@@ -116,6 +126,20 @@ That mean the following:
 * RX module TX line can be connected to any free UART RX pin
 * On F3 or F7 boards flight controller has to be configured not to use inverted SBUS (refer to flight controller docs)
 * On F4 flight controllers inverios has to be configured only when using dedicated SBUS serial port 
+
+# Manual
+
+## Binding
+
+After flashing TX and RX, binding is required. 
+
+1. Power up TX module
+1. Navigate using button #1 to "Bind" option
+1. Long press button #2 to enter _Bind Mode_
+1. Power up RX
+1. RX LED flashes quickly when in bind mode
+1. After RX receives bind packet, LED goes to constanly _ON_ state
+1. When RX LED is solid _ON_, leave bind mode by long pressing button #2 
 
 # TX module connection diagram
 

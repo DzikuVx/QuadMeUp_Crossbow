@@ -3,16 +3,16 @@
 
 void qspDecodeRcDataFrame(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSate) {
 
-    platformNode.setRcChannel(0, (uint16_t) (((uint16_t) qsp->payload[0] << 2) & 0x3fc) | ((qsp->payload[1] >> 6) & 0x03), 1000);
-    platformNode.setRcChannel(1, (uint16_t) (((uint16_t) qsp->payload[1] << 4) & 0x3f0) | ((qsp->payload[2] >> 4) & 0x0F), 1000);
-    platformNode.setRcChannel(2, (uint16_t) (((uint16_t) qsp->payload[2] << 6) & 0x3c0) | ((qsp->payload[3] >> 2) & 0x3F), 1000);
-    platformNode.setRcChannel(3, (uint16_t) (((uint16_t) qsp->payload[3] << 8) & 0x300) | ((qsp->payload[4]) & 0xFF), 1000);
-    platformNode.setRcChannel(4, ((int) qsp->payload[5]) << 2, 1000);
-    platformNode.setRcChannel(5, ((int) qsp->payload[6]) << 2, 1000);
-    platformNode.setRcChannel(6, ((int) ((qsp->payload[7] >> 4) & 0b00001111)) << 6, 1000);
-    platformNode.setRcChannel(7, ((int) (qsp->payload[7] & 0b00001111)) << 6, 1000);
-    platformNode.setRcChannel(8, ((int) ((qsp->payload[8] >> 4) & 0b00001111)) << 6, 1000);
-    platformNode.setRcChannel(9, ((int) (qsp->payload[8] & 0b00001111)) << 6, 1000);
+    qsp->setRcChannelCallback(0, (uint16_t) (((uint16_t) qsp->payload[0] << 2) & 0x3fc) | ((qsp->payload[1] >> 6) & 0x03), 1000);
+    qsp->setRcChannelCallback(1, (uint16_t) (((uint16_t) qsp->payload[1] << 4) & 0x3f0) | ((qsp->payload[2] >> 4) & 0x0F), 1000);
+    qsp->setRcChannelCallback(2, (uint16_t) (((uint16_t) qsp->payload[2] << 6) & 0x3c0) | ((qsp->payload[3] >> 2) & 0x3F), 1000);
+    qsp->setRcChannelCallback(3, (uint16_t) (((uint16_t) qsp->payload[3] << 8) & 0x300) | ((qsp->payload[4]) & 0xFF), 1000);
+    qsp->setRcChannelCallback(4, ((int) qsp->payload[5]) << 2, 1000);
+    qsp->setRcChannelCallback(5, ((int) qsp->payload[6]) << 2, 1000);
+    qsp->setRcChannelCallback(6, ((int) ((qsp->payload[7] >> 4) & 0b00001111)) << 6, 1000);
+    qsp->setRcChannelCallback(7, ((int) (qsp->payload[7] & 0b00001111)) << 6, 1000);
+    qsp->setRcChannelCallback(8, ((int) ((qsp->payload[8] >> 4) & 0b00001111)) << 6, 1000);
+    qsp->setRcChannelCallback(9, ((int) (qsp->payload[8] & 0b00001111)) << 6, 1000);
 }
 
 uint8_t get10bitHighShift(uint8_t channel) {
@@ -41,7 +41,7 @@ void qspComputeCrc(QspConfiguration_t *qsp, uint8_t dataByte)
     qsp->crc = crc8_dvb_s2(qsp->crc, dataByte);
 }
 
-void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState, uint8_t rssi, uint8_t snr) {
+void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceState, uint8_t rssi, uint8_t snr, bool isFailsafe) {
     qsp->payload[0] = rssi;
     qsp->payload[1] = snr;
     qsp->payload[2] = rxDeviceState->rxVoltage;
@@ -50,7 +50,7 @@ void encodeRxHealthPayload(QspConfiguration_t *qsp, RxDeviceState_t *rxDeviceSta
 
     uint8_t flags = 0;
 
-    if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
+    if (isFailsafe) {
         flags |= 0x01 << 0;
     }
 
@@ -75,7 +75,7 @@ void encodeRcDataPayload(QspConfiguration_t *qsp, uint8_t noOfChannels)
 {
     for (uint8_t i = 0; i < noOfChannels; i++)
     {
-        int cV = constrain(platformNode.getRcChannel(i), 1000, 2000) - 1000;
+        int cV = constrain(qsp->rcChannelGetCallback(i), 1000, 2000) - 1000;
 
         uint16_t channelValue10 = cV & 0x03ff;
         uint8_t channelValue8   = (cV >> 2) & 0xff;
@@ -133,10 +133,10 @@ void qspClearPayload(QspConfiguration_t *qsp)
 /**
  * Init CRC with salt based on 4 byte bind key
  */
-void qspInitCrc(QspConfiguration_t *qsp) {
+void qspInitCrc(QspConfiguration_t *qsp, uint8_t bindKey[]) {
     qsp->crc = 0;
     for (uint8_t i = 0; i < 4; i++) {
-        qspComputeCrc(qsp, platformNode.bindKey[i]);
+        qspComputeCrc(qsp, bindKey[i]);
     }
 }
 
@@ -144,7 +144,8 @@ void qspDecodeIncomingFrame(
     QspConfiguration_t *qsp, 
     uint8_t incomingByte, 
     RxDeviceState_t *rxDeviceState, 
-    TxDeviceState_t *txDeviceState
+    TxDeviceState_t *txDeviceState,
+    uint8_t bindKey[]
 ) {
     static uint8_t frameId;
     static uint8_t payloadLength;
@@ -153,7 +154,7 @@ void qspDecodeIncomingFrame(
 
     if (qsp->protocolState == QSP_STATE_IDLE)
     {
-        qspInitCrc(qsp);
+        qspInitCrc(qsp, bindKey);
         qspClearPayload(qsp);
         receivedPayload = 0;
         qsp->frameDecodingStartedAt = millis();
@@ -201,9 +202,15 @@ void qspDecodeIncomingFrame(
 /**
  * Encode frame is corrent format and write to hardware
  */
-void qspEncodeFrame(QspConfiguration_t *qsp, uint8_t buffer[], uint8_t *size, uint8_t radioChannel) {
+void qspEncodeFrame(
+    QspConfiguration_t *qsp, 
+    uint8_t buffer[], 
+    uint8_t *size, 
+    uint8_t radioChannel,
+    uint8_t bindKey[]
+) {
     //Salt CRC with bind key
-    qspInitCrc(qsp);
+    qspInitCrc(qsp, bindKey);
 
     //Write frame type and length
     // We are no longer sending payload length, so 4 bits are now free for other usages
@@ -228,6 +235,15 @@ void encodePingPayload(QspConfiguration_t *qsp, uint32_t currentMicros) {
     qsp->payload[1] = (currentMicros >> 8) & 255;
     qsp->payload[2] = (currentMicros >> 16) & 255;
     qsp->payload[3] = (currentMicros >> 24) & 255;
+
+    qsp->payloadLength = qspFrameLengths[QSP_FRAME_PING];
+}
+
+void encodeBindPayload(QspConfiguration_t *qsp, uint8_t bindKey[]) {
+
+    for (uint8_t i = 0; i < qspFrameLengths[QSP_FRAME_PING]; i++) {
+        qsp->payload[i] = bindKey[i];
+    }
 
     qsp->payloadLength = qspFrameLengths[QSP_FRAME_PING];
 }

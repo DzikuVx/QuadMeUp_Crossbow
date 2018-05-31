@@ -22,6 +22,18 @@ void TxOled::loop() {
             //Second button has notthing to do over here
             break;
 
+        case TX_PAGE_BIND:
+            if (button1.getState() == TACTILE_STATE_LONG_PRESS) {
+
+                if (!platformNode.isBindMode) {
+                    platformNode.enterBindMode();
+                } else {
+                    platformNode.leaveBindMode();
+                }
+                update = true;
+            }
+            break;
+
         case TX_PAGE_STATS:
             //Second button refreshes this page
             if (button1.getState() == TACTILE_STATE_SHORT_PRESS) {
@@ -93,7 +105,12 @@ void TxOled::renderPageBind() {
     _display.clear();
     _display.draw1x2String(0, 0, "Bind");
 
-    snprintf(buf, OLED_COL_COUNT, "Bind?");
+    if (platformNode.isBindMode) {
+        snprintf(buf, OLED_COL_COUNT, "Binding!!");
+    } else {
+        snprintf(buf, OLED_COL_COUNT, "Bind?");
+    }
+
     _display.draw1x2String(0, 4, buf);
 }
 

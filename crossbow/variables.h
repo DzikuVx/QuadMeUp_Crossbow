@@ -1,5 +1,4 @@
 #include "Arduino.h"
-#include "radio_node.h"
 
 #pragma once
 
@@ -34,7 +33,8 @@
 #define QSP_FRAME_SET_RX_CONFIG 0x4
 #define QSP_FRAME_PING 0x5
 #define QSP_FRAME_PONG 0x6
-#define QSP_FRAME_COUNT 0x7
+#define QSP_FRAME_BIND 0x7
+#define QSP_FRAME_COUNT 0x8
 
 static const uint8_t qspFrameLengths[QSP_FRAME_COUNT] = {
     9, //QSP_FRAME_RC_DATA
@@ -44,6 +44,7 @@ static const uint8_t qspFrameLengths[QSP_FRAME_COUNT] = {
     0, //QSP_FRAME_SET_RX_CONFIG -> Not used
     4, //QSP_FRAME_PING
     4, //QSP_FRAME_PONG
+    4  //QSP_FRAME_BIND
 };
 
 #define RX_ADC_PIN_1 A0
@@ -99,6 +100,8 @@ struct QspConfiguration_t {
     uint32_t anyFrameRecivedAt = 0;
     void (* onSuccessCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*, uint8_t receivedChannel);
     void (* onFailureCallback)(QspConfiguration_t*, TxDeviceState_t*, RxDeviceState_t*);    
+    int (* rcChannelGetCallback)(uint8_t);
+    void (* setRcChannelCallback)(uint8_t channel, int value, int offset);
     bool forcePongFrame = false;
     uint32_t frameDecodingStartedAt = 0;
     uint32_t lastTxSlotTimestamp = 0;
