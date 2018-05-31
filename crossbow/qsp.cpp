@@ -244,6 +244,6 @@ void encodeBindPayload(QspConfiguration_t *qsp, uint8_t bindKey[]) {
     for (uint8_t i = 0; i < qspFrameLengths[QSP_FRAME_PING]; i++) {
         qsp->payload[i] = bindKey[i];
     }
-    
+
     qsp->payloadLength = qspFrameLengths[QSP_FRAME_PING];
 }

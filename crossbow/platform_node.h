@@ -37,7 +37,8 @@ class PlatformNode {
         void enterBindMode(void);
         void leaveBindMode(void);
         void seed(void);
-        void loadBindKey();
+        void loadBindKey(uint8_t key[]);
+        void saveBindKey(uint8_t key[]);
         uint8_t bindKey[4];
         uint32_t nextLedUpdate = 0;
         uint8_t platformState = DEVICE_STATE_UNDETERMINED;

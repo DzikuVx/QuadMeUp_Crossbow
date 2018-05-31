@@ -4,10 +4,11 @@ PlatformNode::PlatformNode(void) {
     for (uint8_t i = 0; i < PLATFORM_TOTAL_CHANNEL_COUNT; i++) {
         _channels[i] = PLATFORM_DEFAULT_CHANNEL_VALUE;
     }
-
-    randomSeed(analogRead(0));
 }
 
+/**
+ * Return true if new bind key was generated
+ */
 void PlatformNode::seed(void) {
     uint8_t val;
 
@@ -19,14 +20,22 @@ void PlatformNode::seed(void) {
         EEPROM.write(EEPROM_ADDRESS_BIND_2, random(1, 255)); //Yes, from 1 to 254
         EEPROM.write(EEPROM_ADDRESS_BIND_3, random(1, 255)); //Yes, from 1 to 254
         EEPROM.write(EEPROM_ADDRESS_BIND_KEY_SEEDED, 0xf1);
-    }
+    } 
 }
 
-void PlatformNode::loadBindKey(void) {
-    bindKey[0] = EEPROM.read(EEPROM_ADDRESS_BIND_0);
-    bindKey[1] = EEPROM.read(EEPROM_ADDRESS_BIND_1);
-    bindKey[2] = EEPROM.read(EEPROM_ADDRESS_BIND_2);
-    bindKey[3] = EEPROM.read(EEPROM_ADDRESS_BIND_3);
+void PlatformNode::loadBindKey(uint8_t key[]) {
+    key[0] = EEPROM.read(EEPROM_ADDRESS_BIND_0);
+    key[1] = EEPROM.read(EEPROM_ADDRESS_BIND_1);
+    key[2] = EEPROM.read(EEPROM_ADDRESS_BIND_2);
+    key[3] = EEPROM.read(EEPROM_ADDRESS_BIND_3);
+}
+
+void PlatformNode::saveBindKey(uint8_t key[]) {
+    EEPROM.write(EEPROM_ADDRESS_BIND_0, key[0]);
+    EEPROM.write(EEPROM_ADDRESS_BIND_1, key[1]);
+    EEPROM.write(EEPROM_ADDRESS_BIND_2, key[2]);
+    EEPROM.write(EEPROM_ADDRESS_BIND_3, key[3]);
+    EEPROM.write(EEPROM_ADDRESS_BIND_KEY_SEEDED, 0xf1);
 }
 
 int PlatformNode::getRcChannel(uint8_t channel) {
@@ -48,9 +57,9 @@ void PlatformNode::enterBindMode(void) {
 
     // Set temporary bind mode
     bindKey[0] = 0xf1;
-    bindKey[0] = 0x1e;
-    bindKey[0] = 0x07;
-    bindKey[0] = 0x42;
+    bindKey[1] = 0x1e;
+    bindKey[2] = 0x07;
+    bindKey[3] = 0x42;
 
     radioNode.set(
         0, // Minimum power
@@ -59,10 +68,11 @@ void PlatformNode::enterBindMode(void) {
         5, // same for coding rate
         868000000 //Fixed frequency while binding
     );
+    bindModeExitMillis = millis() + 1000; //This happens only on RX
 }
 
 void PlatformNode::leaveBindMode(void) {
     isBindMode = false;
-    loadBindKey();
+    loadBindKey(bindKey);
     radioNode.reset();
 }

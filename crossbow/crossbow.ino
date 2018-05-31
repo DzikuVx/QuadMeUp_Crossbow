@@ -126,6 +126,20 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
             qsp->forcePongFrame = true;
             break;
 
+        case QSP_FRAME_BIND:
+#ifdef DEVICE_MODE_RX
+            if (platformNode.isBindMode) {
+                platformNode.bindKey[0] = qsp->payload[0];
+                platformNode.bindKey[1] = qsp->payload[1];
+                platformNode.bindKey[2] = qsp->payload[2];
+                platformNode.bindKey[3] = qsp->payload[3];
+
+                platformNode.saveBindKey(platformNode.bindKey);
+                platformNode.leaveBindMode();
+            }
+#endif
+            break;
+
         case QSP_FRAME_PONG:
             txDeviceState->roundtrip = qsp->payload[0];
             txDeviceState->roundtrip += (uint32_t) qsp->payload[1] << 8;
@@ -191,12 +205,13 @@ void setup(void)
      */
     Serial1.begin(100000, SERIAL_8E2);
 
-    platformNode.isBindMode = true;
-    platformNode.bindModeExitMillis = millis() + 1000;
+    platformNode.enterBindMode();
+    LoRa.receive(); //TODO this probably should be moved somewhere....
 #endif
 
 #ifdef DEVICE_MODE_TX
 
+    randomSeed(analogRead(A4));
     platformNode.seed();
 
 #ifdef FEATURE_TX_OLED
@@ -225,17 +240,11 @@ void setup(void)
     button0.start();
     button1.start();
 
+    platformNode.loadBindKey(platformNode.bindKey);
+
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
-
-    platformNode.loadBindKey();
-
-    // platformNode.bindKey[0] = 44;
-    // platformNode.bindKey[1] = 72;
-    // platformNode.bindKey[2] = 30;
-    // platformNode.bindKey[3] = 239;
-
 }
 
 uint8_t currentSequenceIndex = 0;
@@ -294,18 +303,17 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 void loop(void)
 {
 
-    // delay(1000);
-    // Serial.print(platformNode.bindKey[0]);
-    // Serial.print(" ");
-    // Serial.print(platformNode.bindKey[1]);
-    // Serial.print(" ");
-    // Serial.print(platformNode.bindKey[2]);
-    // Serial.print(" ");
-    // Serial.println(platformNode.bindKey[3]);
+    static uint32_t nextKey = millis();
 
     uint32_t currentMillis = millis();
 
 #ifdef DEVICE_MODE_RX
+
+    //Make sure to leave bind mode when binding is done
+    if (platformNode.isBindMode && millis() > platformNode.bindModeExitMillis) {
+        platformNode.leaveBindMode();
+    }
+
     /*
      * This routine handles resync of TX/RX while hoppping frequencies
      * When not in bind mode. Bind mode is single frequency operation
@@ -403,7 +411,15 @@ void loop(void)
                     break;
 
                 case QSP_FRAME_BIND:
-                    encodeBindPayload(&qsp, platformNode.bindKey);
+
+                    /*
+                     * Key to be transmitted is stored in EEPROM
+                     * During binding different key is used
+                     */ 
+                    uint8_t key[4];
+                    platformNode.loadBindKey(key);
+
+                    encodeBindPayload(&qsp, key);
                     break;
             }
 
@@ -552,11 +568,18 @@ void loop(void)
             platformNode.nextLedUpdate = currentMillis + 200;
         }
 #else
-        platformNode.nextLedUpdate = currentMillis + 200;
-        if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
-            digitalWrite(LED_BUILTIN, HIGH);
-        } else {
+
+        if (platformNode.isBindMode) {
+            platformNode.nextLedUpdate = currentMillis + 50;
             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        } else {
+            platformNode.nextLedUpdate = currentMillis + 200;
+
+            if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
+                digitalWrite(LED_BUILTIN, HIGH);
+            } else {
+                digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            }
         }
 #endif
     }
@@ -570,7 +593,6 @@ void onReceive(int packetSize)
      * If not reading, then we might start
      */
     if (radioNode.bytesToRead == NO_DATA_TO_READ) {
-
         if (packetSize >= MIN_PACKET_SIZE && packetSize <= MAX_PACKET_SIZE) {
             //We have a packet candidate that might contain a valid QSP packet
             radioNode.bytesToRead = packetSize;
