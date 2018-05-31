@@ -10,11 +10,11 @@ Works:
 * Frequency hopping
 * Getting basic telemetry from RX module
 * Sending 10 channels using SBUS to flight controller
+* Binding
+* Allowing to use OLED on TX to get basic data
 
 Needs implementation:
-* Binding
 * TX module configuration
-* Allowing to use OLED on TX to get basic data
 * RX configuration from TX module
 * Sending telemetry from TX to OpenTX radio
 
