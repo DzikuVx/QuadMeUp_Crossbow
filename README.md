@@ -127,6 +127,20 @@ That mean the following:
 * On F3 or F7 boards flight controller has to be configured not to use inverted SBUS (refer to flight controller docs)
 * On F4 flight controllers inverios has to be configured only when using dedicated SBUS serial port 
 
+# Manual
+
+## Binding
+
+After flashing TX and RX, binding is required. 
+
+1. Power up TX module
+1. Navigate using button #1 to "Bind" option
+1. Long press button #2 to enter _Bind Mode_
+1. Power up RX
+1. RX LED flashes quickly when in bind mode
+1. After RX receives bind packet, LED goes to constanly _ON_ state
+1. When RX LED is solid _ON_, leave bind mode by long pressing button #2 
+
 # TX module connection diagram
 
 ![Diagram](docs/TX_module_schem.png)
