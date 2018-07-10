@@ -17,6 +17,16 @@ RadioNode::RadioNode(void) {
 
 }
 
+void RadioNode::reset(void) {
+    set(
+        loraTxPower, 
+        loraBandwidth, 
+        loraSpreadingFactor, 
+        loraCodingRate, 
+        getFrequencyForChannel(getChannel())
+    );
+}
+
 void RadioNode::init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int)) {
     /*
      * Setup hardware
@@ -31,11 +41,7 @@ void RadioNode::init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int))
         while (true);
     }
 
-    //Configure LoRa module
-    LoRa.setSignalBandwidth(loraBandwidth);
-    LoRa.setSpreadingFactor(loraSpreadingFactor);
-    LoRa.setCodingRate4(loraCodingRate);
-    LoRa.setTxPower(loraTxPower);
+    reset();
     LoRa.enableCrc();
 
     //Setup ISR callback and start receiving
@@ -68,7 +74,8 @@ uint32_t RadioNode::getChannelEntryMillis(void) {
 void RadioNode::readAndDecode(
     QspConfiguration_t *qsp,
     RxDeviceState_t *rxDeviceState,
-    TxDeviceState_t *txDeviceState
+    TxDeviceState_t *txDeviceState,
+    uint8_t bindKey[]
 ) {
     uint8_t tmpBuffer[MAX_PACKET_SIZE];
     /*
@@ -78,7 +85,7 @@ void RadioNode::readAndDecode(
         LoRa.read(tmpBuffer, bytesToRead);
 
         for (int i = 0; i < bytesToRead; i++) {
-            qspDecodeIncomingFrame(qsp, tmpBuffer[i], rxDeviceState, txDeviceState);
+            qspDecodeIncomingFrame(qsp, tmpBuffer[i], rxDeviceState, txDeviceState, bindKey);
         }
 
         //After reading, flush radio buffer, we have no need for whatever might be over there
@@ -144,7 +151,7 @@ void RadioNode::handleTxDoneState(bool hop) {
     }
 }
 
-void RadioNode::handleTx(QspConfiguration_t *qsp) {
+void RadioNode::handleTx(QspConfiguration_t *qsp, uint8_t bindKey[]) {
 
     if (!canTransmit) {
         return;
@@ -155,11 +162,28 @@ void RadioNode::handleTx(QspConfiguration_t *qsp) {
 
     LoRa.beginPacket();
     //Prepare packet
-    qspEncodeFrame(qsp, tmpBuffer, &size, getChannel());
+    qspEncodeFrame(qsp, tmpBuffer, &size, getChannel(), bindKey);
     //Sent it to radio in one SPI transaction
     LoRa.write(tmpBuffer, size);
     LoRa.endPacketAsync();
 
     //Set state to be able to detect the moment when TX is done
     radioState = RADIO_STATE_TX;
+}
+
+void RadioNode::set(
+    uint8_t power, 
+    long bandwidth, 
+    uint8_t spreadingFactor, 
+    uint8_t codingRate,
+    long frequency
+) {
+    LoRa.sleep();
+    
+    LoRa.setTxPower(power);
+    LoRa.setSignalBandwidth(bandwidth);
+    LoRa.setCodingRate4(codingRate);
+    LoRa.setFrequency(frequency);
+
+    LoRa.idle();
 }

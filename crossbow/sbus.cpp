@@ -1,5 +1,4 @@
 #include "Arduino.h"
-#include "variables.h"
 #include "sbus.h"
 
 #define SBUS_MIN_OFFSET 173
@@ -31,7 +30,7 @@ int mapSbusToChannel(int in) {
     return (((long) in - 173l) * 1020l / 1638l) + 990;
 }
 
-void sbusPreparePacket(uint8_t packet[], bool isSignalLoss, bool isFailsafe){
+void sbusPreparePacket(uint8_t packet[], bool isSignalLoss, bool isFailsafe, int (* rcChannelGetCallback)(uint8_t)) {
     
     int output[SBUS_CHANNEL_NUMBER];
     
@@ -40,7 +39,7 @@ void sbusPreparePacket(uint8_t packet[], bool isSignalLoss, bool isFailsafe){
      * 173-1811 with middle at 992 S.BUS protocol requires
      */
     for (uint8_t i = 0; i < SBUS_CHANNEL_NUMBER; i++) {
-        output[i] = mapChannelToSbus(platformNode.getRcChannel(i));
+        output[i] = mapChannelToSbus(rcChannelGetCallback(i));
     }
 
     uint8_t stateByte = 0x00;
@@ -119,18 +118,18 @@ void SbusInput::recoverStuckFrames(void)
     }
 }
 
-void sbusToChannels(byte buffer[]) {
+void SbusInput::sbusToChannels(byte buffer[]) {
 
-    platformNode.setRcChannel(0, mapSbusToChannel((buffer[1] | buffer[2]<<8) & 0x07FF), 0);
-    platformNode.setRcChannel(1, mapSbusToChannel((buffer[2]>>3 | buffer[3]<<5) & 0x07FF), 0);
-    platformNode.setRcChannel(2, mapSbusToChannel((buffer[3]>>6 | buffer[4]<<2 | buffer[5]<<10) & 0x07FF), 0);
-    platformNode.setRcChannel(3, mapSbusToChannel((buffer[5]>>1 | buffer[6]<<7) & 0x07FF), 0);
-    platformNode.setRcChannel(4, mapSbusToChannel((buffer[6]>>4 | buffer[7]<<4) & 0x07FF), 0);
-    platformNode.setRcChannel(5, mapSbusToChannel((buffer[7]>>7 | buffer[8]<<1 |buffer[9]<<9) & 0x07FF), 0);
-    platformNode.setRcChannel(6, mapSbusToChannel((buffer[9]>>2 | buffer[10]<<6) & 0x07FF), 0);
-    platformNode.setRcChannel(7, mapSbusToChannel((buffer[10]>>5 | buffer[11]<<3) & 0x07FF), 0);
-    platformNode.setRcChannel(8, mapSbusToChannel((buffer[12]   | buffer[13]<<8) & 0x07FF), 0);
-    platformNode.setRcChannel(9, mapSbusToChannel((buffer[13]>>3 | buffer[14]<<5) & 0x07FF), 0);
+    setRcChannelCallback(0, mapSbusToChannel((buffer[1] | buffer[2]<<8) & 0x07FF), 0);
+    setRcChannelCallback(1, mapSbusToChannel((buffer[2]>>3 | buffer[3]<<5) & 0x07FF), 0);
+    setRcChannelCallback(2, mapSbusToChannel((buffer[3]>>6 | buffer[4]<<2 | buffer[5]<<10) & 0x07FF), 0);
+    setRcChannelCallback(3, mapSbusToChannel((buffer[5]>>1 | buffer[6]<<7) & 0x07FF), 0);
+    setRcChannelCallback(4, mapSbusToChannel((buffer[6]>>4 | buffer[7]<<4) & 0x07FF), 0);
+    setRcChannelCallback(5, mapSbusToChannel((buffer[7]>>7 | buffer[8]<<1 |buffer[9]<<9) & 0x07FF), 0);
+    setRcChannelCallback(6, mapSbusToChannel((buffer[9]>>2 | buffer[10]<<6) & 0x07FF), 0);
+    setRcChannelCallback(7, mapSbusToChannel((buffer[10]>>5 | buffer[11]<<3) & 0x07FF), 0);
+    setRcChannelCallback(8, mapSbusToChannel((buffer[12]   | buffer[13]<<8) & 0x07FF), 0);
+    setRcChannelCallback(9, mapSbusToChannel((buffer[13]>>3 | buffer[14]<<5) & 0x07FF), 0);
 
     //We use only 10 channels, so the reset can be just ignored
 }

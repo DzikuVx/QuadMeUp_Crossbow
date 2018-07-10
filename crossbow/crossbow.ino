@@ -124,9 +124,12 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
      * RX module hops to next channel after frame has been received
      */
 #ifdef DEVICE_MODE_RX
-    radioNode.hopFrequency(true, radioNode.lastReceivedChannel, millis());
-    radioNode.failedDwellsCount = 0; // We received a frame, so we can just reset this counter
-    LoRa.receive(); //Put radio back into receive mode
+    if (!platformNode.isBindMode) {
+        //We do not hop frequency in bind mode!
+        radioNode.hopFrequency(true, radioNode.lastReceivedChannel, millis());
+        radioNode.failedDwellsCount = 0; // We received a frame, so we can just reset this counter
+        LoRa.receive(); //Put radio back into receive mode
+    }
 #endif
 
     //Store the last timestamp when frame was received
@@ -145,6 +148,20 @@ void onQspSuccess(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
 
         case QSP_FRAME_PING:
             qsp->forcePongFrame = true;
+            break;
+
+        case QSP_FRAME_BIND:
+#ifdef DEVICE_MODE_RX
+            if (platformNode.isBindMode) {
+                platformNode.bindKey[0] = qsp->payload[0];
+                platformNode.bindKey[1] = qsp->payload[1];
+                platformNode.bindKey[2] = qsp->payload[2];
+                platformNode.bindKey[3] = qsp->payload[3];
+
+                platformNode.saveBindKey(platformNode.bindKey);
+                platformNode.leaveBindMode();
+            }
+#endif
             break;
 
         case QSP_FRAME_PONG:
@@ -169,6 +186,16 @@ void onQspFailure(QspConfiguration_t *qsp, TxDeviceState_t *txDeviceState, RxDev
 
 }
 
+//I do not get function pointers to object methods, no way...
+int getRcChannel_wrapper(uint8_t channel) {
+    return platformNode.getRcChannel(channel);
+}
+
+//Same here, wrapper just works
+void setRcChannel_wrapper(uint8_t channel, int value, int offset) {
+    platformNode.setRcChannel(channel, value, offset);
+}
+
 void setup(void)
 {   
 #ifdef DEBUG_SERIAL
@@ -177,11 +204,16 @@ void setup(void)
 
     qsp.onSuccessCallback = onQspSuccess;
     qsp.onFailureCallback = onQspFailure;
+    qsp.rcChannelGetCallback = getRcChannel_wrapper;
+    qsp.setRcChannelCallback = setRcChannel_wrapper;
 
 #ifdef DEVICE_MODE_RX
     platformNode.platformState = DEVICE_STATE_FAILSAFE;
 #else
     platformNode.platformState = DEVICE_STATE_OK;
+
+    txInput.setRcChannelCallback = setRcChannel_wrapper;
+
 #endif
 
 #ifdef ARDUINO_ESP32_DEV
@@ -203,9 +235,15 @@ void setup(void)
      * Prepare Serial1 for S.Bus processing
      */
     Serial1.begin(100000, SERIAL_8E2);
+
+    platformNode.enterBindMode();
+    LoRa.receive(); //TODO this probably should be moved somewhere....
 #endif
 
 #ifdef DEVICE_MODE_TX
+
+    randomSeed(analogRead(A4));
+    platformNode.seed();
 
 #ifdef FEATURE_TX_OLED
     oled.init();
@@ -233,19 +271,11 @@ void setup(void)
     button0.start();
     button1.start();
 
+    platformNode.loadBindKey(platformNode.bindKey);
+
 #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, HIGH);
-
-    /*
-     * Setup salt bind key
-     */
-    platformNode.bindKey[0] = 0x12;
-    platformNode.bindKey[1] = 0x0a;
-    platformNode.bindKey[2] = 0x36;
-    platformNode.bindKey[3] = 0xa7;
-
 }
 
 uint8_t currentSequenceIndex = 0;
@@ -280,6 +310,11 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 
 #ifdef DEVICE_MODE_TX
 int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
+
+    if (platformNode.isBindMode) {
+        return QSP_FRAME_BIND;
+    }
+
     int8_t retVal = txSendSequence[currentSequenceIndex];
 
     currentSequenceIndex++;
@@ -300,14 +335,24 @@ void loop(void)
 {
 
     Serial.println(millis());
+    static uint32_t nextKey = millis();
 
     uint32_t currentMillis = millis();
 
 #ifdef DEVICE_MODE_RX
+
+    //Make sure to leave bind mode when binding is done
+    if (platformNode.isBindMode && millis() > platformNode.bindModeExitMillis) {
+        platformNode.leaveBindMode();
+    }
+
     /*
      * This routine handles resync of TX/RX while hoppping frequencies
+     * When not in bind mode. Bind mode is single frequency operation
      */
-    radioNode.handleChannelDwell();
+    if (!platformNode.isBindMode) {
+        radioNode.handleChannelDwell();
+    }
 
     /*
      * Detect the moment when radio module stopped transmittig and put it
@@ -341,13 +386,14 @@ void loop(void)
     //     serialRestartMillis = currentMillis;
     // }
 
-    radioNode.handleTxDoneState(true);
+    radioNode.handleTxDoneState(!platformNode.isBindMode);
 #endif
 
     radioNode.readAndDecode(
         &qsp,
         &rxDeviceState,
-        &txDeviceState
+        &txDeviceState,
+        platformNode.bindKey
     );
 
     bool transmitPayload = false;
@@ -397,6 +443,18 @@ void loop(void)
                 case QSP_FRAME_RC_DATA:
                     encodeRcDataPayload(&qsp, PLATFORM_CHANNEL_COUNT);
                     break;
+
+                case QSP_FRAME_BIND:
+
+                    /*
+                     * Key to be transmitted is stored in EEPROM
+                     * During binding different key is used
+                     */ 
+                    uint8_t key[4];
+                    platformNode.loadBindKey(key);
+
+                    encodeBindPayload(&qsp, key);
+                    break;
             }
 
             transmitPayload = true;
@@ -441,7 +499,13 @@ void loop(void)
                     break;
 
                 case QSP_FRAME_RX_HEALTH:
-                    encodeRxHealthPayload(&qsp, &rxDeviceState, radioNode.rssi, radioNode.snr);
+                    encodeRxHealthPayload(
+                        &qsp, 
+                        &rxDeviceState, 
+                        radioNode.rssi, 
+                        radioNode.snr, 
+                        (platformNode.platformState == DEVICE_STATE_FAILSAFE)
+                    );
                     break;
             }
 
@@ -453,7 +517,7 @@ void loop(void)
     if (currentMillis > sbusTime) {
         platformNode.setRcChannel(RSSI_CHANNEL - 1, rxDeviceState.indicatedRssi, 0);
 
-        sbusPreparePacket(sbusPacket, false, (platformNode.platformState == DEVICE_STATE_FAILSAFE));
+        sbusPreparePacket(sbusPacket, false, (platformNode.platformState == DEVICE_STATE_FAILSAFE), getRcChannel_wrapper);
         Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
         sbusTime = currentMillis + SBUS_UPDATE_RATE;
     }
@@ -470,7 +534,7 @@ void loop(void)
 
     if (transmitPayload)
     {
-        radioNode.handleTx(&qsp);
+        radioNode.handleTx(&qsp, platformNode.bindKey);
     }
 
 #ifdef DEVICE_MODE_TX
@@ -538,11 +602,18 @@ void loop(void)
             platformNode.nextLedUpdate = currentMillis + 200;
         }
 #else
-        platformNode.nextLedUpdate = currentMillis + 200;
-        if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
-            digitalWrite(LED_BUILTIN, HIGH);
-        } else {
+
+        if (platformNode.isBindMode) {
+            platformNode.nextLedUpdate = currentMillis + 50;
             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        } else {
+            platformNode.nextLedUpdate = currentMillis + 200;
+
+            if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
+                digitalWrite(LED_BUILTIN, HIGH);
+            } else {
+                digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            }
         }
 #endif
     }
@@ -556,7 +627,6 @@ void onReceive(int packetSize)
      * If not reading, then we might start
      */
     if (radioNode.bytesToRead == NO_DATA_TO_READ) {
-
         if (packetSize >= MIN_PACKET_SIZE && packetSize <= MAX_PACKET_SIZE) {
             //We have a packet candidate that might contain a valid QSP packet
             radioNode.bytesToRead = packetSize;

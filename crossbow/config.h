@@ -5,6 +5,7 @@
  *  Hardware type. Available types:
  *  ARDUINO_AVR_FEATHER32U4
  *  ARDUINO_SAMD_FEATHER_M0
+ *  ARDUINO_ESP32_DEV
  * 
  *  Leave commented for autodetect
  */
