@@ -23,6 +23,7 @@ Needs implementation:
 To compile, following libraries have to be installed:
 
 * [U8g2](https://github.com/olikraus/u8g2) for OLED support in TX module
+* [FlashStorage](https://github.com/cmaglie/FlashStorage) for EEPROM-Emulation if using a SAMD-Board (M0 etc.)
 
 # Protocol
 
