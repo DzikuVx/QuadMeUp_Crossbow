@@ -20,6 +20,9 @@ void PlatformNode::seed(void) {
         EEPROM.write(EEPROM_ADDRESS_BIND_2, random(1, 255)); //Yes, from 1 to 254
         EEPROM.write(EEPROM_ADDRESS_BIND_3, random(1, 255)); //Yes, from 1 to 254
         EEPROM.write(EEPROM_ADDRESS_BIND_KEY_SEEDED, 0xf1);
+        #ifdef ARDUINO_SAMD_FEATHER_M0
+        EEPROM.commit();
+        #endif
     } 
 }
 
@@ -36,6 +39,9 @@ void PlatformNode::saveBindKey(uint8_t key[]) {
     EEPROM.write(EEPROM_ADDRESS_BIND_2, key[2]);
     EEPROM.write(EEPROM_ADDRESS_BIND_3, key[3]);
     EEPROM.write(EEPROM_ADDRESS_BIND_KEY_SEEDED, 0xf1);
+    #ifdef ARDUINO_SAMD_FEATHER_M0
+    EEPROM.commit();
+    #endif
 }
 
 int PlatformNode::getRcChannel(uint8_t channel) {
