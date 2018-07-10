@@ -15,6 +15,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "qsp.h"
 #include "sbus.h"
 #include "platform_node.h"
+#include "platform_storage.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
     #define LORA_SS_PIN     8
@@ -52,6 +53,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 
 RadioNode radioNode;
 PlatformNode platformNode;
+PlatformStorage storage;
 
 /*
  * Main defines for device working in TX mode

@@ -2,12 +2,7 @@
 
 #include "Arduino.h"
 #include "radio_node.h"
-#if defined(ARDUINO_AVR_FEATHER32U4) || defined(ARDUINO_ESP32_DEV)
-#include <EEPROM.h>
-#elif defined(ARDUINO_SAMD_FEATHER_M0)
-// Include EEPROM-like API for FlashStorage
-#include <FlashAsEEPROM.h>
-#endif
+#include "platform_storage.h"
 
 #ifndef PLATFORM_NODE_H
 #define PLATFORM_NODE_H
@@ -17,6 +12,7 @@
 #define PLATFORM_DEFAULT_CHANNEL_VALUE 1000
 
 extern RadioNode radioNode;
+extern PlatformStorage storage;
 
 enum deviceStates {
     DEVICE_STATE_OK,

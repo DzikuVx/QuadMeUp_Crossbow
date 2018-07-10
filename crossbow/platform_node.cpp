@@ -10,38 +10,32 @@ PlatformNode::PlatformNode(void) {
  * Return true if new bind key was generated
  */
 void PlatformNode::seed(void) {
-    uint8_t val;
-
-    val = EEPROM.read(EEPROM_ADDRESS_BIND_KEY_SEEDED);
+    uint8_t val = storage.read(EEPROM_ADDRESS_BIND_KEY_SEEDED);
 
     if (val != 0xf1) {
-        EEPROM.write(EEPROM_ADDRESS_BIND_0, random(1, 255)); //Yes, from 1 to 254
-        EEPROM.write(EEPROM_ADDRESS_BIND_1, random(1, 255)); //Yes, from 1 to 254
-        EEPROM.write(EEPROM_ADDRESS_BIND_2, random(1, 255)); //Yes, from 1 to 254
-        EEPROM.write(EEPROM_ADDRESS_BIND_3, random(1, 255)); //Yes, from 1 to 254
-        EEPROM.write(EEPROM_ADDRESS_BIND_KEY_SEEDED, 0xf1);
-        #ifdef ARDUINO_SAMD_FEATHER_M0
-        EEPROM.commit();
-        #endif
+        storage.write(EEPROM_ADDRESS_BIND_0, random(1, 255)); //Yes, from 1 to 254
+        storage.write(EEPROM_ADDRESS_BIND_1, random(1, 255)); //Yes, from 1 to 254
+        storage.write(EEPROM_ADDRESS_BIND_2, random(1, 255)); //Yes, from 1 to 254
+        storage.write(EEPROM_ADDRESS_BIND_3, random(1, 255)); //Yes, from 1 to 254
+        storage.write(EEPROM_ADDRESS_BIND_KEY_SEEDED, 0xf1);
+        storage.commit();
     } 
 }
 
 void PlatformNode::loadBindKey(uint8_t key[]) {
-    key[0] = EEPROM.read(EEPROM_ADDRESS_BIND_0);
-    key[1] = EEPROM.read(EEPROM_ADDRESS_BIND_1);
-    key[2] = EEPROM.read(EEPROM_ADDRESS_BIND_2);
-    key[3] = EEPROM.read(EEPROM_ADDRESS_BIND_3);
+    key[0] = storage.read(EEPROM_ADDRESS_BIND_0);
+    key[1] = storage.read(EEPROM_ADDRESS_BIND_1);
+    key[2] = storage.read(EEPROM_ADDRESS_BIND_2);
+    key[3] = storage.read(EEPROM_ADDRESS_BIND_3);
 }
 
 void PlatformNode::saveBindKey(uint8_t key[]) {
-    EEPROM.write(EEPROM_ADDRESS_BIND_0, key[0]);
-    EEPROM.write(EEPROM_ADDRESS_BIND_1, key[1]);
-    EEPROM.write(EEPROM_ADDRESS_BIND_2, key[2]);
-    EEPROM.write(EEPROM_ADDRESS_BIND_3, key[3]);
-    EEPROM.write(EEPROM_ADDRESS_BIND_KEY_SEEDED, 0xf1);
-    #ifdef ARDUINO_SAMD_FEATHER_M0
-    EEPROM.commit();
-    #endif
+    storage.write(EEPROM_ADDRESS_BIND_0, key[0]);
+    storage.write(EEPROM_ADDRESS_BIND_1, key[1]);
+    storage.write(EEPROM_ADDRESS_BIND_2, key[2]);
+    storage.write(EEPROM_ADDRESS_BIND_3, key[3]);
+    storage.write(EEPROM_ADDRESS_BIND_KEY_SEEDED, 0xf1);
+    storage.commit();
 }
 
 int PlatformNode::getRcChannel(uint8_t channel) {
