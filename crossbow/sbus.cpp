@@ -1,5 +1,6 @@
 #include "Arduino.h"
 #include "sbus.h"
+#include "variables.h"
 
 #define SBUS_MIN_OFFSET 173
 #define SBUS_MID_OFFSET 992
