@@ -2,7 +2,12 @@
 
 #include "Arduino.h"
 #include "radio_node.h"
+#ifdef ARDUINO_AVR_FEATHER32U4
 #include <EEPROM.h>
+#elif defined(ARDUINO_SAMD_FEATHER_M0)
+// Include EEPROM-like API for FlashStorage
+#include <FlashAsEEPROM.h>
+#endif
 
 #ifndef PLATFORM_NODE_H
 #define PLATFORM_NODE_H
