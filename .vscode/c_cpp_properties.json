@@ -3,12 +3,14 @@
         {
             "name": "Win32",
             "includePath": [
+                "C:\\Users\\pspyc\\Documents\\Arduino\\hardware\\espressif\\esp32\\cores\\esp32",
                 "${workspaceRoot}",
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": false,
                 "path": [
+                    "C:\\Users\\pspyc\\Documents\\Arduino\\hardware\\espressif\\esp32\\cores\\esp32",
                     "${workspaceRoot}",
                     "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino"
                 ]
@@ -19,7 +21,7 @@
             "compilerPath": "/usr/bin/clang",
             "defines": [
                 "FEATURE_TX_INPUT_SBUS",
-                "ARDUINO_AVR_FEATHER32U4"
+                "ARDUINO_ESP32_DEV"
             ]
         },
         {

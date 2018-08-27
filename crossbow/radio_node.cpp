@@ -45,7 +45,10 @@ void RadioNode::init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int))
     LoRa.enableCrc();
 
     //Setup ISR callback and start receiving
-    LoRa.onReceive(callback);
+    if (callback != NULL) {
+        LoRa.onReceive(callback);
+    }
+
     LoRa.receive();
     radioState = RADIO_STATE_RX;
 }

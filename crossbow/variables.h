@@ -5,6 +5,9 @@
 #ifndef VARIABLES_H
 #define VARIABLES_H
 
+#define SERIAL1_TX      17
+#define SERIAL1_RX      16
+
 #define RADIO_STATE_TX 1
 #define RADIO_STATE_RX 2
 

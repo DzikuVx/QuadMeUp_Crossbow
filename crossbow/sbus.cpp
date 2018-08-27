@@ -1,5 +1,6 @@
 #include "Arduino.h"
 #include "sbus.h"
+#include "variables.h"
 
 #define SBUS_MIN_OFFSET 173
 #define SBUS_MID_OFFSET 992
@@ -91,7 +92,11 @@ void SbusInput::loop(void)
 
 void SbusInput::start(void)
 {
+#ifdef ARDUINO_ESP32_DEV
+    _serial.begin(100000, SERIAL_8N2, SERIAL1_RX, SERIAL1_TX, false);
+#else 
     _serial.begin(100000, SERIAL_8N2);
+#endif
 }
 
 void SbusInput::restart(void)

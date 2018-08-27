@@ -15,6 +15,7 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "qsp.h"
 #include "sbus.h"
 #include "platform_node.h"
+#include "platform_storage.h"
 
 #ifdef ARDUINO_AVR_FEATHER32U4
     #define LORA_SS_PIN     8
@@ -30,12 +31,29 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 
     #define BUTTON_0_PIN    9 //Please verify
     #define BUTTON_1_PIN    10 //Please verify
+
+#elif defined (ARDUINO_ESP32_DEV) 
+
+    #define LORA_SS_PIN     18
+    #define LORA_RST_PIN    14
+    #define LORA_DI0_PIN    26
+
+    #define LED_BUILTIN     2
+
+    #define BUTTON_0_PIN    9 //TODO Decide, it is unknown
+    #define BUTTON_1_PIN    10 //TODO Decide, it is unknown
+
+    #define SPI_SCK_PIN     5
+    #define SPI_MISO_PIN    19
+    #define SPI_MOSI_PIN    27
+
 #else
     #error please select hardware
 #endif
 
 RadioNode radioNode;
 PlatformNode platformNode;
+PlatformStorage storage;
 
 /*
  * Main defines for device working in TX mode
@@ -48,7 +66,15 @@ PlatformNode platformNode;
 
 #elif defined(FEATURE_TX_INPUT_SBUS)
   #include "sbus.h"
-  SbusInput txInput(Serial1);
+
+#ifdef ARDUINO_ESP32_DEV
+
+    HardwareSerial sbusInputSerial(1);
+
+    SbusInput txInput(sbusInputSerial);
+#else 
+    SbusInput txInput(Serial1);
+#endif 
 
 #else
   #error please select tx input source
@@ -173,7 +199,7 @@ void setRcChannel_wrapper(uint8_t channel, int value, int offset) {
 }
 
 void setup(void)
-{
+{   
 #ifdef DEBUG_SERIAL
     Serial.begin(115200);
 #endif
@@ -192,7 +218,14 @@ void setup(void)
 
 #endif
 
+#ifdef ARDUINO_ESP32_DEV
+    SPI.begin(SPI_SCK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN, LORA_SS_PIN);
+    
+    //On ESP32 there are no interrupts here, we will have to check it manually
+    radioNode.init(LORA_SS_PIN, LORA_RST_PIN, LORA_DI0_PIN, NULL);
+#else 
     radioNode.init(LORA_SS_PIN, LORA_RST_PIN, LORA_DI0_PIN, onReceive);
+#endif
 
 #ifdef DEVICE_MODE_RX
 
@@ -303,6 +336,7 @@ int8_t getFrameToTransmit(QspConfiguration_t *qsp) {
 void loop(void)
 {
 
+    Serial.println(millis());
     static uint32_t nextKey = millis();
 
     uint32_t currentMillis = millis();
@@ -337,20 +371,22 @@ void loop(void)
     oled.loop();
 #endif
 
+    //FIXME ESP32 has a problem with serial manipulation over here that causes board to restart
+
     txInput.recoverStuckFrames();
 
-    /*
-     * If we are not receiving SBUS frames from radio, try to restart serial
-     */
-    static uint32_t serialRestartMillis = 0;
+    // /*
+    //  * If we are not receiving SBUS frames from radio, try to restart serial
+    //  */
+    // static uint32_t serialRestartMillis = 0;
 
     /*
      * Final guard for SBUS input. If there is no input, try to restart serial port
      */
-    if (!txInput.isReceiving() && serialRestartMillis + 100 < currentMillis) {
-        txInput.restart();
-        serialRestartMillis = currentMillis;
-    }
+    // if (!txInput.isReceiving() && serialRestartMillis + 100 < currentMillis) {
+    //     txInput.restart();
+    //     serialRestartMillis = currentMillis;
+    // }
 
     radioNode.handleTxDoneState(!platformNode.isBindMode);
 #endif

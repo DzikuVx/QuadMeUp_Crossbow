@@ -5,6 +5,7 @@
  *  Hardware type. Available types:
  *  ARDUINO_AVR_FEATHER32U4
  *  ARDUINO_SAMD_FEATHER_M0
+ *  ARDUINO_ESP32_DEV
  * 
  *  Leave commented for autodetect
  */
@@ -15,10 +16,10 @@
  * DEVICE_MODE_TX
  * DEVICE_MODE_RX
  */
-// #define DEVICE_MODE_TX
-#define DEVICE_MODE_RX
+#define DEVICE_MODE_TX
+// #define DEVICE_MODE_RX
 
-#define FEATURE_TX_OLED
+// #define FEATURE_TX_OLED
 // #define FORCE_TX_WITHOUT_INPUT
 
 /*
