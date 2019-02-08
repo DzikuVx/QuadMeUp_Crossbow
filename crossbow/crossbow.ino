@@ -16,7 +16,15 @@ Copyright (c) 20xx, MPL Contributor1 contrib1@example.net
 #include "sbus.h"
 #include "platform_node.h"
 
-#ifdef ARDUINO_AVR_FEATHER32U4
+#ifdef ARDUINO_AVR_PRO
+    #define LORA_SS_PIN     10
+    #define LORA_RST_PIN    9
+    #define LORA_DI0_PIN    2
+
+    #define BUTTON_0_PIN    7
+    #define BUTTON_1_PIN    8
+
+#elif ARDUINO_AVR_FEATHER32U4
     #define LORA_SS_PIN     8
     #define LORA_RST_PIN    4
     #define LORA_DI0_PIN    7
@@ -192,7 +200,10 @@ void setup(void)
 
 #endif
 
+    Serial.println("pre");
     radioNode.init(LORA_SS_PIN, LORA_RST_PIN, LORA_DI0_PIN, onReceive);
+    Serial.println("post");
+
 
 #ifdef DEVICE_MODE_RX
 
@@ -201,9 +212,14 @@ void setup(void)
     pinMode(RX_ADC_PIN_3, INPUT);
 
     /*
-     * Prepare Serial1 for S.Bus processing
+     * Prepare Serial for S.Bus processing
      */
+
+#ifdef ARDUINO_AVR_PRO
+    // Serial.begin(100000, SERIAL_8E2);
+#else
     Serial1.begin(100000, SERIAL_8E2);
+#endif
 
     platformNode.enterBindMode();
     LoRa.receive(); //TODO this probably should be moved somewhere....
@@ -244,7 +260,7 @@ void setup(void)
 
 #endif
 
-    pinMode(LED_BUILTIN, OUTPUT);
+    // pinMode(LED_BUILTIN, OUTPUT);
 }
 
 uint8_t currentSequenceIndex = 0;
@@ -484,7 +500,13 @@ void loop(void)
         platformNode.setRcChannel(RSSI_CHANNEL - 1, rxDeviceState.indicatedRssi, 0);
 
         sbusPreparePacket(sbusPacket, false, (platformNode.platformState == DEVICE_STATE_FAILSAFE), getRcChannel_wrapper);
+
+#ifdef ARDUINO_AVR_PRO
+        // Serial.write(sbusPacket, SBUS_PACKET_LENGTH);
+#else
         Serial1.write(sbusPacket, SBUS_PACKET_LENGTH);
+#endif
+
         sbusTime = currentMillis + SBUS_UPDATE_RATE;
     }
 
@@ -558,27 +580,27 @@ void loop(void)
     if (platformNode.nextLedUpdate < currentMillis) {
 #ifdef DEVICE_MODE_TX
         if (txDeviceState.isReceiving) {
-            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            // digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
             platformNode.nextLedUpdate = currentMillis + 300;
         } else if (txInput.isReceiving()) {
-            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            // digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
             platformNode.nextLedUpdate = currentMillis + 100;
         } else {
-            digitalWrite(LED_BUILTIN, HIGH);
+            // digitalWrite(LED_BUILTIN, HIGH);
             platformNode.nextLedUpdate = currentMillis + 200;
         }
 #else
 
         if (platformNode.isBindMode) {
             platformNode.nextLedUpdate = currentMillis + 50;
-            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            // digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
         } else {
             platformNode.nextLedUpdate = currentMillis + 200;
 
             if (platformNode.platformState == DEVICE_STATE_FAILSAFE) {
-                digitalWrite(LED_BUILTIN, HIGH);
+                // digitalWrite(LED_BUILTIN, HIGH);
             } else {
-                digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+                // digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
             }
         }
 #endif

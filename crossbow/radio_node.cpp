@@ -37,9 +37,12 @@ void RadioNode::init(uint8_t ss, uint8_t rst, uint8_t di0, void(*callback)(int))
         di0
     );
 
-    if (!LoRa.begin(getFrequencyForChannel(getChannel()))) {
-        while (true);
-    }
+    // if () {
+        while (!LoRa.begin(getFrequencyForChannel(getChannel()))) {
+            delay(100);
+        }
+        
+    // }
 
     reset();
     LoRa.enableCrc();
